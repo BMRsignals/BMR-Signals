@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BMR Signals Catcher — Premium TradingView Indicator Rental</title>
+<meta name="description" content="Non-repainting, multi-timeframe trading signals for XAUUSD & Forex. 68% win rate. 1,110R+ documented results. Rent monthly, quarterly, or yearly.">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0a0a0f;
+    color: #e8e8f0;
+    line-height: 1.6;
+  }
+  .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+
+  /* HERO */
+  .hero {
+    background: linear-gradient(135deg, #0a0a0f 0%, #12121c 50%, #0a0a0f 100%);
+    padding: 80px 0 60px;
+    text-align: center;
+    border-bottom: 1px solid #1e1e2e;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: radial-gradient(circle, rgba(255, 193, 7, 0.06) 0%, transparent 70%);
+    animation: pulse 8s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 0.5; }
+    50% { transform: scale(1.1); opacity: 0.8; }
+  }
+  .hero-content { position: relative; z-index: 1; }
+  .badge {
+    display: inline-block;
+    background: rgba(255, 193, 7, 0.15);
+    color: #ffc107;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 24px;
+    border: 1px solid rgba(255, 193, 7, 0.3);
+  }
+  .hero h1 {
+    font-size: 52px;
+    font-weight: 800;
+    margin-bottom: 20px;
+    background: linear-gradient(135deg, #ffffff 0%, #ffc107 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: -1px;
+  }
+  .hero p {
+    font-size: 19px;
+    color: #a0a0b0;
+    max-width: 720px;
+    margin: 0 auto 32px;
+  }
+  .cta-btn {
+    display: inline-block;
+    background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+    color: #0a0a0f;
+    padding: 16px 42px;
+    border-radius: 10px;
+    font-size: 17px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 8px 30px rgba(255, 193, 7, 0.3);
+    border: none;
+    cursor: pointer;
+  }
+  .cta-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(255, 193, 7, 0.45);
+  }
+  .stats-bar {
+    display: flex;
+    justify-content: center;
+    gap: 60px;
+    margin-top: 50px;
+    flex-wrap: wrap;
+  }
+  .stat { text-align: center; }
+  .stat-value {
+    font-size: 32px;
+    font-weight: 800;
+    color: #4caf50;
+    display: block;
+  }
+  .stat-label {
+    font-size: 13px;
+    color: #8080a0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* SECTIONS */
+  section { padding: 70px 0; }
+  .section-title {
+    font-size: 36px;
+    font-weight: 800;
+    text-align: center;
+    margin-bottom: 12px;
+    color: #ffffff;
+  }
+  .section-sub {
+    text-align: center;
+    color: #8080a0;
+    margin-bottom: 50px;
+    font-size: 16px;
+  }
+
+  /* RESULTS GALLERY */
+  .gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 24px;
+  }
+  .result-card {
+    background: #12121c;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid #1e1e2e;
+    transition: transform 0.3s, border-color 0.3s;
+  }
+  .result-card:hover {
+    transform: translateY(-4px);
+    border-color: #ffc107;
+  }
+  .result-card img {
+    width: 100%;
+    height: 260px;
+    object-fit: cover;
+    display: block;
+    background: #0a0a0f;
+  }
+  .result-caption {
+    padding: 18px 20px;
+    font-size: 14px;
+    color: #b0b0c0;
+    border-top: 1px solid #1e1e2e;
+  }
+  .result-caption strong { color: #ffc107; }
+
+  .disclaimer {
+    text-align: center;
+    font-size: 12px;
+    color: #606070;
+    margin-top: 30px;
+    font-style: italic;
+  }
+
+  /* FEATURES */
+  .features {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+  }
+  .feature {
+    background: #12121c;
+    padding: 28px;
+    border-radius: 12px;
+    border: 1px solid #1e1e2e;
+  }
+  .feature-icon {
+    font-size: 28px;
+    margin-bottom: 14px;
+  }
+  .feature h3 {
+    font-size: 17px;
+    margin-bottom: 8px;
+    color: #ffffff;
+  }
+  .feature p {
+    font-size: 14px;
+    color: #9090a8;
+  }
+
+  /* HOW IT WORKS */
+  .steps {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 24px;
+    max-width: 950px;
+    margin: 0 auto;
+  }
+  .step {
+    text-align: center;
+    padding: 30px 20px;
+    background: #12121c;
+    border-radius: 12px;
+    border: 1px solid #1e1e2e;
+  }
+  .step-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+    color: #0a0a0f;
+    border-radius: 50%;
+    font-weight: 800;
+    font-size: 18px;
+    margin-bottom: 16px;
+  }
+  .step h3 { font-size: 17px; margin-bottom: 8px; color: #ffffff; }
+  .step p { font-size: 14px; color: #9090a8; }
+
+  /* PRICING */
+  .pricing {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+  .price-card {
+    background: #12121c;
+    border-radius: 16px;
+    padding: 36px 28px;
+    border: 2px solid #1e1e2e;
+    text-align: center;
+    position: relative;
+    transition: transform 0.3s, border-color 0.3s;
+  }
+  .price-card.featured {
+    border-color: #ffc107;
+    transform: scale(1.05);
+    background: linear-gradient(180deg, #12121c 0%, #1a1a10 100%);
+  }
+  .price-card.featured::before {
+    content: 'BEST VALUE';
+    position: absolute;
+    top: -14px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+    color: #0a0a0f;
+    padding: 5px 18px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1px;
+  }
+  .price-card:hover { transform: translateY(-4px); }
+  .price-card.featured:hover { transform: scale(1.05) translateY(-4px); }
+  .plan-name {
+    font-size: 15px;
+    color: #a0a0b0;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+  }
+  .plan-price {
+    font-size: 48px;
+    font-weight: 800;
+    color: #ffffff;
+    margin-bottom: 6px;
+  }
+  .plan-price span {
+    font-size: 16px;
+    color: #8080a0;
+    font-weight: 500;
+  }
+  .plan-save {
+    color: #4caf50;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 24px;
+    min-height: 20px;
+  }
+  .plan-features {
+    list-style: none;
+    text-align: left;
+    margin-bottom: 28px;
+    padding: 0 10px;
+  }
+  .plan-features li {
+    padding: 8px 0;
+    color: #b0b0c0;
+    font-size: 14px;
+    border-bottom: 1px solid #1e1e2e;
+  }
+  .plan-features li:last-child { border-bottom: none; }
+  .plan-features li::before {
+    content: '✓ ';
+    color: #4caf50;
+    font-weight: 800;
+    margin-right: 6px;
+  }
+  .plan-btn {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    background: #1e1e2e;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.2s;
+  }
+  .plan-btn:hover { background: #2a2a3e; }
+  .featured .plan-btn {
+    background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+    color: #0a0a0f;
+  }
+  .featured .plan-btn:hover { opacity: 0.9; }
+
+  /* PAYMENT MODAL */
+  .modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    backdrop-filter: blur(6px);
+    overflow-y: auto;
+  }
+  .modal.active { display: flex; }
+  .modal-content {
+    background: #12121c;
+    border-radius: 18px;
+    max-width: 480px;
+    width: 100%;
+    padding: 36px 30px;
+    border: 1px solid #2a2a3e;
+    position: relative;
+    margin: auto;
+  }
+  .modal-close {
+    position: absolute;
+    top: 14px; right: 18px;
+    background: none;
+    border: none;
+    color: #8080a0;
+    font-size: 26px;
+    cursor: pointer;
+    line-height: 1;
+  }
+  .modal-close:hover { color: #ffffff; }
+  .modal h2 {
+    font-size: 22px;
+    text-align: center;
+    margin-bottom: 6px;
+    color: #ffffff;
+  }
+  .modal-plan-info {
+    text-align: center;
+    color: #ffc107;
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 24px;
+  }
+  .wallet-box {
+    background: #0a0a0f;
+    border: 1px solid #2a2a3e;
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 20px;
+    word-break: break-all;
+    font-family: monospace;
+    font-size: 13px;
+    color: #e8e8f0;
+  }
+  .copy-btn {
+    display: block;
+    width: 100%;
+    margin-top: 10px;
+    padding: 10px;
+    background: #ffc107;
+    color: #0a0a0f;
+    border: none;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .copy-btn:hover { opacity: 0.9; }
+  .copy-btn.copied { background: #4caf50; color: white; }
+  .qr-container {
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+    background: #ffffff;
+    border-radius: 10px;
+    margin-bottom: 20px;
+  }
+  .amount-warning {
+    background: rgba(255, 193, 7, 0.1);
+    border: 1px solid rgba(255, 193, 7, 0.3);
+    color: #ffc107;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .amount-warning strong { color: #ffffff; }
+  .telegram-btn {
+    display: block;
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, #0088cc 0%, #006699 100%);
+    color: #ffffff;
+    text-align: center;
+    text-decoration: none;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 12px;
+    transition: transform 0.2s;
+  }
+  .telegram-btn:hover { transform: translateY(-2px); }
+  .telegram-note {
+    font-size: 12px;
+    color: #8080a0;
+    text-align: center;
+    line-height: 1.5;
+  }
+  .network-warning {
+    background: rgba(244, 67, 54, 0.1);
+    border: 1px solid rgba(244, 67, 54, 0.3);
+    color: #ff6b6b;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .network-warning strong { color: #ff8888; }
+
+  /* FAQ */
+  .faq { max-width: 800px; margin: 0 auto; }
+  .faq-item {
+    background: #12121c;
+    border: 1px solid #1e1e2e;
+    border-radius: 10px;
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  .faq-q {
+    padding: 18px 22px;
+    cursor: pointer;
+    font-weight: 600;
+    color: #ffffff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 15px;
+  }
+  .faq-q::after {
+    content: '+';
+    color: #ffc107;
+    font-size: 22px;
+    font-weight: 300;
+  }
+  .faq-item.open .faq-q::after { content: '−'; }
+  .faq-a {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    color: #9090a8;
+    font-size: 14px;
+    padding: 0 22px;
+  }
+  .faq-item.open .faq-a {
+    max-height: 300px;
+    padding: 0 22px 18px;
+  }
+
+  /* FOOTER */
+  footer {
+    background: #08080c;
+    padding: 40px 20px;
+    text-align: center;
+    border-top: 1px solid #1e1e2e;
+    font-size: 13px;
+    color: #606070;
+  }
+  footer a { color: #ffc107; text-decoration: none; }
+  footer .risk {
+    max-width: 700px;
+    margin: 16px auto 0;
+    font-size: 11px;
+    color: #505060;
+    line-height: 1.6;
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    .hero h1 { font-size: 34px; }
+    .hero p { font-size: 16px; }
+    .section-title { font-size: 26px; }
+    .stats-bar { gap: 30px; }
+    .stat-value { font-size: 26px; }
+    .price-card.featured { transform: none; }
+    .price-card.featured:hover { transform: translateY(-4px); }
+    .plan-price { font-size: 40px; }
+    section { padding: 50px 0; }
+    .hero { padding: 60px 0 40px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="container hero-content">
+    <div class="badge">⚡ INVITE-ONLY — SOURCE CODE PROTECTED</div>
+    <h1>BMR Signals Catcher</h1>
+    <p>Non-repainting, multi-timeframe trading signals for XAUUSD and Forex. Get precise entries, take-profit levels, and a live performance dashboard — all on your TradingView chart.</p>
+    <a href="#pricing" class="cta-btn">Rent Now — From $90/mo</a>
+
+    <div class="stats-bar">
+      <div class="stat">
+        <span class="stat-value">68%</span>
+        <span class="stat-label">Win Rate (30m)</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value">+1,110R</span>
+        <span class="stat-label">30m Performance</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value">73%</span>
+        <span class="stat-label">Win Rate (5m)</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value">+423R</span>
+        <span class="stat-label">5m Performance</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- RESULTS GALLERY -->
+<section>
+  <div class="container">
+    <h2 class="section-title">Real Results. Real Signals.</h2>
+    <p class="section-sub">Documented performance from live XAUUSD trades</p>
+
+    <div class="gallery">
+      <div class="result-card">
+        <img src="https://i.ibb.co/7dPsML41/IMG-9213.jpg" alt="BMR Signals Catcher — Active 30m sell signal on XAUUSD">
+        <div class="result-caption"><strong>Live 30m Signal:</strong> Active sell trade on XAUUSD with Entry, SL, and TP1/TP2/TP3 marked in real time.</div>
+      </div>
+      <div class="result-card">
+        <img src="https://i.ibb.co/wZfbWVwb/IMG-9212.jpg" alt="BMR Signals Catcher — 30m performance dashboard 68% win rate">
+        <div class="result-caption"><strong>30m Performance:</strong> 68% win rate across 617 signals, generating +1,110R total return.</div>
+      </div>
+      <div class="result-card">
+        <img src="https://i.ibb.co/gbc45kc9/IMG-9209.jpg" alt="BMR Signals Catcher — Multi-timeframe dashboard">
+        <div class="result-caption"><strong>Multi-Timeframe Dashboard:</strong> Live 1H, 4H, and 1D bias alongside 5m, 15m, 30m, and 60m levels.</div>
+      </div>
+    </div>
+
+    <p class="disclaimer">Past performance does not guarantee future results. Trading involves risk.</p>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section style="background: #08080c;">
+  <div class="container">
+    <h2 class="section-title">Why Traders Choose BMR</h2>
+    <p class="section-sub">Built for serious traders who want an edge</p>
+
+    <div class="features">
+      <div class="feature">
+        <div class="feature-icon">🎯</div>
+        <h3>Non-Repainting Signals</h3>
+        <p>Once a signal appears, it stays. No disappearing arrows, no false hope.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">📊</div>
+        <h3>Multi-Timeframe Dashboard</h3>
+        <p>View bias and levels across 5m, 15m, 30m, 60m, 1H, 4H, and 1D at a glance.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">💰</div>
+        <h3>Complete Trade Management</h3>
+        <p>Every signal includes Entry, Stop Loss, TP1, TP2, and TP3 levels.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">📈</div>
+        <h3>Live Performance Stats</h3>
+        <p>Real-time win rate % and R-multiple tracking built into the dashboard.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">🌍</div>
+        <h3>Multi-Market Support</h3>
+        <p>Optimized for XAUUSD (Gold), major Forex pairs, and Crypto.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">🔔</div>
+        <h3>Instant Alerts</h3>
+        <p>Get notified on your phone or email the moment a signal fires.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section>
+  <div class="container">
+    <h2 class="section-title">How It Works</h2>
+    <p class="section-sub">Get access in 3 simple steps</p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h3>Send USDT Payment</h3>
+        <p>Choose your plan and send the exact USDT amount (TRC20 network) to the wallet address.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3>Send Screenshot on Telegram</h3>
+        <p>Message <strong>@BMR_indicator_official</strong> with your payment screenshot and TradingView username.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3>Get Instant Access</h3>
+        <p>We verify and add you to the Invite-Only script. Access within 24 hours.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section id="pricing" style="background: #08080c;">
+  <div class="container">
+    <h2 class="section-title">Choose Your Plan</h2>
+    <p class="section-sub">Rent access — no source code, no ownership, pure performance</p>
+
+    <div class="pricing">
+      <div class="price-card">
+        <div class="plan-name">Monthly</div>
+        <div class="plan-price">$90<span>/mo</span></div>
+        <div class="plan-save"></div>
+        <ul class="plan-features">
+          <li>30 days full access</li>
+          <li>All timeframes</li>
+          <li>Live signal alerts</li>
+          <li>Telegram support</li>
+        </ul>
+        <button class="plan-btn" onclick="openModal('1 Month', 90)">Rent Now</button>
+      </div>
+
+      <div class="price-card">
+        <div class="plan-name">3 Months</div>
+        <div class="plan-price">$250<span>/3mo</span></div>
+        <div class="plan-save">Save $20 vs monthly</div>
+        <ul class="plan-features">
+          <li>90 days full access</li>
+          <li>All timeframes</li>
+          <li>Live signal alerts</li>
+          <li>Priority support</li>
+        </ul>
+        <button class="plan-btn" onclick="openModal('3 Months', 250)">Rent Now</button>
+      </div>
+
+      <div class="price-card featured">
+        <div class="plan-name">Annual</div>
+        <div class="plan-price">$750<span>/yr</span></div>
+        <div class="plan-save">Save $330 — Best Value</div>
+        <ul class="plan-features">
+          <li>365 days full access</li>
+          <li>All timeframes</li>
+          <li>Live signal alerts</li>
+          <li>VIP support</li>
+          <li>Early feature access</li>
+        </ul>
+        <button class="plan-btn" onclick="openModal('Annual', 750)">Rent Now</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section>
+  <div class="container">
+    <h2 class="section-title">Frequently Asked Questions</h2>
+    <p class="section-sub">Everything you need to know</p>
+
+    <div class="faq">
+      <div class="faq-item">
+        <div class="faq-q">Is the source code visible to me?</div>
+        <div class="faq-a">No. BMR Signals Catcher is delivered as an Invite-Only script. You can use all features on your chart, but the Pine Script code remains fully protected.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">How fast will I get access after paying?</div>
+        <div class="faq-a">Access is typically activated within 24 hours of payment verification. Send your screenshot on Telegram to speed things up.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Which payment methods do you accept?</div>
+        <div class="faq-a">We currently accept USDT on the TRC20 network only. Send the exact amount to the wallet shown at checkout.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">What markets does it work on?</div>
+        <div class="faq-a">BMR Signals Catcher is optimized for XAUUSD (Gold), major Forex pairs, and Crypto. It works on any market TradingView supports.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Can I get a refund?</div>
+        <div class="faq-a">All sales are final. Because access is granted immediately, we do not offer refunds. Please make sure the indicator suits your needs before purchasing.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">What happens when my subscription ends?</div>
+        <div class="faq-a">Your access is automatically revoked. To continue using the indicator, simply renew with a new payment.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PAYMENT MODAL -->
+<div class="modal" id="paymentModal">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <h2>Complete Your Payment</h2>
+    <div class="modal-plan-info" id="modalPlanInfo">Plan: $90</div>
+
+    <div class="network-warning">
+      ⚠️ <strong>TRC20 Network Only</strong><br>
+      Sending any other coin or network will result in permanent loss.
+    </div>
+
+    <div class="amount-warning">
+      Send exactly <strong id="modalAmount">$90 USDT</strong> to the wallet below
+    </div>
+
+    <div class="wallet-box">
+      <div id="walletAddress">TLgREYohGVK6V9zUS6gNowq2WjPavmfEj3</div>
+      <button class="copy-btn" id="copyBtn" onclick="copyWallet()">Copy Wallet Address</button>
+    </div>
+
+    <div class="qr-container">
+      <div id="qrcode"></div>
+    </div>
+
+    <a href="https://t.me/BMR_indicator_official" target="_blank" class="telegram-btn">
+      📩 Send Payment Screenshot on Telegram
+    </a>
+    <p class="telegram-note">Include your <strong>TradingView username</strong> and the <strong>plan you purchased</strong> in the message. Activation within 24 hours.</p>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <p>© 2025 BMR Signals Catcher. All rights reserved.</p>
+    <p style="margin-top: 8px;">Contact: <a href="https://t.me/BMR_indicator_official">@BMR_indicator_official</a></p>
+    <p class="risk">Risk Disclaimer: Trading financial instruments carries a high level of risk. Past performance does not guarantee future results. BMR Signals Catcher is a technical analysis tool and does not constitute financial advice. You are solely responsible for your trading decisions.</p>
+  </div>
+</footer>
+
+<script>
+  // ========== QR CODE GENERATION ==========
+  const WALLET = "TLgREYohGVK6V9zUS6gNowq2WjPavmfEj3";
+
+  function generateQR() {
+    const qrContainer = document.getElementById('qrcode');
+    qrContainer.innerHTML = '';
+    new QRCode(qrContainer, {
+      text: WALLET,
+      width: 200,
+      height: 200,
+      colorDark: "#000000",
+      colorLight: "#ffffff",
+      correctLevel: QRCode.CorrectLevel.H
+    });
+  }
+
+  // ========== MODAL FUNCTIONS ==========
+  function openModal(plan, price) {
+    document.getElementById('modalPlanInfo').textContent = plan + ' Plan — $' + price;
+    document.getElementById('modalAmount').textContent = '$' + price + ' USDT';
+    document.getElementById('paymentModal').classList.add('active');
+    document.body.style.overflow = 'hidden';
+    setTimeout(generateQR, 50);
+  }
+
+  function closeModal() {
+    document.getElementById('paymentModal').classList.remove('active');
+    document.body.style.overflow = '';
+  }
+
+  document.getElementById('paymentModal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
+
+  // ========== COPY WALLET ==========
+  function copyWallet() {
+    navigator.clipboard.writeText(WALLET).then(() => {
+      const btn = document.getElementById('copyBtn');
+      btn.textContent = '✓ Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = 'Copy Wallet Address';
+        btn.classList.remove('copied');
+      }, 2000);
+    }).catch(() => {
+      const range = document.createRange();
+      range.selectNode(document.getElementById('walletAddress'));
+      window.getSelection().removeAllRanges();
+      window.getSelection().addRange(range);
+      document.execCommand('copy');
+      alert('Wallet address copied!');
+    });
+  }
+
+  // ========== FAQ TOGGLE ==========
+  document.querySelectorAll('.faq-q').forEach(q => {
+    q.addEventListener('click', () => {
+      const item = q.parentElement;
+      const wasOpen = item.classList.contains('open');
+      document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+      if (!wasOpen) item.classList.add('open');
+    });
+  });
+
+  // ========== SMOOTH SCROLL ==========
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', function(e) {
+      const target = document.querySelector(this.getAttribute('href'));
+      if (target) {
+        e.preventDefault();
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  });
+</script>
+
+</body>
+</html>
