@@ -167,6 +167,7 @@
     
     // YOUR FINNHUB API KEY
     const FINNHUB_API_KEY = 'dblpitpr01qpfa5oeql0dblpitpr01qpfa5oeqlg'; 
+    const CORS_PROXY = 'https://corsproxy.io/?';
 
     let supabaseClient = null;
     let isRecoveryMode = false; 
@@ -355,12 +356,13 @@
       loadChartData(tf); 
     }
 
-    // --- REAL FOREX DATA (Finnhub) ---
+    // --- REAL FOREX DATA (Finnhub + CORS Proxy) ---
     async function loadChartData(tf) {
       try {
         const now = Math.floor(Date.now() / 1000);
         let from;
         
+        // Calculate time range based on timeframe (approximate for 300 candles)
         if (tf === '5') from = now - (300 * 5 * 60); 
         else if (tf === '15') from = now - (300 * 15 * 60);
         else if (tf === '30') from = now - (300 * 30 * 60);
@@ -368,10 +370,13 @@
         else if (tf === '240') from = now - (300 * 4 * 60 * 60);
         else from = now - (300 * 24 * 60 * 60); 
 
-        const res = await fetch(`https://finnhub.io/api/v1/forex/candle?symbol=OANDA:XAU_USD&resolution=${tf}&from=${from}&to=${now}&token=${FINNHUB_API_KEY}`);
+        const targetUrl = `https://finnhub.io/api/v1/forex/candle?symbol=OANDA:XAU_USD&resolution=${tf}&from=${from}&to=${now}&token=${FINNHUB_API_KEY}`;
+        
+        // Use Proxy to bypass browser security restrictions
+        const res = await fetch(CORS_PROXY + encodeURIComponent(targetUrl));
         const data = await res.json();
 
-        if (data.s === 'no_data') return null;
+        if (!data || data.s === 'no_data' || !data.t) return null;
 
         const bars = [];
         for (let i = 0; i < data.t.length; i++) {
@@ -401,6 +406,7 @@
         }
         return bars;
       } catch (e) { 
+        console.error("Chart Error:", e);
         return null; 
       }
     }
@@ -425,7 +431,7 @@
 
       const bars = await loadChartData(currentTF);
       if (!bars || bars.length === 0) {
-        document.getElementById('signalBox').innerHTML = `<div class="loading text-red">Failed to load. Try again.</div>`;
+        document.getElementById('signalBox').innerHTML = `<div class="loading text-red">Failed to load chart. Refresh page.</div>`;
         return;
       }
 
@@ -575,10 +581,11 @@
         if (!activeTrade) return;
         try {
           const now = Math.floor(Date.now() / 1000);
-          const res = await fetch(`https://finnhub.io/api/v1/forex/candle?symbol=OANDA:XAU_USD&resolution=1&from=${now-60}&to=${now}&token=${FINNHUB_API_KEY}`);
+          const targetUrl = `https://finnhub.io/api/v1/forex/candle?symbol=OANDA:XAU_USD&resolution=1&from=${now-60}&to=${now}&token=${FINNHUB_API_KEY}`;
+          const res = await fetch(CORS_PROXY + encodeURIComponent(targetUrl));
           const data = await res.json();
           
-          if (data.s === 'no_data' || !data.c || data.c.length === 0) return; 
+          if (!data || data.s === 'no_data' || !data.c || data.c.length === 0) return; 
           
           const livePrice = data.c[data.c.length - 1];
           
@@ -608,7 +615,7 @@
             renderTradeCard(activeTrade, livePrice);
           }
         } catch (e) { }
-      }, 15000); // Check every 15 seconds to stay safe with API limits
+      }, 15000); 
     }
   </script>
 </body>
