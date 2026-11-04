@@ -93,7 +93,7 @@
       <a class="forgot-link" onclick="showForgotPassword()">Forgot Password?</a>
     </div>
 
-    <!-- FORGOT PASSWORD VIEW (Hidden by default) -->
+    <!-- FORGOT PASSWORD VIEW -->
     <div class="login-box" id="forgotBox" style="display: none;">
       <h2 style="color: #ffd700; margin-bottom: 20px;">Reset Password</h2>
       <input type="email" id="resetEmailInput" class="login-input" placeholder="Enter your email">
@@ -101,9 +101,9 @@
       <a class="forgot-link" onclick="showLogin()">Back to Login</a>
     </div>
 
-    <!-- NEW PASSWORD VIEW (Hidden by default, shows after clicking email link) -->
+    <!-- NEW PASSWORD VIEW -->
     <div class="login-box" id="newPasswordBox" style="display: none;">
-      <h2 style="color: #ffd700; margin-bottom: 20px;">New Password</h2>
+      <h2 style="color: #ffd700; margin-bottom: 20px;">Set New Password</h2>
       <input type="password" id="newPasswordInput" class="login-input" placeholder="Enter new password">
       <button class="btn-primary" onclick="updatePassword()">Update Password</button>
     </div>
@@ -167,19 +167,23 @@
     const SUPABASE_URL = 'https://wdexwfoplycblaxmrfws.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_6U7d-ihEr1ivc362mhkDeQ_2suPM3gy';
     let supabaseClient = null;
+    let isRecoveryMode = false; // Flag to stop auto-login
 
     window.onload = function() {
       supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-      checkUser();
       
-      // Check if the user clicked a password reset link
-      supabaseClient.auth.onAuthStateChange((event, session) => {
-        if (event === 'PASSWORD_RECOVERY') {
-          document.getElementById('loginBox').style.display = 'none';
-          document.getElementById('forgotBox').style.display = 'none';
-          document.getElementById('newPasswordBox').style.display = 'block';
-        }
-      });
+      // Check the URL for the recovery token
+      const hash = window.location.hash;
+      if (hash && hash.includes('type=recovery')) {
+        isRecoveryMode = true;
+        document.getElementById('loginBox').style.display = 'none';
+        document.getElementById('forgotBox').style.display = 'none';
+        document.getElementById('newPasswordBox').style.display = 'block';
+        document.getElementById('loginScreen').style.display = 'flex';
+        document.getElementById('appContent').style.display = 'none';
+      } else {
+        checkUser();
+      }
     };
 
     // --- 2. AUTHENTICATION LOGIC ---
@@ -238,9 +242,13 @@
       if (!newPassword || newPassword.length < 6) return alert('Password must be at least 6 characters.');
 
       const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
-      if (error) alert("Error: " + error.message);
-      else {
+      if (error) {
+        alert("Error: " + error.message);
+      } else {
         alert('Password updated successfully! You are now logged in.');
+        isRecoveryMode = false; 
+        // Clear the URL hash so it doesn't trigger recovery mode again on refresh
+        window.history.replaceState(null, null, window.location.pathname); 
         checkUser();
       }
     }
@@ -253,6 +261,10 @@
 
     async function checkUser() {
       if (!supabaseClient) return;
+      
+      // If we are in recovery mode, DO NOT go to dashboard
+      if (isRecoveryMode) return; 
+
       const { data: { session } } = await supabaseClient.auth.getSession();
       
       if (session) {
