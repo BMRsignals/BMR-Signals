@@ -87,26 +87,21 @@
 </head>
 <body id="mainBody">
 
-  <!-- LOGIN SCREEN -->
   <div id="loginScreen">
     <div class="login-box" id="loginBox">
       <h2 style="color: #ffd700; margin-bottom: 20px;">MR.Trader AI</h2>
-      
       <input type="email" id="emailInput" class="login-input" placeholder="Enter your email">
       <input type="password" id="passwordInput" class="login-input" placeholder="Enter password">
-      
       <button class="btn-primary" onclick="loginUser()">Login</button>
       <button class="btn-secondary" onclick="signUpUser()">Create Account</button>
       <a class="forgot-link" onclick="showForgotPassword()">Forgot Password?</a>
     </div>
-
     <div class="login-box" id="forgotBox" style="display: none;">
       <h2 style="color: #ffd700; margin-bottom: 20px;">Reset Password</h2>
       <input type="email" id="resetEmailInput" class="login-input" placeholder="Enter your email">
       <button class="btn-primary" onclick="sendResetEmail()">Send Reset Link</button>
       <a class="forgot-link" onclick="showLogin()">Back to Login</a>
     </div>
-
     <div class="login-box" id="newPasswordBox" style="display: none;">
       <h2 style="color: #ffd700; margin-bottom: 20px;">Set New Password</h2>
       <input type="password" id="newPasswordInput" class="login-input" placeholder="Enter new password">
@@ -114,11 +109,8 @@
     </div>
   </div>
 
-  <!-- MAIN APP -->
   <div id="appContent" style="display: none;">
-    <header>
-      <h1>MR.Trader <span class="text-yellow">AI</span></h1>
-    </header>
+    <header><h1>MR.Trader <span class="text-yellow">AI</span></h1></header>
 
     <div id="page-live" class="page active" style="padding: 0;">
       <div class="tf-selector" id="tfSelector">
@@ -138,25 +130,12 @@
 
     <div id="page-history" class="page">
       <h2 style="font-size: 18px; margin-bottom: 16px;">Performance & History</h2>
-      
       <div class="stats-grid">
-        <div class="stat-box">
-          <div class="stat-title">Win Rate</div>
-          <div class="stat-value text-green" id="statWinRate">0%</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-title">Total Trades</div>
-          <div class="stat-value" id="statTotalTrades">0</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-title">Total Pips</div>
-          <div class="stat-value text-yellow" id="statTotalPips">0</div>
-        </div>
+        <div class="stat-box"><div class="stat-title">Win Rate</div><div class="stat-value text-green" id="statWinRate">0%</div></div>
+        <div class="stat-box"><div class="stat-title">Total Trades</div><div class="stat-value" id="statTotalTrades">0</div></div>
+        <div class="stat-box"><div class="stat-title">Total Pips</div><div class="stat-value text-yellow" id="statTotalPips">0</div></div>
       </div>
-
-      <div id="historyList">
-        <div class="loading">No previous trades.</div>
-      </div>
+      <div id="historyList"><div class="loading">No previous trades.</div></div>
     </div>
 
     <div id="page-account" class="page">
@@ -180,18 +159,30 @@
   </div>
 
   <script>
-    // --- 1. SUPABASE & API SETUP ---
     const SUPABASE_URL = 'https://wdexwfoplycblaxmrfws.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_6U7d-ihEr1ivc362mhkDeQ_2suPM3gy';
-    
-    // TwelveData is only used to grab the EXACT live Gold price ONCE on load.
     const TWELVEDATA_API_KEY = 'a76abacdca7b4bd39dbf6caf65654e6a'; 
 
     let supabaseClient = null;
     let isRecoveryMode = false; 
-    let REAL_GOLD_PRICE = 2300; // Fallback
+    let REAL_GOLD_PRICE = 2300; 
+    let chart, candleSeries;
+    let priceLines = [];
+    let currentLang = localStorage.getItem('lang') || 'en';
+    let currentTF = '5m';
+    
+    let activeTrade = null;
+    let tradeHistory = [];
+    try {
+      const savedActive = localStorage.getItem('activeTrade');
+      if (savedActive) activeTrade = JSON.parse(savedActive);
+      const savedHistory = localStorage.getItem('tradeHistory');
+      if (savedHistory) tradeHistory = JSON.parse(savedHistory);
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.has('t')) activeTrade = JSON.parse(decodeURIComponent(urlParams.get('t')));
+    } catch (e) {}
 
-    window.onload = async function() {
+    window.onload = function() {
       supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
       
       const hash = window.location.hash;
@@ -207,7 +198,6 @@
       }
     };
 
-    // --- 2. AUTHENTICATION LOGIC ---
     function showForgotPassword() { document.getElementById('loginBox').style.display = 'none'; document.getElementById('forgotBox').style.display = 'block'; }
     function showLogin() { document.getElementById('loginBox').style.display = 'block'; document.getElementById('forgotBox').style.display = 'none'; document.getElementById('newPasswordBox').style.display = 'none'; }
 
@@ -274,27 +264,10 @@
       }
     }
 
-    // --- 3. APP LOGIC ---
     const dict = {
       en: { analyze: "⚡ ANALYZE MARKET", loading: "Select a timeframe and click Analyze.", scanning: "Scanning Market Structure...", buy: "BUY", sell: "SELL", activeBuy: "ACTIVE BUY", activeSell: "ACTIVE SELL", pending: "PENDING (WAIT)", entry: "SNIPER ENTRY", sl: "STOP LOSS", tp1: "TAKE PROFIT 1", tp2: "TAKE PROFIT 2", live: "Live", account: "Account", history: "History", noHistory: "No previous trades yet." },
       ar: { analyze: "⚡ تحليل السوق", loading: "اختر الفريم واضغط تحليل.", scanning: "جاري تحليل هيكل السوق...", buy: "شراء", sell: "بيع", activeBuy: "شراء نشط", activeSell: "بيع نشط", pending: "معلق (انتظار)", entry: "الدخول", sl: "وقف خسارة", tp1: "هدف", tp2: "هدف", live: "مباشر", account: "الحساب", history: "السجل", noHistory: "لا يوجد صفقات سابقة." }
     };
-
-    let currentLang = localStorage.getItem('lang') || 'en';
-    let currentTF = '5m';
-    let chart, candleSeries;
-    let priceLines = [];
-    
-    let activeTrade = null;
-    let tradeHistory = [];
-    try {
-      const savedActive = localStorage.getItem('activeTrade');
-      if (savedActive) activeTrade = JSON.parse(savedActive);
-      const savedHistory = localStorage.getItem('tradeHistory');
-      if (savedHistory) tradeHistory = JSON.parse(savedHistory);
-      const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.has('t')) activeTrade = JSON.parse(decodeURIComponent(urlParams.get('t')));
-    } catch (e) {}
 
     function applyLanguage() {
       document.getElementById('langBtn2').innerText = currentLang === 'en' ? 'AR' : 'EN';
@@ -321,12 +294,11 @@
     async function initApp() {
       if (chart) return; 
       
-      // 1. Fetch the real Gold price ONCE at startup to calibrate the chart
       try {
         const res = await fetch(`https://api.twelvedata.com/price?symbol=XAU/USD&apikey=${TWELVEDATA_API_KEY}`);
         const data = await res.json();
         if (data.price) REAL_GOLD_PRICE = parseFloat(data.price);
-      } catch(e) { console.log("Using fallback Gold price"); }
+      } catch(e) { }
 
       chart = LightweightCharts.createChart(document.getElementById('chart-container'), {
         layout: { background: { type: 'solid', color: '#000000' }, textColor: '#888' },
@@ -358,21 +330,17 @@
       loadChartData(tf); 
     }
 
-    // --- FIXED DATA FEED: No Rate Limits (Binance Proxy scaled to Gold) ---
+    // --- FIXED: LIVE CHART TRACKING (Uses candle highs/lows to detect touches) ---
     async function loadChartData(tf) {
       try {
-        // Binance handles crypto perfectly without limits. PAXG acts as a Gold proxy.
         const response = await fetch(`https://api.binance.com/api/v3/klines?symbol=PAXGUSDT&interval=${tf}&limit=300`);
         const data = await response.json();
         
-        // Map Binance candles to real Gold price
         const bars = data.map(item => {
           const bOpen = parseFloat(item[1]);
           const bClose = parseFloat(item[4]);
           const bHigh = parseFloat(item[2]);
           const bLow = parseFloat(item[3]);
-          
-          // Adjust the ratio so the chart visually aligns with real Gold
           const ratio = REAL_GOLD_PRICE / bClose;
           
           return { 
@@ -386,9 +354,24 @@
 
         candleSeries.setData(bars);
         chart.timeScale().setVisibleLogicalRange({ from: bars.length - 60, to: bars.length + 10 });
+
+        // --- LIVE TRACKING FROM CHART CANDLES ---
+        if (activeTrade && activeTrade.status === 'PENDING') {
+          const lastBar = bars[bars.length - 1];
+          let touched = false;
+          
+          if (activeTrade.dir === 'BUY' && lastBar.low <= activeTrade.entry) touched = true;
+          if (activeTrade.dir === 'SELL' && lastBar.high >= activeTrade.entry) touched = true;
+          
+          if (touched) {
+            activeTrade.status = 'ACTIVE';
+            localStorage.setItem('activeTrade', JSON.stringify(activeTrade));
+            renderTradeCard(activeTrade); // Update card instantly
+          }
+        }
+
         return bars;
       } catch (e) { 
-        console.error("Data error", e);
         return null; 
       }
     }
@@ -405,7 +388,6 @@
       localStorage.removeItem('activeTrade');
       window.history.replaceState({}, document.title, window.location.pathname);
 
-      // Fetch chart data
       const bars = await loadChartData(currentTF);
       if (!bars || bars.length === 0) return;
 
@@ -415,10 +397,9 @@
       
       let dir = lastBar.close > ema20 ? "BUY" : "SELL";
       
-      // Entry is the CURRENT real Gold price
+      // Set Entry at exactly the current live price
       const entry = REAL_GOLD_PRICE; 
       
-      // Calculate dynamic ATR for Stop Loss
       let trSum = 0;
       for (let i = bars.length - 14; i < bars.length; i++) {
         const highLow = bars[i].high - bars[i].low;
@@ -458,10 +439,7 @@
       const isBuy = trade.dir === 'BUY';
       let statusClass = "status-pending";
       let statusText = dict[currentLang].pending;
-      if (currentPrice) {
-        if (trade.dir === 'BUY' && currentPrice <= trade.entry) { trade.status = 'ACTIVE'; localStorage.setItem('activeTrade', JSON.stringify(trade)); }
-        else if (trade.dir === 'SELL' && currentPrice >= trade.entry) { trade.status = 'ACTIVE'; localStorage.setItem('activeTrade', JSON.stringify(trade)); }
-      }
+      
       if (trade.status === 'ACTIVE') {
         statusClass = isBuy ? "status-active-buy" : "status-active-sell";
         statusText = isBuy ? dict[currentLang].activeBuy : dict[currentLang].activeSell;
@@ -547,7 +525,6 @@
       list.innerHTML = html;
     }
 
-    // --- 4. LIVE PRICE CHECKER (Using Real Gold Price) ---
     setInterval(async () => {
       if (!activeTrade) return;
       try {
@@ -557,7 +534,7 @@
         if (data.status === 'error' || !data.price) return; 
         
         const livePrice = parseFloat(data.price);
-        REAL_GOLD_PRICE = livePrice; // Update global price
+        REAL_GOLD_PRICE = livePrice; 
         
         let result = null;
         let exitPrice = 0;
@@ -581,11 +558,11 @@
           
           alert(`TRADE HIT ${result === 'WIN' ? 'TAKE PROFIT' : 'STOP LOSS'}!`);
           location.reload();
-        } else {
+        } else if (activeTrade.status === 'ACTIVE') {
           renderTradeCard(activeTrade, livePrice);
         }
       } catch (e) { }
-    }, 10000);
+    }, 5000); // Sped up to 5 seconds so it feels faster
   </script>
 </body>
 </html>
