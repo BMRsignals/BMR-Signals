@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>MR.Trader AI</title>
   <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
-  <!-- Load Supabase synchronously -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   
   <style>
@@ -28,6 +27,7 @@
     .login-input { width: 100%; padding: 14px; margin-bottom: 12px; background: #000; border: 1px solid #333; color: #fff; border-radius: 8px; font-size: 14px; }
     .btn-primary { width: 100%; padding: 14px; border-radius: 8px; border: none; font-size: 16px; font-weight: 700; cursor: pointer; background: #ffd700; color: #000; margin-bottom: 10px; }
     .btn-secondary { width: 100%; padding: 14px; border-radius: 8px; border: 1px solid #ffd700; font-size: 16px; font-weight: 700; cursor: pointer; background: transparent; color: #ffd700; }
+    .forgot-link { color: #888; font-size: 12px; text-decoration: underline; cursor: pointer; margin-top: 10px; display: block; }
     
     /* App Pages */
     .page { display: none; padding: 16px; animation: fadeIn 0.3s; }
@@ -82,15 +82,30 @@
 
   <!-- LOGIN SCREEN -->
   <div id="loginScreen">
-    <div class="login-box">
+    <div class="login-box" id="loginBox">
       <h2 style="color: #ffd700; margin-bottom: 20px;">MR.Trader AI</h2>
-      <p style="color: #888; font-size: 14px; margin-bottom: 20px;">Login or Create an Account</p>
       
       <input type="email" id="emailInput" class="login-input" placeholder="Enter your email">
       <input type="password" id="passwordInput" class="login-input" placeholder="Enter password">
       
       <button class="btn-primary" onclick="loginUser()">Login</button>
       <button class="btn-secondary" onclick="signUpUser()">Create Account</button>
+      <a class="forgot-link" onclick="showForgotPassword()">Forgot Password?</a>
+    </div>
+
+    <!-- FORGOT PASSWORD VIEW (Hidden by default) -->
+    <div class="login-box" id="forgotBox" style="display: none;">
+      <h2 style="color: #ffd700; margin-bottom: 20px;">Reset Password</h2>
+      <input type="email" id="resetEmailInput" class="login-input" placeholder="Enter your email">
+      <button class="btn-primary" onclick="sendResetEmail()">Send Reset Link</button>
+      <a class="forgot-link" onclick="showLogin()">Back to Login</a>
+    </div>
+
+    <!-- NEW PASSWORD VIEW (Hidden by default, shows after clicking email link) -->
+    <div class="login-box" id="newPasswordBox" style="display: none;">
+      <h2 style="color: #ffd700; margin-bottom: 20px;">New Password</h2>
+      <input type="password" id="newPasswordInput" class="login-input" placeholder="Enter new password">
+      <button class="btn-primary" onclick="updatePassword()">Update Password</button>
     </div>
   </div>
 
@@ -153,43 +168,80 @@
     const SUPABASE_KEY = 'sb_publishable_6U7d-ihEr1ivc362mhkDeQ_2suPM3gy';
     let supabaseClient = null;
 
-    // Wait for the library to load before initializing
     window.onload = function() {
       supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
       checkUser();
+      
+      // Check if the user clicked a password reset link
+      supabaseClient.auth.onAuthStateChange((event, session) => {
+        if (event === 'PASSWORD_RECOVERY') {
+          document.getElementById('loginBox').style.display = 'none';
+          document.getElementById('forgotBox').style.display = 'none';
+          document.getElementById('newPasswordBox').style.display = 'block';
+        }
+      });
     };
 
     // --- 2. AUTHENTICATION LOGIC ---
+    function showForgotPassword() {
+      document.getElementById('loginBox').style.display = 'none';
+      document.getElementById('forgotBox').style.display = 'block';
+    }
+
+    function showLogin() {
+      document.getElementById('loginBox').style.display = 'block';
+      document.getElementById('forgotBox').style.display = 'none';
+      document.getElementById('newPasswordBox').style.display = 'none';
+    }
+
     async function loginUser() {
-      if (!supabaseClient) return alert("Please wait, loading...");
-      
+      if (!supabaseClient) return;
       const email = document.getElementById('emailInput').value;
       const password = document.getElementById('passwordInput').value;
       if (!email || !password) return alert('Please enter email and password.');
 
       const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-      
-      if (error) {
-        alert("Login Error: " + error.message);
-      } else {
-        checkUser();
-      }
+      if (error) alert("Login Error: " + error.message);
+      else checkUser();
     }
 
     async function signUpUser() {
-      if (!supabaseClient) return alert("Please wait, loading...");
-      
+      if (!supabaseClient) return;
       const email = document.getElementById('emailInput').value;
       const password = document.getElementById('passwordInput').value;
       if (!email || !password) return alert('Please enter email and password.');
-      if (password.length < 6) return alert('Password must be at least 6 characters.');
 
       const { error } = await supabaseClient.auth.signUp({ email, password });
+      if (error) alert("Sign Up Error: " + error.message);
+      else alert('Account created! You can now click Login.');
+    }
+
+    async function sendResetEmail() {
+      if (!supabaseClient) return;
+      const email = document.getElementById('resetEmailInput').value;
+      if (!email) return alert('Please enter your email.');
+
+      const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + window.location.pathname
+      });
       
-      if (error) {
-        alert("Sign Up Error: " + error.message);
-      } else {
-        alert('Account created! You can now click Login.');
+      if (error) alert("Error: " + error.message);
+      else {
+        alert('Reset link sent! Check your email.');
+        showLogin();
+      }
+    }
+
+    async function updatePassword() {
+      if (!supabaseClient) return;
+      const newPassword = document.getElementById('newPasswordInput').value;
+      if (!newPassword || newPassword.length < 6) return alert('Password must be at least 6 characters.');
+
+      const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
+      if (error) alert("Error: " + error.message);
+      else {
+        alert('Password updated successfully! You are now logged in.');
+        checkUser();
       }
     }
 
@@ -201,7 +253,6 @@
 
     async function checkUser() {
       if (!supabaseClient) return;
-      
       const { data: { session } } = await supabaseClient.auth.getSession();
       
       if (session) {
