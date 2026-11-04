@@ -396,14 +396,6 @@
     }
 
     async function startAnalysis() {
-      // TRIAL LIMIT DISABLED FOR TESTING
-      /*
-      if (userTries <= 0) {
-        alert("You have used all your 5 free trials.\nPlease upgrade to Pro to continue getting signals.");
-        return;
-      }
-      */
-
       if (activeTrade) {
         const confirmReset = confirm(currentLang === 'ar' ? "هل تريد حذف الصفقة والبحث عن جديدة؟" : "Delete current trade and scan again?");
         if (!confirmReset) return;
@@ -422,7 +414,6 @@
         return;
       }
 
-      // Only decrease tries if we are still tracking it, but for testing we just let it be
       if (userTries > 0) {
         userTries--;
         updateTryText();
@@ -431,25 +422,41 @@
         }
       }
 
+      // --- PINE SCRIPT LOGIC (SMC + LIQUIDITY SWEEP) ---
       const closes = bars.map(b => b.close);
       const lastBar = bars[bars.length - 1];
+      
+      // 1. Calculate EMA 20 for trend direction
       const ema20 = closes.reduce((a, b) => a + b, 0) / 20; 
+      let trendDir = lastBar.close > ema20 ? "BUY" : "SELL";
+
+      // 2. Find Liquidity Sweeps (Look back 20 candles)
+      const lookback = 20;
+      let prevHigh = Math.max(...bars.slice(-lookback - 1, -1).map(b => b.high));
+      let prevLow = Math.min(...bars.slice(-lookback - 1, -1).map(b => b.low));
       
-      let dir = lastBar.close > ema20 ? "BUY" : "SELL";
-      const entry = lastBar.close; 
+      let sweepSignal = "NEUTRAL";
+      // Bullish sweep: low goes below prevLow, but closes above prevLow
+      if (lastBar.low < prevLow && lastBar.close > prevLow) sweepSignal = "BUY";
+      // Bearish sweep: high goes above prevHigh, but closes below prevHigh
+      if (lastBar.high > prevHigh && lastBar.close < prevHigh) sweepSignal = "SELL";
+
+      // 3. Determine Final Direction (Sweep takes priority)
+      let dir = sweepSignal !== "NEUTRAL" ? sweepSignal : trendDir;
+
+      // 4. Calculate Entry & SL based on SMC Zones
+      let entry = lastBar.close;
+      let sl;
       
-      let trSum = 0;
-      for (let i = bars.length - 14; i < bars.length; i++) {
-        const highLow = bars[i].high - bars[i].low;
-        const highPrevClose = Math.abs(bars[i].high - bars[i-1].close);
-        const lowPrevClose = Math.abs(bars[i].low - bars[i-1].close);
-        trSum += Math.max(highLow, highPrevClose, lowPrevClose);
+      if (dir === "BUY") {
+        // Place SL below the recent swing low (Demand Zone)
+        sl = Math.min(...bars.slice(-10).map(b => b.low)) - 0.5;
+      } else {
+        // Place SL above the recent swing high (Supply Zone)
+        sl = Math.max(...bars.slice(-10).map(b => b.high)) + 0.5;
       }
-      
-      const atr = trSum / 14;
-      const slDistance = atr * 2.0; 
-      const sl = dir === 'BUY' ? entry - slDistance : entry + slDistance;
-      
+
+      // 5. Calculate TP1 and TP2 based on Risk/Reward
       const risk = Math.abs(entry - sl);
       const tp1 = dir === 'BUY' ? entry + (risk * 1.5) : entry - (risk * 1.5);
       const tp2 = dir === 'BUY' ? entry + (risk * 2.5) : entry - (risk * 2.5);
