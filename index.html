@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>MR.Trader AI</title>
   <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+  <!-- Load Supabase synchronously -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   
   <style>
@@ -27,11 +28,6 @@
     .login-input { width: 100%; padding: 14px; margin-bottom: 12px; background: #000; border: 1px solid #333; color: #fff; border-radius: 8px; font-size: 14px; }
     .btn-primary { width: 100%; padding: 14px; border-radius: 8px; border: none; font-size: 16px; font-weight: 700; cursor: pointer; background: #ffd700; color: #000; margin-bottom: 10px; }
     .btn-secondary { width: 100%; padding: 14px; border-radius: 8px; border: 1px solid #ffd700; font-size: 16px; font-weight: 700; cursor: pointer; background: transparent; color: #ffd700; }
-    
-    /* Toggle Switch */
-    .toggle-container { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
-    .toggle-btn { padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: 700; cursor: pointer; border: 1px solid #333; background: #000; color: #888; }
-    .toggle-btn.active { background: #ffd700; color: #000; border-color: #ffd700; }
     
     /* App Pages */
     .page { display: none; padding: 16px; animation: fadeIn 0.3s; }
@@ -88,28 +84,13 @@
   <div id="loginScreen">
     <div class="login-box">
       <h2 style="color: #ffd700; margin-bottom: 20px;">MR.Trader AI</h2>
+      <p style="color: #888; font-size: 14px; margin-bottom: 20px;">Login or Create an Account</p>
       
-      <!-- Toggle Options -->
-      <div class="toggle-container">
-        <button class="toggle-btn active" id="tabPassword" onclick="switchLoginMode('password')">Password</button>
-        <button class="toggle-btn" id="tabMagic" onclick="switchLoginMode('magic')">Magic Link</button>
-      </div>
-
       <input type="email" id="emailInput" class="login-input" placeholder="Enter your email">
+      <input type="password" id="passwordInput" class="login-input" placeholder="Enter password">
       
-      <!-- Password Field (Hidden by default when Magic is selected) -->
-      <div id="passwordSection">
-        <input type="password" id="passwordInput" class="login-input" placeholder="Enter password">
-        <button class="btn-primary" onclick="loginUser()">Login</button>
-        <button class="btn-secondary" onclick="signUpUser()">Create Account</button>
-      </div>
-
-      <!-- Magic Link Section -->
-      <div id="magicSection" style="display: none;">
-        <button class="btn-primary" onclick="sendMagicLink()">Send Login Link</button>
-        <p style="color: #888; font-size: 12px; margin-top: 10px;">We will email you a secure link to log in instantly.</p>
-      </div>
-
+      <button class="btn-primary" onclick="loginUser()">Login</button>
+      <button class="btn-secondary" onclick="signUpUser()">Create Account</button>
     </div>
   </div>
 
@@ -170,68 +151,57 @@
     // --- 1. SUPABASE SETUP ---
     const SUPABASE_URL = 'https://wdexwfoplycblaxmrfws.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_6U7d-ihEr1ivc362mhkDeQ_2suPM3gy';
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    let supabaseClient = null;
 
-    // --- 2. LOGIN MODE SWITCHER ---
-    function switchLoginMode(mode) {
-      if (mode === 'password') {
-        document.getElementById('tabPassword').classList.add('active');
-        document.getElementById('tabMagic').classList.remove('active');
-        document.getElementById('passwordSection').style.display = 'block';
-        document.getElementById('magicSection').style.display = 'none';
-      } else {
-        document.getElementById('tabPassword').classList.remove('active');
-        document.getElementById('tabMagic').classList.add('active');
-        document.getElementById('passwordSection').style.display = 'none';
-        document.getElementById('magicSection').style.display = 'block';
-      }
-    }
+    // Wait for the library to load before initializing
+    window.onload = function() {
+      supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      checkUser();
+    };
 
-    // --- 3. AUTHENTICATION LOGIC ---
-    
-    // Password Login
+    // --- 2. AUTHENTICATION LOGIC ---
     async function loginUser() {
+      if (!supabaseClient) return alert("Please wait, loading...");
+      
       const email = document.getElementById('emailInput').value;
       const password = document.getElementById('passwordInput').value;
       if (!email || !password) return alert('Please enter email and password.');
 
       const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-      if (error) alert("Login Error: " + error.message);
-      else checkUser();
+      
+      if (error) {
+        alert("Login Error: " + error.message);
+      } else {
+        checkUser();
+      }
     }
 
-    // Create Account (Password)
     async function signUpUser() {
+      if (!supabaseClient) return alert("Please wait, loading...");
+      
       const email = document.getElementById('emailInput').value;
       const password = document.getElementById('passwordInput').value;
       if (!email || !password) return alert('Please enter email and password.');
       if (password.length < 6) return alert('Password must be at least 6 characters.');
 
       const { error } = await supabaseClient.auth.signUp({ email, password });
-      if (error) alert("Sign Up Error: " + error.message);
-      else alert('Account created! You can now log in.');
-    }
-
-    // Magic Link Login
-    async function sendMagicLink() {
-      const email = document.getElementById('emailInput').value;
-      if (!email) return alert('Please enter an email.');
-
-      const { error } = await supabaseClient.auth.signInWithOtp({ 
-        email: email,
-        options: { emailRedirectTo: window.location.origin + window.location.pathname }
-      });
       
-      if (error) alert("Error: " + error.message);
-      else alert('Check your email for the login link!');
+      if (error) {
+        alert("Sign Up Error: " + error.message);
+      } else {
+        alert('Account created! You can now click Login.');
+      }
     }
 
     async function logout() {
+      if (!supabaseClient) return;
       await supabaseClient.auth.signOut();
       window.location.reload();
     }
 
     async function checkUser() {
+      if (!supabaseClient) return;
+      
       const { data: { session } } = await supabaseClient.auth.getSession();
       
       if (session) {
@@ -244,12 +214,8 @@
         document.getElementById('appContent').style.display = 'none';
       }
     }
-    
-    document.addEventListener('DOMContentLoaded', () => {
-      checkUser();
-    });
 
-    // --- 4. APP LOGIC ---
+    // --- 3. APP LOGIC ---
     const dict = {
       en: { analyze: "⚡ ANALYZE MARKET", loading: "Select a timeframe and click Analyze.", scanning: "Scanning Market Structure...", buy: "BUY", sell: "SELL", activeBuy: "ACTIVE BUY", activeSell: "ACTIVE SELL", pending: "PENDING (WAIT)", entry: "SNIPER ENTRY", sl: "STOP LOSS", tp1: "TAKE PROFIT 1", tp2: "TAKE PROFIT 2", live: "Live", account: "Account", history: "History", noHistory: "No previous trades yet." },
       ar: { analyze: "⚡ تحليل السوق", loading: "اختر الفريم واضغط تحليل.", scanning: "جاري تحليل هيكل السوق...", buy: "شراء", sell: "بيع", activeBuy: "شراء نشط", activeSell: "بيع نشط", pending: "معلق (انتظار)", entry: "الدخول", sl: "وقف خسارة", tp1: "هدف", tp2: "هدف", live: "مباشر", account: "الحساب", history: "السجل", noHistory: "لا يوجد صفقات سابقة." }
