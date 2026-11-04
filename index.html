@@ -13,9 +13,9 @@
       min-height: 100vh; padding-bottom: 90px; transition: 0.3s;
     }
     
-    /* RTL Support for Arabic */
+    /* RTL Support */
     body.rtl { direction: rtl; }
-    body.rtl .price-label, body.rtl .tf-btn, body.rtl .nav-item { letter-spacing: 0; }
+    body.rtl .price-label { letter-spacing: 0; }
 
     /* Pages */
     .page { display: none; padding: 16px; animation: fadeIn 0.3s; }
@@ -25,7 +25,6 @@
     /* Header */
     header { padding: 16px; border-bottom: 1px solid #1a1a1a; display: flex; justify-content: space-between; align-items: center; }
     header h1 { margin: 0; font-size: 18px; font-weight: 700; }
-    .lang-btn { background: #222; border: 1px solid #444; color: #ffd700; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; }
 
     /* Timeframe Selector */
     .tf-selector { display: flex; overflow-x: auto; padding: 10px 16px; gap: 8px; border-bottom: 1px solid #1a1a1a; scrollbar-width: none; }
@@ -34,7 +33,7 @@
     .tf-btn.active { background: #ffd700; border-color: #ffd700; color: #000; }
 
     /* Analyze Button */
-    .btn-analyze { width: 100%; padding: 16px; background: #222; color: #fff; border: none; border-top: 1px solid #333; font-size: 16px; font-weight: 700; cursor: pointer; letter-spacing: 1px; transition: 0.2s; }
+    .btn-analyze { width: 100%; padding: 16px; background: #222; color: #fff; border: none; border-top: 1px solid #333; font-size: 16px; font-weight: 700; cursor: pointer; transition: 0.2s; }
     .btn-analyze:active { background: #ffd700; color: #000; }
 
     /* Chart */
@@ -45,14 +44,14 @@
     .signal-card.sell { background: linear-gradient(145deg, #1a1111 0%, #0f0a0a 100%); border-color: #3a1e1e; }
     .price-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
     .price-box { background: #000; border: 1px solid #222; border-radius: 12px; padding: 12px; }
-    .price-box.tp1 { grid-column: span 1; border-color: #26a69a44; }
-    .price-box.tp2 { grid-column: span 1; border-color: #26a69a88; }
-    .price-label { font-size: 10px; color: #888; text-transform: uppercase; }
+    .price-box.tp1 { border-color: #26a69a44; }
+    .price-box.tp2 { border-color: #26a69a88; }
+    .price-label { font-size: 11px; color: #888; font-weight: 600; text-transform: uppercase; }
     .price-val { font-size: 18px; font-weight: 700; margin-top: 4px; }
     .pips-sub { font-size: 11px; font-weight: 600; margin-top: 4px; }
     
     /* Status Badges */
-    .status-badge { padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; display: inline-block; }
+    .status-badge { padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 700; text-transform: uppercase; display: inline-block; margin-top: 8px; }
     .status-pending { background: #ffd70022; color: #ffd700; border: 1px solid #ffd70055; }
     .status-active-buy { background: #26a69a22; color: #26a69a; border: 1px solid #26a69a55; }
     .status-active-sell { background: #ef535022; color: #ef5350; border: 1px solid #ef535055; }
@@ -63,16 +62,18 @@
 
     /* Bottom Navigation */
     .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; height: 65px; background: #0a0a0a; border-top: 1px solid #222; display: flex; justify-content: space-around; align-items: center; z-index: 100; }
-    .nav-item { color: #666; text-align: center; font-size: 10px; font-weight: 600; text-transform: uppercase; cursor: pointer; }
+    .nav-item { color: #666; text-align: center; font-size: 11px; font-weight: 700; text-transform: uppercase; cursor: pointer; }
     .nav-item.active { color: #ffd700; }
     .nav-icon { font-size: 20px; margin-bottom: 4px; display: block; }
+
+    /* Language Toggle */
+    .lang-btn { background: #222; border: 1px solid #444; color: #ffd700; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; }
   </style>
 </head>
 <body id="mainBody">
 
   <header>
     <h1>MR.Trader <span class="text-yellow">AI</span></h1>
-    <button class="lang-btn" id="langBtn" onclick="toggleLanguage()">AR</button>
   </header>
 
   <div id="page-live" class="page active" style="padding: 0;">
@@ -85,7 +86,7 @@
       <button class="tf-btn" onclick="selectTF('1d', this)">1D</button>
     </div>
 
-    <button class="btn-analyze" id="btnAnalyze" onclick="analyzeMarket()">⚡ ANALYZE MARKET</button>
+    <button class="btn-analyze" id="btnAnalyze" onclick="startAnalysis()">⚡ ANALYZE MARKET</button>
 
     <div id="chart-container"></div>
 
@@ -96,10 +97,18 @@
     </div>
   </div>
 
+  <div id="page-account" class="page">
+    <h2 style="font-size: 18px; margin-bottom: 16px;">Account Settings</h2>
+    <div style="background: #111; border: 1px solid #222; border-radius: 12px; padding: 16px; display: flex; justify-content: space-between; align-items: center;">
+      <span style="font-weight: 600;">Language / اللغة</span>
+      <button class="lang-btn" id="langBtn" onclick="toggleLanguage()">AR</button>
+    </div>
+  </div>
+
   <!-- Navigation -->
   <div class="bottom-nav">
     <div class="nav-item active" onclick="switchTab('live', this)"><span class="nav-icon">⚡</span> <span class="nav-text">Live</span></div>
-    <div class="nav-item" onclick="switchTab('history', this)"><span class="nav-icon">🕒</span> <span class="nav-text">History</span></div>
+    <div class="nav-item" onclick="switchTab('account', this)"><span class="nav-icon">👤</span> <span class="nav-text">Account</span></div>
   </div>
 
   <script>
@@ -109,59 +118,63 @@
         analyze: "⚡ ANALYZE MARKET",
         loading: "Select a timeframe and click Analyze.",
         scanning: "Scanning Market Structure...",
-        buyLimit: "BUY LIMIT",
-        sellLimit: "SELL LIMIT",
+        buy: "BUY",
+        sell: "SELL",
         activeBuy: "ACTIVE BUY",
         activeSell: "ACTIVE SELL",
         pending: "PENDING (WAIT)",
-        entry: "Sniper Entry",
-        sl: "Stop Loss",
-        tp1: "Take Profit 1",
-        tp2: "Take Profit 2",
-        live: "Live", history: "History"
+        entry: "SNIPER ENTRY",
+        sl: "STOP LOSS",
+        tp1: "TAKE PROFIT 1",
+        tp2: "TAKE PROFIT 2",
+        live: "Live", account: "Account"
       },
       ar: {
         analyze: "⚡ تحليل السوق",
         loading: "اختر الفريم واضغط تحليل.",
         scanning: "جاري تحليل هيكل السوق...",
-        buyLimit: "شراء معلق",
-        sellLimit: "بيع معلق",
+        buy: "شراء",
+        sell: "بيع",
         activeBuy: "شراء نشط",
         activeSell: "بيع نشط",
         pending: "معلق (انتظار)",
-        entry: "دخول القناص",
-        sl: "وقف الخسارة",
-        tp1: "هدف أول",
-        tp2: "هدف ثاني",
-        live: "مباشر", history: "السجل"
+        entry: "الدخول",
+        sl: "وقف خسارة",
+        tp1: "هدف",
+        tp2: "هدف",
+        live: "مباشر", account: "الحساب"
       }
     };
 
-    let currentLang = 'en';
+    let currentLang = localStorage.getItem('lang') || 'en';
     let currentTF = '5m';
     let chart, candleSeries;
     let priceLines = [];
+    let activeTrade = JSON.parse(localStorage.getItem('activeTrade')) || null;
 
-    // --- Language Toggle ---
-    function toggleLanguage() {
-      currentLang = currentLang === 'en' ? 'ar' : 'en';
+    // --- 1. Initialize Language ---
+    function applyLanguage() {
       document.getElementById('langBtn').innerText = currentLang === 'en' ? 'AR' : 'EN';
-      
-      const body = document.getElementById('mainBody');
       if (currentLang === 'ar') {
-        body.classList.add('rtl');
+        document.getElementById('mainBody').classList.add('rtl');
       } else {
-        body.classList.remove('rtl');
+        document.getElementById('mainBody').classList.remove('rtl');
       }
-
-      // Update static texts
       document.getElementById('btnAnalyze').innerText = dict[currentLang].analyze;
       document.getElementById('loadingText').innerText = dict[currentLang].loading;
       document.querySelectorAll('.nav-text')[0].innerText = dict[currentLang].live;
-      document.querySelectorAll('.nav-text')[1].innerText = dict[currentLang].history;
+      document.querySelectorAll('.nav-text')[1].innerText = dict[currentLang].account;
+      
+      if (activeTrade) renderTradeCard(activeTrade); // Re-render active trade in new language
     }
 
-    // --- Chart Setup ---
+    function toggleLanguage() {
+      currentLang = currentLang === 'en' ? 'ar' : 'en';
+      localStorage.setItem('lang', currentLang);
+      applyLanguage();
+    }
+
+    // --- 2. Chart Setup ---
     const chartContainer = document.getElementById('chart-container');
     chart = LightweightCharts.createChart(chartContainer, {
       layout: { background: { type: 'solid', color: '#000000' }, textColor: '#888' },
@@ -177,13 +190,25 @@
       wickUpColor: '#ffd700', wickDownColor: '#555',
     });
 
+    // --- 3. Navigation ---
+    function switchTab(tabId, element) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById('page-' + tabId).classList.add('active');
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      element.classList.add('active');
+      if (tabId === 'live') {
+        setTimeout(() => chart.applyOptions({ width: document.getElementById('chart-container').clientWidth }), 50);
+      }
+    }
+
     function selectTF(tf, btn) {
       currentTF = tf;
       document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      document.getElementById('signalBox').innerHTML = `<div class="loading">${dict[currentLang].loading}</div>`;
+      loadChartData(tf); // Just load the chart, don't reset the trade
     }
 
+    // --- 4. Data Loading & Analysis ---
     function calculateEMA(data, period) {
       const k = 2 / (period + 1);
       let emaArray = [data[0]];
@@ -191,132 +216,183 @@
       return emaArray[emaArray.length - 1];
     }
 
-    async function analyzeMarket() {
+    async function loadChartData(tf) {
+      const response = await fetch(`https://api.binance.com/api/v3/klines?symbol=PAXGUSDT&interval=${tf}&limit=300`);
+      const data = await response.json();
+      const bars = data.map(item => ({
+        time: item[0] / 1000,
+        open: parseFloat(item[1]), high: parseFloat(item[2]), low: parseFloat(item[3]), close: parseFloat(item[4])
+      }));
+      candleSeries.setData(bars);
+      chart.timeScale().setVisibleLogicalRange({ from: bars.length - 60, to: bars.length + 10 });
+      return bars;
+    }
+
+    async function startAnalysis() {
+      if (activeTrade) {
+        const confirmReset = confirm(currentLang === 'ar' ? "لديك صفقة نشطة. هل تريد حذفها والبحث عن صفقة جديدة؟" : "You have an active trade. Delete it and scan for a new one?");
+        if (!confirmReset) return;
+      }
+
       document.getElementById('signalBox').innerHTML = `<div class="loading">${dict[currentLang].scanning}</div>`;
-      
       priceLines.forEach(line => candleSeries.removePriceLine(line));
       priceLines = [];
+      activeTrade = null;
+      localStorage.removeItem('activeTrade');
 
-      try {
-        const response = await fetch(`https://api.binance.com/api/v3/klines?symbol=PAXGUSDT&interval=${currentTF}&limit=300`);
-        const data = await response.json();
+      const bars = await loadChartData(currentTF);
+      const closes = bars.map(b => b.close);
+      const lastBar = bars[bars.length - 1];
+      
+      const ema20 = calculateEMA(closes, 20);
+      const ema50 = calculateEMA(closes, 50);
+      let trendDir = (lastBar.close > ema20 && ema20 > ema50) ? 1 : (lastBar.close < ema20 && ema20 < ema50) ? -1 : 0;
+      let dir = trendDir === 1 ? "BUY" : trendDir === -1 ? "SELL" : (lastBar.close > ema50 ? "BUY" : "SELL");
+      
+      const entry = ema20; 
+      
+      let trSum = 0;
+      for (let i = bars.length - 14; i < bars.length; i++) {
+        trSum += Math.max(bars[i].high - bars[i].low, Math.abs(bars[i].high - bars[i-1].close), Math.abs(bars[i].low - bars[i-1].close));
+      }
+      const atr = trSum / 14;
+      
+      let sl, tp1, tp2;
+      if (dir === 'BUY') {
+        sl = entry - (atr * 1.0);
+        tp1 = entry + ((entry - sl) * 1.5);
+        tp2 = entry + ((entry - sl) * 2.5);
+      } else {
+        sl = entry + (atr * 1.0);
+        tp1 = entry - ((sl - entry) * 1.5);
+        tp2 = entry - ((sl - entry) * 2.5);
+      }
 
-        const bars = data.map(item => ({
-          time: item[0] / 1000,
-          open: parseFloat(item[1]), high: parseFloat(item[2]), low: parseFloat(item[3]), close: parseFloat(item[4])
-        }));
+      // Save Trade
+      activeTrade = {
+        dir: dir,
+        entry: entry,
+        sl: sl,
+        tp1: tp1,
+        tp2: tp2,
+        tf: currentTF,
+        status: 'PENDING' // Initial status
+      };
+      
+      localStorage.setItem('activeTrade', JSON.stringify(activeTrade));
+      renderTradeCard(activeTrade);
+      drawTradeLines(activeTrade);
+    }
 
-        candleSeries.setData(bars);
-        chart.timeScale().setVisibleLogicalRange({ from: bars.length - 60, to: bars.length + 10 });
+    // --- 5. Render & Live Tracking ---
+    function drawTradeLines(trade) {
+      priceLines.forEach(line => candleSeries.removePriceLine(line));
+      priceLines = [];
+      priceLines.push(candleSeries.createPriceLine({ price: trade.entry, color: '#ffd700', lineWidth: 2, lineStyle: 2, title: 'ENTRY' }));
+      priceLines.push(candleSeries.createPriceLine({ price: trade.sl, color: '#ef5350', lineWidth: 1, lineStyle: 2, title: 'SL' }));
+      priceLines.push(candleSeries.createPriceLine({ price: trade.tp1, color: '#26a69a', lineWidth: 1, lineStyle: 2, title: 'TP1' }));
+      priceLines.push(candleSeries.createPriceLine({ price: trade.tp2, color: '#26a69a', lineWidth: 1, lineStyle: 2, title: 'TP2' }));
+    }
 
-        const closes = bars.map(b => b.close);
-        const lastBar = bars[bars.length - 1];
-        const currentPrice = lastBar.close; // Live price
-        
-        // Trend
-        const ema20 = calculateEMA(closes, 20);
-        const ema50 = calculateEMA(closes, 50);
-        let trendDir = (lastBar.close > ema20 && ema20 > ema50) ? 1 : (lastBar.close < ema20 && ema20 < ema50) ? -1 : 0;
-        let finalDir = trendDir === 1 ? "BUY" : trendDir === -1 ? "SELL" : (lastBar.close > ema50 ? "BUY" : "SELL");
-        
-        // Entry is the EMA 20 (Pullback zone)
-        const entry = ema20; 
-        
-        // ATR for Stop Loss
-        let trSum = 0;
-        for (let i = bars.length - 14; i < bars.length; i++) {
-          trSum += Math.max(bars[i].high - bars[i].low, Math.abs(bars[i].high - bars[i-1].close), Math.abs(bars[i].low - bars[i-1].close));
+    function renderTradeCard(trade, currentPrice = null) {
+      const isBuy = trade.dir === 'BUY';
+      
+      // Update Status based on live price
+      let statusClass = "status-pending";
+      let statusText = dict[currentLang].pending;
+
+      if (currentPrice) {
+        if (trade.dir === 'BUY' && currentPrice <= trade.entry) {
+          trade.status = 'ACTIVE';
+          localStorage.setItem('activeTrade', JSON.stringify(trade));
+        } else if (trade.dir === 'SELL' && currentPrice >= trade.entry) {
+          trade.status = 'ACTIVE';
+          localStorage.setItem('activeTrade', JSON.stringify(trade));
         }
-        const atr = trSum / 14;
-        
-        let stopLoss, takeProfit1, takeProfit2;
-        
-        if (finalDir === 'BUY') {
-          stopLoss = entry - (atr * 1.0);
-          const risk = entry - stopLoss;
-          takeProfit1 = entry + (risk * 1.5);
-          takeProfit2 = entry + (risk * 2.5);
-        } else {
-          stopLoss = entry + (atr * 1.0);
-          const risk = stopLoss - entry;
-          takeProfit1 = entry - (risk * 1.5);
-          takeProfit2 = entry - (risk * 2.5);
-        }
+      }
 
-        const pipsRisk = (Math.abs(entry - stopLoss) * 10).toFixed(0);
-        const pipsReward1 = (Math.abs(takeProfit1 - entry) * 10).toFixed(0);
-        const pipsReward2 = (Math.abs(takeProfit2 - entry) * 10).toFixed(0);
+      if (trade.status === 'ACTIVE') {
+        statusClass = isBuy ? "status-active-buy" : "status-active-sell";
+        statusText = isBuy ? dict[currentLang].activeBuy : dict[currentLang].activeSell;
+      }
 
-        priceLines.push(candleSeries.createPriceLine({ price: entry, color: '#ffd700', lineWidth: 2, lineStyle: 2, title: 'ENTRY' }));
-        priceLines.push(candleSeries.createPriceLine({ price: stopLoss, color: '#ef5350', lineWidth: 1, lineStyle: 2, title: 'SL' }));
-        priceLines.push(candleSeries.createPriceLine({ price: takeProfit1, color: '#26a69a', lineWidth: 1, lineStyle: 2, title: 'TP1' }));
-        priceLines.push(candleSeries.createPriceLine({ price: takeProfit2, color: '#26a69a', lineWidth: 1, lineStyle: 2, title: 'TP2' }));
+      const pipsRisk = (Math.abs(trade.entry - trade.sl) * 10).toFixed(0);
+      const pipsReward1 = (Math.abs(trade.tp1 - trade.entry) * 10).toFixed(0);
+      const pipsReward2 = (Math.abs(trade.tp2 - trade.entry) * 10).toFixed(0);
 
-        // Determine Status (Pending vs Active)
-        let statusClass = "status-pending";
-        let statusText = dict[currentLang].pending;
-        let orderType = finalDir === 'BUY' ? dict[currentLang].buyLimit : dict[currentLang].sellLimit;
-
-        // Logic: If price has touched entry
-        if (finalDir === 'BUY' && currentPrice <= entry) {
-            statusClass = "status-active-buy";
-            statusText = dict[currentLang].activeBuy;
-            orderType = ""; // Remove "Limit" if active
-        } else if (finalDir === 'SELL' && currentPrice >= entry) {
-            statusClass = "status-active-sell";
-            statusText = dict[currentLang].activeSell;
-            orderType = "";
-        }
-
-        const isBuy = finalDir === 'BUY';
-
-        document.getElementById('signalBox').innerHTML = `
-          <div class="signal-card ${isBuy ? '' : 'sell'}">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 12px; align-items: flex-start;">
-              
-              <div>
-                <div style="font-size: 18px; font-weight: 700; margin-bottom: 4px;">
-                  XAUUSD <span class="${isBuy ? 'text-green' : 'text-red'}">${orderType}</span>
-                </div>
-                <div class="status-badge ${statusClass}">${statusText}</div>
+      document.getElementById('signalBox').innerHTML = `
+        <div class="signal-card ${isBuy ? '' : 'sell'}">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 12px; align-items: flex-start;">
+            <div>
+              <div style="font-size: 18px; font-weight: 700; margin-bottom: 4px;">
+                XAUUSD <span class="${isBuy ? 'text-green' : 'text-red'}">${isBuy ? dict[currentLang].buy : dict[currentLang].sell}</span>
               </div>
-
-              <div style="font-size: 12px; color: #888; font-weight: 600; text-align: ${currentLang === 'ar' ? 'left' : 'right'};">
-                ${currentTF.toUpperCase()} <br> CHART
-              </div>
+              <div class="status-badge ${statusClass}">${statusText}</div>
             </div>
-
-            <div class="price-grid">
-              <div class="price-box">
-                <div class="price-label">${dict[currentLang].entry}</div>
-                <div class="price-val text-yellow">${entry.toFixed(2)}</div>
-              </div>
-              
-              <div class="price-box">
-                <div class="price-label">${dict[currentLang].sl}</div>
-                <div class="price-val text-red">${stopLoss.toFixed(2)}</div>
-                <div class="pips-sub text-red">-${pipsRisk} pips</div>
-              </div>
-              
-              <div class="price-box tp1">
-                <div class="price-label">${dict[currentLang].tp1}</div>
-                <div class="price-val text-green">${takeProfit1.toFixed(2)}</div>
-                <div class="pips-sub text-green">+${pipsReward1} pips</div>
-              </div>
-              
-              <div class="price-box tp2">
-                <div class="price-label">${dict[currentLang].tp2}</div>
-                <div class="price-val text-green">${takeProfit2.toFixed(2)}</div>
-                <div class="pips-sub text-green">+${pipsReward2} pips</div>
-              </div>
+            <div style="font-size: 12px; color: #888; font-weight: 600; text-align: ${currentLang === 'ar' ? 'left' : 'right'};">
+              ${trade.tf.toUpperCase()} <br> CHART
             </div>
           </div>
-        `;
 
-      } catch (error) {
-        console.error(error);
-      }
+          <div class="price-grid">
+            <div class="price-box">
+              <div class="price-label">${dict[currentLang].entry}</div>
+              <div class="price-val text-yellow">${trade.entry.toFixed(2)}</div>
+            </div>
+            <div class="price-box">
+              <div class="price-label">${dict[currentLang].sl}</div>
+              <div class="price-val text-red">${trade.sl.toFixed(2)}</div>
+              <div class="pips-sub text-red">-${pipsRisk} pips</div>
+            </div>
+            <div class="price-box tp1">
+              <div class="price-label">${dict[currentLang].tp1} 1</div>
+              <div class="price-val text-green">${trade.tp1.toFixed(2)}</div>
+              <div class="pips-sub text-green">+${pipsReward1} pips</div>
+            </div>
+            <div class="price-box tp2">
+              <div class="price-label">${dict[currentLang].tp2} 2</div>
+              <div class="price-val text-green">${trade.tp2.toFixed(2)}</div>
+              <div class="pips-sub text-green">+${pipsReward2} pips</div>
+            </div>
+          </div>
+        </div>
+      `;
+      drawTradeLines(trade);
     }
+
+    // --- 6. Live Price Checker (Runs every 5 seconds) ---
+    setInterval(async () => {
+      if (!activeTrade) return;
+      
+      try {
+        const res = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=PAXGUSDT');
+        const json = await res.json();
+        const livePrice = parseFloat(json.price);
+
+        // Check for Win / Loss
+        if (activeTrade.dir === 'BUY') {
+          if (livePrice <= activeTrade.sl) { alert("TRADE HIT STOP LOSS"); localStorage.removeItem('activeTrade'); activeTrade = null; location.reload(); }
+          if (livePrice >= activeTrade.tp2) { alert("TRADE HIT TP 2!"); localStorage.removeItem('activeTrade'); activeTrade = null; location.reload(); }
+        } else {
+          if (livePrice >= activeTrade.sl) { alert("TRADE HIT STOP LOSS"); localStorage.removeItem('activeTrade'); activeTrade = null; location.reload(); }
+          if (livePrice <= activeTrade.tp2) { alert("TRADE HIT TP 2!"); localStorage.removeItem('activeTrade'); activeTrade = null; location.reload(); }
+        }
+
+        // Re-render to check if it became Active
+        renderTradeCard(activeTrade, livePrice);
+      } catch (e) { console.log("Live price check failed"); }
+    }, 5000);
+
+    // --- Init ---
+    applyLanguage();
+    loadChartData(currentTF).then(() => {
+      if (activeTrade) {
+        renderTradeCard(activeTrade);
+      } else {
+        document.getElementById('signalBox').innerHTML = `<div class="loading">${dict[currentLang].loading}</div>`;
+      }
+    });
+
   </script>
 </body>
 </html>
