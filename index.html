@@ -441,9 +441,11 @@
         const lowPrevClose = Math.abs(bars[i].low - bars[i-1].close);
         trSum += Math.max(highLow, highPrevClose, lowPrevClose);
       }
+      
+      // --- FIX: WIDER SL FOR FEWER STOP-OUTS ---
       const atr = trSum / 14;
-
-      const slDistance = atr * 1.2; 
+      // We increased the ATR multiplier from 1.2 to 2.0 to give the trade more breathing room
+      const slDistance = atr * 2.0; 
       const sl = dir === 'BUY' ? entry - slDistance : entry + slDistance;
       
       const risk = Math.abs(entry - sl);
