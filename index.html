@@ -73,6 +73,12 @@
     .lang-btn { background: #222; border: 1px solid #444; color: #ffd700; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; }
 
     /* Performance Stats */
+    .stats-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .stats-filter { display: flex; gap: 4px; }
+    .filter-btn { background: #111; border: 1px solid #333; color: #888; padding: 4px 10px; border-radius: 6px; font-size: 10px; cursor: pointer; }
+    .filter-btn.active { background: #ffd700; color: #000; border-color: #ffd700; }
+    .reset-btn { background: #ef535022; color: #ef5350; border: 1px solid #ef535055; padding: 4px 10px; border-radius: 6px; font-size: 10px; cursor: pointer; }
+
     .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 20px; }
     .stat-box { background: #111; border: 1px solid #222; border-radius: 12px; padding: 12px; text-align: center; }
     .stat-title { font-size: 10px; color: #888; text-transform: uppercase; font-weight: 700; }
@@ -83,6 +89,20 @@
     .history-title { font-weight: 700; font-size: 14px; }
     .history-date { font-size: 11px; color: #888; }
     .history-result { font-weight: 700; font-size: 14px; text-align: right;}
+
+    /* Account & Subscription */
+    .sub-banner { background: linear-gradient(145deg, #1a1505 0%, #000 100%); border: 1px solid #ffd70055; border-radius: 16px; padding: 20px; text-align: center; margin-top: 16px; }
+    .sub-banner h3 { color: #ffd700; margin: 0 0 8px 0; letter-spacing: 1px; }
+    .sub-banner p { color: #ccc; font-size: 14px; margin-bottom: 16px; }
+    
+    .payment-box { background: #000; border: 1px dashed #ffd700; border-radius: 12px; padding: 16px; margin-top: 16px; }
+    .qr-code { width: 150px; height: 150px; margin: 0 auto; display: block; border-radius: 8px; background: #fff; padding: 5px; }
+    .wallet-address { background: #111; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 12px; color: #ffd700; word-break: break-all; margin: 12px 0; border: 1px solid #333; text-align: center; }
+    
+    .btn-copy { width: 100%; padding: 10px; background: #ffd700; color: #000; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; margin-bottom: 8px; }
+    .btn-verify { width: 100%; padding: 10px; background: #26a69a; color: #fff; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; }
+
+    .risk-note { font-size: 12px; color: #888; background: #111; padding: 12px; border-radius: 8px; border: 1px solid #222; margin-top: 16px; line-height: 1.5; }
   </style>
 </head>
 <body id="mainBody">
@@ -132,7 +152,19 @@
     </div>
 
     <div id="page-history" class="page">
-      <h2 style="font-size: 18px; margin-bottom: 16px;">Performance & History</h2>
+      <div class="stats-header">
+        <h2 style="font-size: 18px; margin: 0;">Performance</h2>
+        <div class="stats-filter">
+          <button class="filter-btn active" onclick="setFilter('all', this)">All</button>
+          <button class="filter-btn" onclick="setFilter('week', this)">Week</button>
+          <button class="filter-btn" onclick="setFilter('today', this)">Today</button>
+        </div>
+      </div>
+      
+      <div style="display: flex; justify-content: flex-end; margin-bottom: 12px;">
+         <button class="reset-btn" onclick="clearHistory()">Clear History</button>
+      </div>
+
       <div class="stats-grid">
         <div class="stat-box"><div class="stat-title">Win Rate</div><div class="stat-value text-green" id="statWinRate">0%</div></div>
         <div class="stat-box"><div class="stat-title">Total Trades</div><div class="stat-value" id="statTotalTrades">0</div></div>
@@ -143,15 +175,47 @@
 
     <div id="page-account" class="page">
       <h2 style="font-size: 18px; margin-bottom: 16px;">Account Settings</h2>
+      
       <div style="background: #111; border: 1px solid #222; border-radius: 12px; padding: 16px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
         <span style="font-weight: 600;">Language / اللغة</span>
         <button class="lang-btn" id="langBtn2" onclick="toggleLanguage()">AR</button>
       </div>
-      <div style="background: #111; border: 1px solid #222; border-radius: 12px; padding: 16px;">
+
+      <div style="background: #111; border: 1px solid #222; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
         <div style="font-size: 12px; color: #888; margin-bottom: 4px;">Logged in as:</div>
         <div id="userEmail" style="font-weight: 600; font-size: 14px; margin-bottom: 16px;">...</div>
         <button onclick="logout()" style="width: 100%; padding: 12px; background: #ef535022; color: #ef5350; border: 1px solid #ef535055; border-radius: 8px; font-weight: 700; cursor: pointer;">Log Out</button>
       </div>
+
+      <!-- UPGRADE BANNER & CRYPTO PAYMENT -->
+      <div class="sub-banner">
+        <h3>MR.TRADER FAMILY</h3>
+        <div style="font-size: 32px; font-weight: 700; margin-bottom: 8px;">$49<span style="font-size: 14px; color: #888;">/mo</span></div>
+        <p>Unlock unlimited live AI signals, advanced volume profile, and priority support.</p>
+        
+        <!-- USDT TRC20 PAYMENT BOX -->
+        <div class="payment-box">
+          <div style="font-size: 12px; color: #888; margin-bottom: 8px; font-weight: 700;">PAY WITH USDT (TRC20)</div>
+          
+          <!-- QR Code generated dynamically via API -->
+          <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=TLgREYohGVK6V9zUS6gNowq2WjPavmfEj3" alt="TRC20 QR Code" class="qr-code">
+          
+          <div class="wallet-address" id="walletAddress">TLgREYohGVK6V9zUS6gNowq2WjPavmfEj3</div>
+          
+          <button class="btn-copy" onclick="copyWallet()">Copy Address</button>
+          <button class="btn-verify" onclick="alert('Please send a screenshot of your payment to support@mrtraderai.com to activate your account.')">Verify Payment</button>
+        </div>
+
+      </div>
+
+      <!-- RISK DISCLAIMER -->
+      <div class="risk-note">
+        <strong>Risk Management Rules:</strong><br>
+        • Minimum balance to trade: <strong>$200</strong><br>
+        • Position size: <strong>0.02 lots for every $200</strong><br>
+        • Close <strong>0.01 at TP1</strong> and <strong>0.01 at TP2</strong>.
+      </div>
+
     </div>
 
     <div class="bottom-nav">
@@ -174,6 +238,7 @@
     let currentTF = '5min';
     let liveInterval;
     let userTries = 5; 
+    let currentFilter = 'all';
 
     let activeTrade = null;
     let tradeHistory = [];
@@ -289,6 +354,16 @@
         el.innerText = `Free trial ended`;
         el.style.color = '#ef5350';
       }
+    }
+
+    // --- COPY WALLET LOGIC ---
+    function copyWallet() {
+      const address = "TLgREYohGVK6V9zUS6gNowq2WjPavmfEj3";
+      navigator.clipboard.writeText(address).then(() => {
+        alert("Wallet Address Copied!");
+      }).catch(err => {
+        alert("Failed to copy: " + err);
+      });
     }
 
     const dict = {
@@ -423,20 +498,17 @@
         }
       }
 
-      // 1. Calculate Trend using EMA 20
       const closes = bars.map(b => b.close);
       const lastBar = bars[bars.length - 1];
       const ema20 = closes.reduce((a, b) => a + b, 0) / 20; 
       let trendDir = lastBar.close > ema20 ? "BUY" : "SELL";
 
-      // 2. Find Liquidity Sweeps & Structure (Look back 30 candles)
       const lookback = 30;
       const recentBars = bars.slice(-lookback);
       
       const recentHigh = Math.max(...recentBars.map(b => b.high));
       const recentLow = Math.min(...recentBars.map(b => b.low));
 
-      // 3. Determine Entry (Pending Limit Orders)
       let dir, entry, sl, tp1, tp2;
       
       if (lastBar.high > recentHigh && lastBar.close < recentHigh) {
@@ -446,7 +518,6 @@
         dir = "BUY"; 
         entry = recentLow - 0.2; 
       } else {
-        // If no sweep, use trend direction and recent structure
         if (trendDir === "SELL") {
             dir = "SELL";
             entry = recentHigh + 0.2;
@@ -456,17 +527,16 @@
         }
       }
 
-      // 4. Calculate SL and TP
       if (dir === "SELL") {
-        sl = entry + 2.5; // Stop loss above the recent high
+        sl = entry + 2.5; 
         const risk = sl - entry;
         tp1 = entry - (risk * 1.5);
-        tp2 = entry - (risk * 2.5);
+        tp2 = entry - (risk * 3.0); 
       } else {
-        sl = entry - 2.5; // Stop loss below the recent low
+        sl = entry - 2.5; 
         const risk = entry - sl;
         tp1 = entry + (risk * 1.5);
-        tp2 = entry + (risk * 2.5);
+        tp2 = entry + (risk * 3.0); 
       }
 
       activeTrade = { id: Date.now(), dir, entry, sl, tp1, tp2, tf: currentTF, status: 'PENDING', date: new Date().toLocaleString() };
@@ -522,14 +592,40 @@
       drawTradeLines(trade);
     }
 
+    function setFilter(filter, element) {
+      currentFilter = filter;
+      document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+      element.classList.add('active');
+      renderHistoryList();
+    }
+
+    function clearHistory() {
+      if (confirm("Are you sure you want to clear all trade history? This cannot be undone.")) {
+        tradeHistory = [];
+        localStorage.removeItem('tradeHistory');
+        renderHistoryList();
+      }
+    }
+
     function renderHistoryList() {
       const list = document.getElementById('historyList');
       
+      let filteredHistory = tradeHistory;
+
+      if (currentFilter === 'today') {
+        const today = new Date().toLocaleDateString();
+        filteredHistory = tradeHistory.filter(t => t.date.startsWith(today));
+      } else if (currentFilter === 'week') {
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+        filteredHistory = tradeHistory.filter(t => new Date(t.date) >= oneWeekAgo);
+      }
+
       let wins = 0;
       let totalPips = 0;
-      const totalTrades = tradeHistory.length;
+      const totalTrades = filteredHistory.length;
 
-      tradeHistory.forEach(t => {
+      filteredHistory.forEach(t => {
         const pips = Math.abs(t.exitPrice - t.entry) * 10;
         if (t.result === 'WIN') {
           wins++;
@@ -553,7 +649,7 @@
         return;
       }
       
-      const sorted = [...tradeHistory].reverse();
+      const sorted = [...filteredHistory].reverse();
       let html = '';
       sorted.forEach(t => {
         const isBuy = t.dir === 'BUY';
