@@ -3,139 +3,202 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>AI Trading Signals</title>
+  <title>MR.Trader AI</title>
   <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
   <style>
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body {
       margin: 0; background: #000000; color: #ffffff;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      display: flex; flex-direction: column; min-height: 100vh; padding-bottom: 80px;
+      min-height: 100vh; padding-bottom: 70px; /* Space for bottom nav */
     }
     
+    /* Pages */
+    .page { display: none; padding: 16px; animation: fadeIn 0.3s; }
+    .page.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
     /* Header */
-    header {
-      padding: 16px 20px; border-bottom: 1px solid #1a1a1a;
-      display: flex; justify-content: space-between; align-items: center;
-    }
-    header h1 { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: 1px; }
-    .live-dot { display: inline-block; width: 8px; height: 8px; background: #26a69a; border-radius: 50%; margin-right: 6px; animation: pulse 2s infinite; }
-    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(38, 166, 154, 0.7); } 70% { box-shadow: 0 0 0 6px rgba(38, 166, 154, 0); } 100% { box-shadow: 0 0 0 0 rgba(38, 166, 154, 0); } }
+    header { padding: 16px; border-bottom: 1px solid #1a1a1a; display: flex; justify-content: space-between; align-items: center; }
+    header h1 { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: 0.5px; }
+    .live-dot { display: inline-block; width: 8px; height: 8px; background: #26a69a; border-radius: 50%; margin-right: 6px; box-shadow: 0 0 8px #26a69a; animation: pulse 2s infinite; }
+    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 
-    /* Chart Section */
-    #chart-container { width: 100%; height: 40vh; position: relative; border-bottom: 1px solid #1a1a1a; }
-    
-    /* Content Area */
-    .content { padding: 16px; flex: 1; }
-    
+    /* Chart */
+    #chart-container { width: 100%; height: 35vh; border-bottom: 1px solid #1a1a1a; }
+
+    /* History & Performance */
+    .history-card { background: #111; border: 1px solid #222; border-radius: 12px; padding: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+    .perf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+    .perf-box { background: #111; border: 1px solid #222; border-radius: 12px; padding: 16px; text-align: center; }
+    .perf-val { font-size: 24px; font-weight: 700; color: #ffd700; margin-top: 8px; }
+
     /* Signal Card */
-    .signal-card {
-      background: linear-gradient(145deg, #111a14 0%, #0a0f0c 100%);
-      border: 1px solid #1e3a2a; border-radius: 16px; padding: 20px; margin-bottom: 16px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: relative; overflow: hidden;
-    }
-    .signal-card.sell {
-      background: linear-gradient(145deg, #1a1111 0%, #0f0a0a 100%); border-color: #3a1e1e;
-    }
-    .signal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-    .asset-name { font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
-    .badge { font-size: 11px; padding: 4px 8px; border-radius: 4px; font-weight: 600; background: #26a69a22; color: #26a69a; border: 1px solid #26a69a44; }
-    .badge.sell { background: #ef535022; color: #ef5350; border-color: #ef535044; }
-
-    /* Price Grid */
-    .price-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
-    .price-box {
-      background: #000000; border: 1px solid #222; border-radius: 12px; padding: 12px;
-    }
+    .signal-card { background: linear-gradient(145deg, #111a14 0%, #0a0f0c 100%); border: 1px solid #1e3a2a; border-radius: 16px; padding: 16px; margin-top: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+    .signal-card.sell { background: linear-gradient(145deg, #1a1111 0%, #0f0a0a 100%); border-color: #3a1e1e; }
+    .price-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+    .price-box { background: #000; border: 1px solid #222; border-radius: 12px; padding: 12px; }
     .price-box.tp { grid-column: span 2; border-color: #26a69a44; }
-    .price-label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; display: flex; align-items: center; gap: 4px; }
-    .price-val { font-size: 22px; font-weight: 700; }
-    .price-sub { font-size: 12px; margin-top: 4px; font-weight: 500; }
-    
-    .text-yellow { color: #ffd700; }
-    .text-red { color: #ef5350; }
-    .text-green { color: #26a69a; }
+    .price-label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+    .price-val { font-size: 20px; font-weight: 700; margin-top: 4px; }
 
-    /* Stats Row */
-    .stats-row { display: flex; border-top: 1px solid #222; padding-top: 16px; margin-top: 16px; justify-content: space-between; text-align: center; }
-    .stat-item { flex: 1; }
-    .stat-item:not(:last-child) { border-right: 1px solid #222; }
-    .stat-label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 1px; }
-    .stat-val { font-size: 16px; font-weight: 600; margin-top: 4px; }
+    /* Bottom Navigation */
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 0; width: 100%; height: 65px;
+      background: #0a0a0a; border-top: 1px solid #222;
+      display: flex; justify-content: space-around; align-items: center; z-index: 100;
+    }
+    .nav-item { color: #666; text-align: center; font-size: 10px; font-weight: 600; text-transform: uppercase; cursor: pointer; transition: 0.2s; }
+    .nav-item.active { color: #ffd700; }
+    .nav-icon { font-size: 20px; margin-bottom: 4px; display: block; }
 
-    /* Tracking Progress */
-    .tracking-box { background: #111; border: 1px solid #222; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
-    .tracking-header { display: flex; justify-content: space-between; font-size: 12px; color: #888; margin-bottom: 16px; }
-    .progress-track { height: 4px; background: #333; border-radius: 2px; position: relative; margin-bottom: 12px; }
-    .progress-fill { position: absolute; height: 100%; background: linear-gradient(90deg, #ffd700, #26a69a); border-radius: 2px; width: 45%; }
-    .progress-dots { display: flex; justify-content: space-between; font-size: 10px; color: #888; font-weight: 600; text-transform: uppercase; }
-    .dot.active { color: #fff; }
-
-    /* Sticky Footer */
-    .footer {
-      position: fixed; bottom: 0; left: 0; width: 100%; padding: 12px 16px;
-      background: linear-gradient(to top, #000 80%, transparent);
-      display: flex; gap: 12px; align-items: center;
-    }
-    .btn-refresh {
-      width: 48px; height: 48px; border-radius: 50%; background: #1a1a1a;
-      border: 1px solid #333; color: #fff; display: flex; align-items: center; justify-content: center;
-      font-size: 20px; cursor: pointer;
-    }
-    .btn-unlock {
-      flex: 1; height: 48px; border-radius: 24px; border: none;
-      background: linear-gradient(90deg, #d4af37, #ffd700);
-      color: #000; font-size: 16px; font-weight: 700; cursor: pointer;
-      box-shadow: 0 4px 15px rgba(255, 215, 0, 0.2);
-    }
+    /* Utils */
+    .text-green { color: #26a69a; } .text-red { color: #ef5350; } .text-yellow { color: #ffd700; }
+    .btn-gold { width: 100%; padding: 14px; border-radius: 12px; border: none; background: linear-gradient(90deg, #d4af37, #ffd700); color: #000; font-weight: 700; font-size: 16px; margin-top: 16px; cursor: pointer; box-shadow: 0 4px 15px rgba(255,215,0,0.2); }
   </style>
 </head>
 <body>
 
+  <!-- HEADER -->
   <header>
-    <h1>AI SIGNALS</h1>
-    <div style="font-size: 12px; color: #888;"><span class="live-dot"></span>LIVE</div>
+    <h1>MR.Trader <span class="text-yellow">AI</span></h1>
+    <div style="font-size: 12px; color: #888; font-weight: 600;"><span class="live-dot"></span>LIVE</div>
   </header>
 
-  <div id="chart-container"></div>
-  
-  <div class="content">
+  <!-- PAGE 1: LIVE SIGNAL -->
+  <div id="page-live" class="page active">
+    <div id="chart-container"></div>
     <div id="signalBox">
-      <div style="text-align: center; padding: 40px; color: #888;">Analyzing market...</div>
+      <div style="text-align: center; padding: 40px; color: #888;">Running MR.Trader AI Models...</div>
     </div>
   </div>
 
-  <div class="footer">
-    <button class="btn-refresh" onclick="window.location.reload()">↻</button>
-    <button class="btn-unlock">Unlock Full Access</button>
+  <!-- PAGE 2: HISTORY -->
+  <div id="page-history" class="page">
+    <h2 style="font-size: 18px; margin-bottom: 16px;">Recent AI Signals</h2>
+    
+    <div class="history-card">
+      <div>
+        <div style="font-weight: 600;">XAUUSD <span class="text-green">BUY</span></div>
+        <div style="font-size: 12px; color: #888;">Today, 08:30 AM</div>
+      </div>
+      <div class="text-green" style="font-weight: 700;">+45 Pips</div>
+    </div>
+
+    <div class="history-card">
+      <div>
+        <div style="font-weight: 600;">EURUSD <span class="text-red">SELL</span></div>
+        <div style="font-size: 12px; color: #888;">Yesterday, 14:15 PM</div>
+      </div>
+      <div class="text-green" style="font-weight: 700;">+22 Pips</div>
+    </div>
+
+    <div class="history-card">
+      <div>
+        <div style="font-weight: 600;">XAUUSD <span class="text-red">SELL</span></div>
+        <div style="font-size: 12px; color: #888;">Yesterday, 09:00 AM</div>
+      </div>
+      <div class="text-red" style="font-weight: 700;">-15 Pips</div>
+    </div>
+  </div>
+
+  <!-- PAGE 3: PERFORMANCE -->
+  <div id="page-performance" class="page">
+    <h2 style="font-size: 18px; margin-bottom: 16px;">AI Performance</h2>
+    
+    <div class="perf-grid">
+      <div class="perf-box">
+        <div style="font-size: 12px; color: #888;">Total Pips</div>
+        <div class="perf-val text-green">+12,450</div>
+      </div>
+      <div class="perf-box">
+        <div style="font-size: 12px; color: #888;">Win Rate</div>
+        <div class="perf-val">74%</div>
+      </div>
+      <div class="perf-box">
+        <div style="font-size: 12px; color: #888;">Total Trades</div>
+        <div class="perf-val">342</div>
+      </div>
+      <div class="perf-box">
+        <div style="font-size: 12px; color: #888;">Profit Factor</div>
+        <div class="perf-val">2.8</div>
+      </div>
+    </div>
+
+    <div style="background: #111; padding: 16px; border-radius: 12px; border: 1px solid #222;">
+      <div style="font-size: 14px; margin-bottom: 8px;">Equity Curve</div>
+      <div style="height: 100px; background: linear-gradient(to right, transparent, #ffd70022); border-bottom: 2px solid #ffd700;"></div>
+    </div>
+  </div>
+
+  <!-- PAGE 4: SUBSCRIPTION -->
+  <div id="page-account" class="page">
+    <h2 style="font-size: 18px; margin-bottom: 16px;">MR.Trader Pro</h2>
+    
+    <div style="background: linear-gradient(145deg, #1a1505 0%, #000 100%); border: 1px solid #ffd70055; border-radius: 16px; padding: 20px; text-align: center;">
+      <h3 style="color: #ffd700; margin: 0 0 8px 0; letter-spacing: 1px;">PRO MEMBER</h3>
+      <div style="font-size: 32px; font-weight: 700;">$49<span style="font-size: 14px; color: #888;">/mo</span></div>
+      <ul style="text-align: left; color: #ccc; font-size: 14px; line-height: 1.8; margin-top: 20px; padding-left: 20px;">
+        <li>Unlimited Live AI Signals</li>
+        <li>Instant Push Notifications</li>
+        <li>Full Access to Volume Profile & Liquidity Maps</li>
+        <li>Advanced Performance Analytics</li>
+      </ul>
+      <button class="btn-gold" onclick="alert('Stripe Checkout would open here.')">Subscribe Now</button>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAVIGATION -->
+  <div class="bottom-nav">
+    <div class="nav-item active" onclick="switchTab('live', this)">
+      <span class="nav-icon">⚡</span> Live
+    </div>
+    <div class="nav-item" onclick="switchTab('history', this)">
+      <span class="nav-icon">🕒</span> History
+    </div>
+    <div class="nav-item" onclick="switchTab('performance', this)">
+      <span class="nav-icon">📈</span> Stats
+    </div>
+    <div class="nav-item" onclick="switchTab('account', this)">
+      <span class="nav-icon">👤</span> Account
+    </div>
   </div>
 
   <script>
-    // --- Chart Setup ---
+    // --- 1. Navigation Logic ---
+    function switchTab(tabId, element) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById('page-' + tabId).classList.add('active');
+      
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      element.classList.add('active');
+
+      if (tabId === 'live') {
+        setTimeout(() => chart.applyOptions({ width: document.getElementById('chart-container').clientWidth }), 50);
+      }
+    }
+
+    // --- 2. Chart Setup ---
     const chartContainer = document.getElementById('chart-container');
     const chart = LightweightCharts.createChart(chartContainer, {
       layout: { background: { type: 'solid', color: '#000000' }, textColor: '#888' },
       grid: { vertLines: { color: '#111' }, horzLines: { color: '#111' } },
-      timeScale: { borderColor: '#222', timeVisible: true, secondsVisible: false },
+      timeScale: { borderColor: '#222', timeVisible: true },
       rightPriceScale: { borderColor: '#222' },
       autoSize: true,
-      crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
     });
 
-    // Custom Candlestick Colors (Yellow/Black like Exunu)
     const candleSeries = chart.addCandlestickSeries({
-      upColor: '#ffd700', downColor: '#555', // Exunu style: Gold up, Grey down
+      upColor: '#ffd700', downColor: '#555',
       borderUpColor: '#ffd700', borderDownColor: '#555',
       wickUpColor: '#ffd700', wickDownColor: '#555',
     });
 
-    // --- Logic ---
+    // --- 3. Data & Signal Logic ---
     function calculateEMA(data, period) {
       const k = 2 / (period + 1);
       let emaArray = [data[0]];
-      for (let i = 1; i < data.length; i++) {
-        emaArray.push((data[i] * k) + (emaArray[i - 1] * (1 - k)));
-      }
+      for (let i = 1; i < data.length; i++) emaArray.push((data[i] * k) + (emaArray[i - 1] * (1 - k)));
       return emaArray[emaArray.length - 1];
     }
 
@@ -146,27 +209,18 @@
 
         const bars = data.map(item => ({
           time: item[0] / 1000,
-          open: parseFloat(item[1]),
-          high: parseFloat(item[2]),
-          low: parseFloat(item[3]),
-          close: parseFloat(item[4]),
-          volume: parseFloat(item[5])
+          open: parseFloat(item[1]), high: parseFloat(item[2]), low: parseFloat(item[3]), close: parseFloat(item[4]), volume: parseFloat(item[5])
         }));
 
         candleSeries.setData(bars);
-        
-        // Zoom chart to the right (current time)
         chart.timeScale().setVisibleLogicalRange({ from: bars.length - 60, to: bars.length + 10 });
 
         const closes = bars.map(b => b.close);
         const lastBar = bars[bars.length - 1];
-
-        // --- Calculate Signal ---
         const ema20 = calculateEMA(closes, 20);
         const ema50 = calculateEMA(closes, 50);
-        let trendDir = (lastBar.close > ema20 && lastBar.close > ema50) ? 1 : 
-                       (lastBar.close < ema20 && lastBar.close < ema50) ? -1 : 0;
-
+        let trendDir = (lastBar.close > ema20 && lastBar.close > ema50) ? 1 : -1;
+        
         const lookback = 20;
         let prevHigh = Math.max(...bars.slice(-lookback - 1, -1).map(b => b.high));
         let prevLow = Math.min(...bars.slice(-lookback - 1, -1).map(b => b.low));
@@ -177,7 +231,6 @@
 
         let finalDir = sweepSignal !== "NEUTRAL" ? sweepSignal : (trendDir > 0 ? "BUY" : "SELL");
         
-        // Calculate Pips (For Gold, 1 pip is usually 0.10 or 1.00. We use 1.00 for visual math here)
         const atrApprox = Math.max((lastBar.high - lastBar.low) * 2.5, 15); 
         const entry = lastBar.close;
         const stopLoss = finalDir === 'BUY' ? entry - atrApprox : entry + atrApprox;
@@ -185,34 +238,17 @@
 
         const pipsRisk = Math.abs(entry - stopLoss).toFixed(1);
         const pipsReward = Math.abs(takeProfit - entry).toFixed(1);
-        const currentPips = Math.abs(entry - lastBar.close).toFixed(1);
 
-        // --- Draw Chart Zones (The Exunu Rectangle) ---
-        const entryTime = bars[bars.length - 10].time; // Start rectangle a bit in the past
-        const endTime = bars[bars.length - 1].time + (15 * 60); // End at future
+        candleSeries.createPriceLine({ price: entry, color: '#ffd700', lineWidth: 1, lineStyle: 2, title: 'ENTRY' });
+        candleSeries.createPriceLine({ price: stopLoss, color: '#ef5350', lineWidth: 1, lineStyle: 2, title: 'SL' });
+        candleSeries.createPriceLine({ price: takeProfit, color: '#26a69a', lineWidth: 1, lineStyle: 2, title: 'TP' });
 
-        if (finalDir === 'BUY') {
-          // Green Reward Box
-          candleSeries.createPriceLine({ price: takeProfit, color: '#26a69a', lineWidth: 1, lineStyle: 2, title: 'TP' });
-          candleSeries.createPriceLine({ price: entry, color: '#ffd700', lineWidth: 1, lineStyle: 2, title: 'ENTRY' });
-          candleSeries.createPriceLine({ price: stopLoss, color: '#ef5350', lineWidth: 1, lineStyle: 2, title: 'SL' });
-        } else {
-          // Red Risk Box
-          candleSeries.createPriceLine({ price: stopLoss, color: '#ef5350', lineWidth: 1, lineStyle: 2, title: 'SL' });
-          candleSeries.createPriceLine({ price: entry, color: '#ffd700', lineWidth: 1, lineStyle: 2, title: 'ENTRY' });
-          candleSeries.createPriceLine({ price: takeProfit, color: '#26a69a', lineWidth: 1, lineStyle: 2, title: 'TP' });
-        }
-
-        // --- Render UI ---
         const isBuy = finalDir === 'BUY';
         document.getElementById('signalBox').innerHTML = `
           <div class="signal-card ${isBuy ? '' : 'sell'}">
-            <div class="signal-header">
-              <div class="asset-name">
-                <span>XAUUSD</span>
-                <span class="badge ${isBuy ? '' : 'sell'}">${finalDir}</span>
-              </div>
-              <div style="font-size: 12px; color: #888;"><span class="live-dot"></span>LIVE</div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+              <div style="font-size: 18px; font-weight: 700;">XAUUSD <span class="${isBuy ? 'text-green' : 'text-red'}">${finalDir}</span></div>
+              <div style="font-size: 12px; color: #888; font-weight: 600;"><span class="live-dot"></span>LIVE</div>
             </div>
 
             <div class="price-grid">
@@ -223,50 +259,19 @@
               <div class="price-box">
                 <div class="price-label">Stop Loss</div>
                 <div class="price-val text-red">${stopLoss.toFixed(2)}</div>
-                <div class="price-sub text-red">-${pipsRisk} pips</div>
+                <div style="font-size: 11px; color: #ef5350;">-${pipsRisk} pips</div>
               </div>
               <div class="price-box tp">
                 <div class="price-label">Take Profit (TP1)</div>
                 <div class="price-val text-green">${takeProfit.toFixed(2)}</div>
-                <div class="price-sub text-green">+${pipsReward} pips</div>
+                <div style="font-size: 11px; color: #26a69a;">+${pipsReward} pips</div>
               </div>
-            </div>
-
-            <div class="stats-row">
-              <div class="stat-item">
-                <div class="stat-label">Risk</div>
-                <div class="stat-val text-red">${pipsRisk} <span style="font-size:10px">PIPS</span></div>
-              </div>
-              <div class="stat-item">
-                <div class="stat-label">R:R</div>
-                <div class="stat-val">1 : 2.7</div>
-              </div>
-              <div class="stat-item">
-                <div class="stat-label">Reward</div>
-                <div class="stat-val text-green">${pipsReward} <span style="font-size:10px">PIPS</span></div>
-              </div>
-            </div>
-          </div>
-
-          <div class="tracking-box">
-            <div class="tracking-header">
-              <div><span class="live-dot"></span> TRACKING</div>
-              <div>Current: ${currentPips} Pips</div>
-            </div>
-            <div class="progress-track">
-              <div class="progress-fill" style="width: ${isBuy ? '45%' : '55%'}"></div>
-            </div>
-            <div class="progress-dots">
-              <div class="dot text-red">STOP</div>
-              <div class="dot">ENTRY</div>
-              <div class="dot text-green">TP</div>
             </div>
           </div>
         `;
 
       } catch (error) {
-        console.error('Error:', error);
-        document.getElementById('signalBox').innerHTML = `<div style="color: #ef5350; text-align: center;">Failed to load data. Refresh page.</div>`;
+        console.error(error);
       }
     }
 
