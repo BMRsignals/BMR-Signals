@@ -112,7 +112,7 @@
   <div id="appContent" style="display: none;">
     <header>
       <h1>MR.Trader <span class="text-yellow">AI</span></h1>
-      <div id="trialText" style="font-size: 12px; color: #888; font-weight: 600;">Tries left: 3</div>
+      <div id="trialText" style="font-size: 12px; color: #888; font-weight: 600;">Tries left: 5</div>
     </header>
 
     <div id="page-live" class="page active" style="padding: 0;">
@@ -173,7 +173,7 @@
     let currentLang = localStorage.getItem('lang') || 'en';
     let currentTF = '5min';
     let liveInterval;
-    let userTries = 3;
+    let userTries = 5; // DEFAULT TO 5
 
     let activeTrade = null;
     let tradeHistory = [];
@@ -223,7 +223,7 @@
       const { error } = await supabaseClient.auth.signUp({ 
         email, 
         password,
-        options: { data: { tries_left: 3 } } 
+        options: { data: { tries_left: 5 } } // NEW USERS START WITH 5
       });
       if (error) alert("Sign Up Error: " + error.message);
       else alert('Account created! You can now click Login.');
@@ -269,7 +269,7 @@
         if (session.user.user_metadata && session.user.user_metadata.tries_left !== undefined) {
           userTries = session.user.user_metadata.tries_left;
         } else {
-          userTries = 3;
+          userTries = 5; // Fallback for old accounts
         }
         updateTryText();
 
@@ -398,7 +398,7 @@
 
     async function startAnalysis() {
       if (userTries <= 0) {
-        alert("You have used all your 3 free trials.\nPlease upgrade to Pro to continue getting signals.");
+        alert("You have used all your 5 free trials.\nPlease upgrade to Pro to continue getting signals.");
         return;
       }
 
@@ -442,9 +442,8 @@
         trSum += Math.max(highLow, highPrevClose, lowPrevClose);
       }
       
-      // --- FIX: WIDER SL FOR FEWER STOP-OUTS ---
       const atr = trSum / 14;
-      // We increased the ATR multiplier from 1.2 to 2.0 to give the trade more breathing room
+      // WIDER STOP LOSS (2.0x ATR) to prevent premature stop-outs
       const slDistance = atr * 2.0; 
       const sl = dir === 'BUY' ? entry - slDistance : entry + slDistance;
       
