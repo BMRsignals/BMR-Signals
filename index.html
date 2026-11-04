@@ -164,10 +164,10 @@
   <script>
     const SUPABASE_URL = 'https://wdexwfoplycblaxmrfws.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_6U7d-ihEr1ivc362mhkDeQ_2suPM3gy';
-    
-    // YOUR FINNHUB API KEY
     const FINNHUB_API_KEY = 'dblpitpr01qpfa5oeql0dblpitpr01qpfa5oeqlg'; 
-    const CORS_PROXY = 'https://corsproxy.io/?';
+
+    // RELIABLE PROXY
+    const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
 
     let supabaseClient = null;
     let isRecoveryMode = false; 
@@ -356,13 +356,12 @@
       loadChartData(tf); 
     }
 
-    // --- REAL FOREX DATA (Finnhub + CORS Proxy) ---
+    // --- REAL FOREX DATA (Finnhub + AllOrigins Proxy) ---
     async function loadChartData(tf) {
       try {
         const now = Math.floor(Date.now() / 1000);
         let from;
         
-        // Calculate time range based on timeframe (approximate for 300 candles)
         if (tf === '5') from = now - (300 * 5 * 60); 
         else if (tf === '15') from = now - (300 * 15 * 60);
         else if (tf === '30') from = now - (300 * 30 * 60);
@@ -372,7 +371,6 @@
 
         const targetUrl = `https://finnhub.io/api/v1/forex/candle?symbol=OANDA:XAU_USD&resolution=${tf}&from=${from}&to=${now}&token=${FINNHUB_API_KEY}`;
         
-        // Use Proxy to bypass browser security restrictions
         const res = await fetch(CORS_PROXY + encodeURIComponent(targetUrl));
         const data = await res.json();
 
@@ -406,7 +404,6 @@
         }
         return bars;
       } catch (e) { 
-        console.error("Chart Error:", e);
         return null; 
       }
     }
