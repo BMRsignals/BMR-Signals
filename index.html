@@ -173,7 +173,7 @@
     let currentLang = localStorage.getItem('lang') || 'en';
     let currentTF = '5min';
     let liveInterval;
-    let userTries = 5; // DEFAULT TO 5
+    let userTries = 5; 
 
     let activeTrade = null;
     let tradeHistory = [];
@@ -223,7 +223,7 @@
       const { error } = await supabaseClient.auth.signUp({ 
         email, 
         password,
-        options: { data: { tries_left: 5 } } // NEW USERS START WITH 5
+        options: { data: { tries_left: 5 } }
       });
       if (error) alert("Sign Up Error: " + error.message);
       else alert('Account created! You can now click Login.');
@@ -269,7 +269,7 @@
         if (session.user.user_metadata && session.user.user_metadata.tries_left !== undefined) {
           userTries = session.user.user_metadata.tries_left;
         } else {
-          userTries = 5; // Fallback for old accounts
+          userTries = 5;
         }
         updateTryText();
 
@@ -356,7 +356,6 @@
       loadChartData(tf); 
     }
 
-    // --- REAL FOREX DATA (TwelveData) ---
     async function loadChartData(tf) {
       try {
         const res = await fetch(`https://api.twelvedata.com/time_series?symbol=XAU/USD&interval=${tf}&outputsize=300&apikey=${TWELVEDATA_API_KEY}`);
@@ -397,10 +396,13 @@
     }
 
     async function startAnalysis() {
+      // TRIAL LIMIT DISABLED FOR TESTING
+      /*
       if (userTries <= 0) {
         alert("You have used all your 5 free trials.\nPlease upgrade to Pro to continue getting signals.");
         return;
       }
+      */
 
       if (activeTrade) {
         const confirmReset = confirm(currentLang === 'ar' ? "هل تريد حذف الصفقة والبحث عن جديدة؟" : "Delete current trade and scan again?");
@@ -420,11 +422,13 @@
         return;
       }
 
-      userTries--;
-      updateTryText();
-
-      if (supabaseClient) {
-        await supabaseClient.auth.updateUser({ data: { tries_left: userTries } });
+      // Only decrease tries if we are still tracking it, but for testing we just let it be
+      if (userTries > 0) {
+        userTries--;
+        updateTryText();
+        if (supabaseClient) {
+          await supabaseClient.auth.updateUser({ data: { tries_left: userTries } });
+        }
       }
 
       const closes = bars.map(b => b.close);
@@ -443,7 +447,6 @@
       }
       
       const atr = trSum / 14;
-      // WIDER STOP LOSS (2.0x ATR) to prevent premature stop-outs
       const slDistance = atr * 2.0; 
       const sl = dir === 'BUY' ? entry - slDistance : entry + slDistance;
       
