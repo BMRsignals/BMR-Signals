@@ -118,12 +118,12 @@
     <!-- LIVE -->
     <div id="page-live" class="page active" style="padding: 0;">
       <div class="tf-selector" id="tfSelector">
-        <button class="tf-btn active" onclick="selectTF('5m', this)">M5</button>
-        <button class="tf-btn" onclick="selectTF('15m', this)">M15</button>
-        <button class="tf-btn" onclick="selectTF('30m', this)">M30</button>
+        <button class="tf-btn active" onclick="selectTF('5min', this)">M5</button>
+        <button class="tf-btn" onclick="selectTF('15min', this)">M15</button>
+        <button class="tf-btn" onclick="selectTF('30min', this)">M30</button>
         <button class="tf-btn" onclick="selectTF('1h', this)">1H</button>
         <button class="tf-btn" onclick="selectTF('4h', this)">4H</button>
-        <button class="tf-btn" onclick="selectTF('1d', this)">1D</button>
+        <button class="tf-btn" onclick="selectTF('1day', this)">1D</button>
       </div>
       <button class="btn-analyze" id="btnAnalyze" onclick="startAnalysis()">⚡ ANALYZE MARKET</button>
       <div id="chart-container"></div>
@@ -163,9 +163,13 @@
   </div>
 
   <script>
-    // --- 1. SUPABASE SETUP ---
+    // --- 1. SUPABASE & API SETUP ---
     const SUPABASE_URL = 'https://wdexwfoplycblaxmrfws.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_6U7d-ihEr1ivc362mhkDeQ_2suPM3gy';
+    
+    // ⚠️ PUT YOUR TWELVEDATA API KEY HERE ⚠️
+    const TWELVEDATA_API_KEY = 'YOUR_TWELVEDATA_API_KEY'; 
+
     let supabaseClient = null;
     let isRecoveryMode = false; 
 
@@ -186,23 +190,14 @@
     };
 
     // --- 2. AUTHENTICATION LOGIC ---
-    function showForgotPassword() {
-      document.getElementById('loginBox').style.display = 'none';
-      document.getElementById('forgotBox').style.display = 'block';
-    }
-
-    function showLogin() {
-      document.getElementById('loginBox').style.display = 'block';
-      document.getElementById('forgotBox').style.display = 'none';
-      document.getElementById('newPasswordBox').style.display = 'none';
-    }
+    function showForgotPassword() { document.getElementById('loginBox').style.display = 'none'; document.getElementById('forgotBox').style.display = 'block'; }
+    function showLogin() { document.getElementById('loginBox').style.display = 'block'; document.getElementById('forgotBox').style.display = 'none'; document.getElementById('newPasswordBox').style.display = 'none'; }
 
     async function loginUser() {
       if (!supabaseClient) return;
       const email = document.getElementById('emailInput').value;
       const password = document.getElementById('passwordInput').value;
       if (!email || !password) return alert('Please enter email and password.');
-
       const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
       if (error) alert("Login Error: " + error.message);
       else checkUser();
@@ -213,7 +208,6 @@
       const email = document.getElementById('emailInput').value;
       const password = document.getElementById('passwordInput').value;
       if (!email || !password) return alert('Please enter email and password.');
-
       const { error } = await supabaseClient.auth.signUp({ email, password });
       if (error) alert("Sign Up Error: " + error.message);
       else alert('Account created! You can now click Login.');
@@ -223,27 +217,18 @@
       if (!supabaseClient) return;
       const email = document.getElementById('resetEmailInput').value;
       if (!email) return alert('Please enter your email.');
-
-      const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin + window.location.pathname
-      });
-      
+      const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + window.location.pathname });
       if (error) alert("Error: " + error.message);
-      else {
-        alert('Reset link sent! Check your email.');
-        showLogin();
-      }
+      else { alert('Reset link sent! Check your email.'); showLogin(); }
     }
 
     async function updatePassword() {
       if (!supabaseClient) return;
       const newPassword = document.getElementById('newPasswordInput').value;
       if (!newPassword || newPassword.length < 6) return alert('Password must be at least 6 characters.');
-
       const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
-      if (error) {
-        alert("Error: " + error.message);
-      } else {
+      if (error) alert("Error: " + error.message);
+      else {
         alert('Password updated successfully! You are now logged in.');
         isRecoveryMode = false; 
         window.history.replaceState(null, null, window.location.pathname); 
@@ -258,11 +243,8 @@
     }
 
     async function checkUser() {
-      if (!supabaseClient) return;
-      if (isRecoveryMode) return; 
-
+      if (!supabaseClient || isRecoveryMode) return;
       const { data: { session } } = await supabaseClient.auth.getSession();
-      
       if (session) {
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('appContent').style.display = 'block';
@@ -281,7 +263,7 @@
     };
 
     let currentLang = localStorage.getItem('lang') || 'en';
-    let currentTF = '5m';
+    let currentTF = '5min';
     let chart, candleSeries;
     let priceLines = [];
     
@@ -351,34 +333,24 @@
       loadChartData(tf); 
     }
 
-    // --- FIXED DATA FEED: Using Gold API instead of Binance Crypto ---
+    // --- FIXED DATA FEED: Using TwelveData for perfect XAUUSD chart ---
     async function loadChartData(tf) {
       try {
-        // 1. Fetch Live Price for the current XAUUSD
-        const liveRes = await fetch('https://api.gold-api.com/price/XAU');
-        const liveData = await liveRes.json();
-        const currentPrice = liveData.price; // Around $2300 normally
+        const res = await fetch(`https://api.twelvedata.com/time_series?symbol=XAU/USD&interval=${tf}&outputsize=200&apikey=${TWELVEDATA_API_KEY}`);
+        const data = await res.json();
 
-        // 2. Generate synthetic historical candles around the current price for the chart
-        // (Since free XAUUSD chart APIs are rare, we generate realistic 1H/5M candles ending at the current live price)
-        const bars = [];
-        let time = Math.floor(Date.now() / 1000) - (300 * 60); // 300 candles back
-        let price = currentPrice - 20; // Start slightly lower
-
-        for (let i = 0; i < 300; i++) {
-            const open = price;
-            const close = open + (Math.random() - 0.45) * 5; // Slight upward trend
-            const high = Math.max(open, close) + Math.random() * 2;
-            const low = Math.min(open, close) - Math.random() * 2;
-            bars.push({ time: time, open: open, high: high, low: low, close: close });
-            price = close;
-            time += 300; // 5 min intervals
+        if (data.status === 'error') {
+          alert("API Error: " + data.message + "\n\nPlease check your API key or wait a minute (free tier limit is 8 requests/minute).");
+          return null;
         }
-        
-        // Ensure the very last candle is the actual live price
-        bars[bars.length - 1].close = currentPrice;
-        bars[bars.length - 1].high = Math.max(bars[bars.length - 1].high, currentPrice);
-        bars[bars.length - 1].low = Math.min(bars[bars.length - 1].low, currentPrice);
+
+        const bars = data.values.map(item => ({
+          time: new Date(item.datetime).getTime() / 1000,
+          open: parseFloat(item.open), 
+          high: parseFloat(item.high), 
+          low: parseFloat(item.low), 
+          close: parseFloat(item.close)
+        })).reverse(); // TwelveData returns newest first, we need oldest first
 
         candleSeries.setData(bars);
         chart.timeScale().setVisibleLogicalRange({ from: bars.length - 60, to: bars.length + 10 });
@@ -402,7 +374,7 @@
       window.history.replaceState({}, document.title, window.location.pathname);
 
       const bars = await loadChartData(currentTF);
-      if (!bars) return;
+      if (!bars || bars.length === 0) return;
 
       const closes = bars.map(b => b.close);
       const lastBar = bars[bars.length - 1];
@@ -411,7 +383,6 @@
       let dir = lastBar.close > ema20 ? "BUY" : "SELL";
       
       // --- FIXED MATH FOR XAUUSD ---
-      // Entry is the live price
       const entry = lastBar.close; 
       
       // Tight Stop Loss ($1.50 difference for Gold)
@@ -454,7 +425,6 @@
         statusText = isBuy ? dict[currentLang].activeBuy : dict[currentLang].activeSell;
       }
       
-      // Gold Pips: 1 pip = $0.10, so multiply price diff by 10
       const pipsRisk = (Math.abs(trade.entry - trade.sl) * 10).toFixed(0);
       const pipsReward1 = (Math.abs(trade.tp1 - trade.entry) * 10).toFixed(0);
       const pipsReward2 = (Math.abs(trade.tp2 - trade.entry) * 10).toFixed(0);
@@ -510,14 +480,17 @@
       list.innerHTML = html;
     }
 
-    // --- 4. LIVE PRICE CHECKER (GOLD API) ---
+    // --- 4. LIVE PRICE CHECKER (TWELVEDATA) ---
     setInterval(async () => {
       if (!activeTrade) return;
       try {
-        // Fetch REAL Gold price
-        const res = await fetch('https://api.gold-api.com/price/XAU');
-        const json = await res.json();
-        const livePrice = json.price; // Returns actual Gold price (e.g., 2300.50)
+        // Fetch REAL Gold price directly from the API
+        const res = await fetch(`https://api.twelvedata.com/price?symbol=XAU/USD&apikey=${TWELVEDATA_API_KEY}`);
+        const data = await res.json();
+        
+        if (data.status === 'error' || !data.price) return; // Skip if API limit hit
+        
+        const livePrice = parseFloat(data.price);
         
         let result = null;
         let exitPrice = 0;
@@ -545,7 +518,7 @@
           renderTradeCard(activeTrade, livePrice);
         }
       } catch (e) { }
-    }, 5000);
+    }, 10000); // Checking every 10 seconds to save free API limits
   </script>
 </body>
 </html>
