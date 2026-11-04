@@ -102,7 +102,8 @@
     .btn-copy { width: 100%; padding: 10px; background: #ffd700; color: #000; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; margin-bottom: 8px; }
     .btn-verify { width: 100%; padding: 10px; background: #26a69a; color: #fff; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; }
 
-    .risk-note { font-size: 12px; color: #888; background: #111; padding: 12px; border-radius: 8px; border: 1px solid #222; margin-top: 16px; line-height: 1.5; }
+    /* Risk Note on Live Page */
+    .risk-note-live { font-size: 12px; color: #888; background: #111; padding: 12px; border-radius: 8px; border: 1px solid #222; margin-top: 16px; line-height: 1.5; }
   </style>
 </head>
 <body id="mainBody">
@@ -148,6 +149,14 @@
       <div id="chart-container"></div>
       <div style="padding: 16px;">
         <div id="signalBox"><div class="loading" id="loadingText">Loading saved data...</div></div>
+        
+        <!-- RISK DISCLAIMER MOVED HERE -->
+        <div class="risk-note-live">
+          <strong>Risk Management Rules:</strong><br>
+          • Minimum balance to trade: <strong>$200</strong><br>
+          • Position size: <strong>0.02 lots for every $200</strong><br>
+          • Close <strong>0.01 at TP1</strong> and <strong>0.01 at TP2</strong>.
+        </div>
       </div>
     </div>
 
@@ -197,7 +206,6 @@
         <div class="payment-box">
           <div style="font-size: 12px; color: #888; margin-bottom: 8px; font-weight: 700;">PAY WITH USDT (TRC20)</div>
           
-          <!-- QR Code generated dynamically via API -->
           <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=TLgREYohGVK6V9zUS6gNowq2WjPavmfEj3" alt="TRC20 QR Code" class="qr-code">
           
           <div class="wallet-address" id="walletAddress">TLgREYohGVK6V9zUS6gNowq2WjPavmfEj3</div>
@@ -206,14 +214,6 @@
           <button class="btn-verify" onclick="alert('Please send a screenshot of your payment to support@mrtraderai.com to activate your account.')">Verify Payment</button>
         </div>
 
-      </div>
-
-      <!-- RISK DISCLAIMER -->
-      <div class="risk-note">
-        <strong>Risk Management Rules:</strong><br>
-        • Minimum balance to trade: <strong>$200</strong><br>
-        • Position size: <strong>0.02 lots for every $200</strong><br>
-        • Close <strong>0.01 at TP1</strong> and <strong>0.01 at TP2</strong>.
       </div>
 
     </div>
@@ -356,7 +356,6 @@
       }
     }
 
-    // --- COPY WALLET LOGIC ---
     function copyWallet() {
       const address = "TLgREYohGVK6V9zUS6gNowq2WjPavmfEj3";
       navigator.clipboard.writeText(address).then(() => {
@@ -470,7 +469,7 @@
       }
     }
 
-    // --- THE SNIPER LOGIC (Supply / Demand) ---
+    // --- THE SNIPER LOGIC (Supply / Demand + Pip Caps) ---
     async function startAnalysis() {
       if (activeTrade) {
         const confirmReset = confirm(currentLang === 'ar' ? "هل تريد حذف الصفقة والبحث عن جديدة؟" : "Delete current trade and scan again?");
@@ -511,6 +510,7 @@
 
       let dir, entry, sl, tp1, tp2;
       
+      // 1. Determine Entry
       if (lastBar.high > recentHigh && lastBar.close < recentHigh) {
         dir = "SELL"; 
         entry = recentHigh + 0.2; 
@@ -527,16 +527,28 @@
         }
       }
 
+      // 2. Calculate Raw SL distance (Standard structure)
+      let slDistance = 2.5; // Default if structure is too tight
+
+      // 3. Apply Scalping Rules based on timeframe
+      if (currentTF === '5min') {
+        slDistance = Math.min(slDistance, 5.0); // MAX 50 pips for M5
+      } else if (currentTF === '15min') {
+        slDistance = Math.min(slDistance, 7.0); // MAX 70 pips for M15
+      }
+      // For M30, 1H, 4H, 1D it stays at the structural 2.5 (or you can make it wider if needed)
+
+      // 4. Calculate Final SL and TPs
       if (dir === "SELL") {
-        sl = entry + 2.5; 
+        sl = entry + slDistance; 
         const risk = sl - entry;
         tp1 = entry - (risk * 1.5);
-        tp2 = entry - (risk * 3.0); 
+        tp2 = entry - (risk * 3.5); 
       } else {
-        sl = entry - 2.5; 
+        sl = entry - slDistance; 
         const risk = entry - sl;
         tp1 = entry + (risk * 1.5);
-        tp2 = entry + (risk * 3.0); 
+        tp2 = entry + (risk * 3.5); 
       }
 
       activeTrade = { id: Date.now(), dir, entry, sl, tp1, tp2, tf: currentTF, status: 'PENDING', date: new Date().toLocaleString() };
