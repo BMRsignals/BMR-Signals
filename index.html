@@ -10,9 +10,13 @@
     body {
       margin: 0; background: #000000; color: #ffffff;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      min-height: 100vh; padding-bottom: 90px;
+      min-height: 100vh; padding-bottom: 90px; transition: 0.3s;
     }
     
+    /* RTL Support for Arabic */
+    body.rtl { direction: rtl; }
+    body.rtl .price-label, body.rtl .tf-btn, body.rtl .nav-item { letter-spacing: 0; }
+
     /* Pages */
     .page { display: none; padding: 16px; animation: fadeIn 0.3s; }
     .page.active { display: block; }
@@ -21,8 +25,7 @@
     /* Header */
     header { padding: 16px; border-bottom: 1px solid #1a1a1a; display: flex; justify-content: space-between; align-items: center; }
     header h1 { margin: 0; font-size: 18px; font-weight: 700; }
-    .live-dot { display: inline-block; width: 8px; height: 8px; background: #26a69a; border-radius: 50%; margin-right: 6px; box-shadow: 0 0 8px #26a69a; animation: pulse 2s infinite; }
-    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+    .lang-btn { background: #222; border: 1px solid #444; color: #ffd700; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; }
 
     /* Timeframe Selector */
     .tf-selector { display: flex; overflow-x: auto; padding: 10px 16px; gap: 8px; border-bottom: 1px solid #1a1a1a; scrollbar-width: none; }
@@ -47,6 +50,12 @@
     .price-label { font-size: 10px; color: #888; text-transform: uppercase; }
     .price-val { font-size: 18px; font-weight: 700; margin-top: 4px; }
     .pips-sub { font-size: 11px; font-weight: 600; margin-top: 4px; }
+    
+    /* Status Badges */
+    .status-badge { padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; display: inline-block; }
+    .status-pending { background: #ffd70022; color: #ffd700; border: 1px solid #ffd70055; }
+    .status-active-buy { background: #26a69a22; color: #26a69a; border: 1px solid #26a69a55; }
+    .status-active-sell { background: #ef535022; color: #ef5350; border: 1px solid #ef535055; }
 
     /* Utils */
     .text-green { color: #26a69a; } .text-red { color: #ef5350; } .text-yellow { color: #ffd700; }
@@ -57,22 +66,16 @@
     .nav-item { color: #666; text-align: center; font-size: 10px; font-weight: 600; text-transform: uppercase; cursor: pointer; }
     .nav-item.active { color: #ffd700; }
     .nav-icon { font-size: 20px; margin-bottom: 4px; display: block; }
-
-    /* Unlock Bar */
-    .unlock-bar { position: fixed; bottom: 65px; left: 0; width: 100%; padding: 12px 16px; background: linear-gradient(to top, #000 80%, transparent); z-index: 99; display: none; gap: 12px; }
-    .btn-gold { flex: 1; padding: 14px; border-radius: 12px; border: none; background: linear-gradient(90deg, #d4af37, #ffd700); color: #000; font-weight: 700; font-size: 16px; cursor: pointer; }
   </style>
 </head>
-<body>
+<body id="mainBody">
 
   <header>
     <h1>MR.Trader <span class="text-yellow">AI</span></h1>
+    <button class="lang-btn" id="langBtn" onclick="toggleLanguage()">AR</button>
   </header>
 
-  <!-- PAGE 1: LIVE SIGNAL -->
   <div id="page-live" class="page active" style="padding: 0;">
-    
-    <!-- Timeframe Buttons -->
     <div class="tf-selector" id="tfSelector">
       <button class="tf-btn active" onclick="selectTF('5m', this)">M5</button>
       <button class="tf-btn" onclick="selectTF('15m', this)">M15</button>
@@ -82,69 +85,83 @@
       <button class="tf-btn" onclick="selectTF('1d', this)">1D</button>
     </div>
 
-    <!-- Main Action Button -->
     <button class="btn-analyze" id="btnAnalyze" onclick="analyzeMarket()">⚡ ANALYZE MARKET</button>
 
     <div id="chart-container"></div>
 
     <div style="padding: 16px;">
       <div id="signalBox">
-        <div class="loading">Select a timeframe and click Analyze.</div>
+        <div class="loading" id="loadingText">Select a timeframe and click Analyze.</div>
       </div>
     </div>
   </div>
 
-  <!-- PAGE 2: HISTORY -->
-  <div id="page-history" class="page">
-    <h2 style="font-size: 18px; margin-bottom: 16px;">Recent AI Signals</h2>
-    <div class="history-card"><div>XAUUSD <span class="text-green">BUY</span></div><div class="text-green">+45 Pips</div></div>
-    <div class="history-card"><div>XAUUSD <span class="text-red">SELL</span></div><div class="text-green">+120 Pips</div></div>
-  </div>
-
-  <!-- PAGE 3: PERFORMANCE -->
-  <div id="page-performance" class="page">
-    <h2 style="font-size: 18px; margin-bottom: 16px;">AI Performance</h2>
-    <div class="perf-grid">
-      <div class="perf-box"><div style="font-size: 12px; color: #888;">Total Pips</div><div class="perf-val text-green">+12,450</div></div>
-      <div class="perf-box"><div style="font-size: 12px; color: #888;">Win Rate</div><div class="perf-val">74%</div></div>
-    </div>
-  </div>
-
-  <!-- PAGE 4: SUBSCRIPTION -->
-  <div id="page-account" class="page">
-    <h2 style="font-size: 18px; margin-bottom: 16px;">MR.Trader Pro</h2>
-    <div style="background: linear-gradient(145deg, #1a1505 0%, #000 100%); border: 1px solid #ffd70055; border-radius: 16px; padding: 20px; text-align: center;">
-      <h3 style="color: #ffd700; margin: 0 0 8px 0; letter-spacing: 1px;">PRO MEMBER</h3>
-      <div style="font-size: 32px; font-weight: 700;">$49<span style="font-size: 14px; color: #888;">/mo</span></div>
-    </div>
-  </div>
-
-  <!-- BOTTOM NAVIGATION -->
+  <!-- Navigation -->
   <div class="bottom-nav">
-    <div class="nav-item active" onclick="switchTab('live', this)"><span class="nav-icon">⚡</span> Live</div>
-    <div class="nav-item" onclick="switchTab('history', this)"><span class="nav-icon">🕒</span> History</div>
-    <div class="nav-item" onclick="switchTab('performance', this)"><span class="nav-icon">📈</span> Stats</div>
-    <div class="nav-item" onclick="switchTab('account', this)"><span class="nav-icon">👤</span> Account</div>
+    <div class="nav-item active" onclick="switchTab('live', this)"><span class="nav-icon">⚡</span> <span class="nav-text">Live</span></div>
+    <div class="nav-item" onclick="switchTab('history', this)"><span class="nav-icon">🕒</span> <span class="nav-text">History</span></div>
   </div>
 
   <script>
+    // --- Translation Dictionary ---
+    const dict = {
+      en: {
+        analyze: "⚡ ANALYZE MARKET",
+        loading: "Select a timeframe and click Analyze.",
+        scanning: "Scanning Market Structure...",
+        buyLimit: "BUY LIMIT",
+        sellLimit: "SELL LIMIT",
+        activeBuy: "ACTIVE BUY",
+        activeSell: "ACTIVE SELL",
+        pending: "PENDING (WAIT)",
+        entry: "Sniper Entry",
+        sl: "Stop Loss",
+        tp1: "Take Profit 1",
+        tp2: "Take Profit 2",
+        live: "Live", history: "History"
+      },
+      ar: {
+        analyze: "⚡ تحليل السوق",
+        loading: "اختر الفريم واضغط تحليل.",
+        scanning: "جاري تحليل هيكل السوق...",
+        buyLimit: "شراء معلق",
+        sellLimit: "بيع معلق",
+        activeBuy: "شراء نشط",
+        activeSell: "بيع نشط",
+        pending: "معلق (انتظار)",
+        entry: "دخول القناص",
+        sl: "وقف الخسارة",
+        tp1: "هدف أول",
+        tp2: "هدف ثاني",
+        live: "مباشر", history: "السجل"
+      }
+    };
+
+    let currentLang = 'en';
     let currentTF = '5m';
     let chart, candleSeries;
-    let priceLines = []; // Array to store lines so we can clear them
+    let priceLines = [];
 
-    // --- 1. Navigation Logic ---
-    function switchTab(tabId, element) {
-      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-      document.getElementById('page-' + tabId).classList.add('active');
-      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-      element.classList.add('active');
-
-      if (tabId === 'live') {
-        setTimeout(() => chart.applyOptions({ width: document.getElementById('chart-container').clientWidth }), 50);
+    // --- Language Toggle ---
+    function toggleLanguage() {
+      currentLang = currentLang === 'en' ? 'ar' : 'en';
+      document.getElementById('langBtn').innerText = currentLang === 'en' ? 'AR' : 'EN';
+      
+      const body = document.getElementById('mainBody');
+      if (currentLang === 'ar') {
+        body.classList.add('rtl');
+      } else {
+        body.classList.remove('rtl');
       }
+
+      // Update static texts
+      document.getElementById('btnAnalyze').innerText = dict[currentLang].analyze;
+      document.getElementById('loadingText').innerText = dict[currentLang].loading;
+      document.querySelectorAll('.nav-text')[0].innerText = dict[currentLang].live;
+      document.querySelectorAll('.nav-text')[1].innerText = dict[currentLang].history;
     }
 
-    // --- 2. Chart Setup ---
+    // --- Chart Setup ---
     const chartContainer = document.getElementById('chart-container');
     chart = LightweightCharts.createChart(chartContainer, {
       layout: { background: { type: 'solid', color: '#000000' }, textColor: '#888' },
@@ -160,15 +177,13 @@
       wickUpColor: '#ffd700', wickDownColor: '#555',
     });
 
-    // --- 3. Select Timeframe ---
     function selectTF(tf, btn) {
       currentTF = tf;
       document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      document.getElementById('signalBox').innerHTML = `<div class="loading">Click 'Analyze Market' to scan ${tf.toUpperCase()}...</div>`;
+      document.getElementById('signalBox').innerHTML = `<div class="loading">${dict[currentLang].loading}</div>`;
     }
 
-    // --- 4. Core Engine ---
     function calculateEMA(data, period) {
       const k = 2 / (period + 1);
       let emaArray = [data[0]];
@@ -177,9 +192,8 @@
     }
 
     async function analyzeMarket() {
-      document.getElementById('signalBox').innerHTML = `<div class="loading">Scanning ${currentTF.toUpperCase()} Market Structure...</div>`;
+      document.getElementById('signalBox').innerHTML = `<div class="loading">${dict[currentLang].scanning}</div>`;
       
-      // Clear old lines from chart
       priceLines.forEach(line => candleSeries.removePriceLine(line));
       priceLines = [];
 
@@ -197,18 +211,18 @@
 
         const closes = bars.map(b => b.close);
         const lastBar = bars[bars.length - 1];
+        const currentPrice = lastBar.close; // Live price
         
-        // Trend Logic
+        // Trend
         const ema20 = calculateEMA(closes, 20);
         const ema50 = calculateEMA(closes, 50);
         let trendDir = (lastBar.close > ema20 && ema20 > ema50) ? 1 : (lastBar.close < ema20 && ema20 < ema50) ? -1 : 0;
         let finalDir = trendDir === 1 ? "BUY" : trendDir === -1 ? "SELL" : (lastBar.close > ema50 ? "BUY" : "SELL");
         
-        // --- SNIPER ENTRY LOGIC ---
-        // Instead of buying at current price, we buy on a pullback to the EMA 20
+        // Entry is the EMA 20 (Pullback zone)
         const entry = ema20; 
         
-        // Calculate True Range for ATR
+        // ATR for Stop Loss
         let trSum = 0;
         for (let i = bars.length - 14; i < bars.length; i++) {
           trSum += Math.max(bars[i].high - bars[i].low, Math.abs(bars[i].high - bars[i-1].close), Math.abs(bars[i].low - bars[i-1].close));
@@ -217,7 +231,6 @@
         
         let stopLoss, takeProfit1, takeProfit2;
         
-        // Tight SL (1.0x ATR) below the Entry
         if (finalDir === 'BUY') {
           stopLoss = entry - (atr * 1.0);
           const risk = entry - stopLoss;
@@ -230,48 +243,69 @@
           takeProfit2 = entry - (risk * 2.5);
         }
 
-        // Gold Pips (x10)
         const pipsRisk = (Math.abs(entry - stopLoss) * 10).toFixed(0);
         const pipsReward1 = (Math.abs(takeProfit1 - entry) * 10).toFixed(0);
         const pipsReward2 = (Math.abs(takeProfit2 - entry) * 10).toFixed(0);
 
-        // Draw Lines & Store them
         priceLines.push(candleSeries.createPriceLine({ price: entry, color: '#ffd700', lineWidth: 2, lineStyle: 2, title: 'ENTRY' }));
         priceLines.push(candleSeries.createPriceLine({ price: stopLoss, color: '#ef5350', lineWidth: 1, lineStyle: 2, title: 'SL' }));
         priceLines.push(candleSeries.createPriceLine({ price: takeProfit1, color: '#26a69a', lineWidth: 1, lineStyle: 2, title: 'TP1' }));
         priceLines.push(candleSeries.createPriceLine({ price: takeProfit2, color: '#26a69a', lineWidth: 1, lineStyle: 2, title: 'TP2' }));
 
+        // Determine Status (Pending vs Active)
+        let statusClass = "status-pending";
+        let statusText = dict[currentLang].pending;
+        let orderType = finalDir === 'BUY' ? dict[currentLang].buyLimit : dict[currentLang].sellLimit;
+
+        // Logic: If price has touched entry
+        if (finalDir === 'BUY' && currentPrice <= entry) {
+            statusClass = "status-active-buy";
+            statusText = dict[currentLang].activeBuy;
+            orderType = ""; // Remove "Limit" if active
+        } else if (finalDir === 'SELL' && currentPrice >= entry) {
+            statusClass = "status-active-sell";
+            statusText = dict[currentLang].activeSell;
+            orderType = "";
+        }
+
         const isBuy = finalDir === 'BUY';
 
-        // Render Card
         document.getElementById('signalBox').innerHTML = `
           <div class="signal-card ${isBuy ? '' : 'sell'}">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
-              <div style="font-size: 18px; font-weight: 700;">XAUUSD <span class="${isBuy ? 'text-green' : 'text-red'}">${finalDir}</span></div>
-              <div style="font-size: 12px; color: #888; font-weight: 600;">${currentTF.toUpperCase()} SNIPER</div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 12px; align-items: flex-start;">
+              
+              <div>
+                <div style="font-size: 18px; font-weight: 700; margin-bottom: 4px;">
+                  XAUUSD <span class="${isBuy ? 'text-green' : 'text-red'}">${orderType}</span>
+                </div>
+                <div class="status-badge ${statusClass}">${statusText}</div>
+              </div>
+
+              <div style="font-size: 12px; color: #888; font-weight: 600; text-align: ${currentLang === 'ar' ? 'left' : 'right'};">
+                ${currentTF.toUpperCase()} <br> CHART
+              </div>
             </div>
 
             <div class="price-grid">
               <div class="price-box">
-                <div class="price-label">Sniper Entry</div>
+                <div class="price-label">${dict[currentLang].entry}</div>
                 <div class="price-val text-yellow">${entry.toFixed(2)}</div>
-                <div class="pips-sub" style="color:#888;">(Wait for pullback)</div>
               </div>
               
               <div class="price-box">
-                <div class="price-label">Stop Loss</div>
+                <div class="price-label">${dict[currentLang].sl}</div>
                 <div class="price-val text-red">${stopLoss.toFixed(2)}</div>
                 <div class="pips-sub text-red">-${pipsRisk} pips</div>
               </div>
               
               <div class="price-box tp1">
-                <div class="price-label">Take Profit 1</div>
+                <div class="price-label">${dict[currentLang].tp1}</div>
                 <div class="price-val text-green">${takeProfit1.toFixed(2)}</div>
                 <div class="pips-sub text-green">+${pipsReward1} pips</div>
               </div>
               
               <div class="price-box tp2">
-                <div class="price-label">Take Profit 2</div>
+                <div class="price-label">${dict[currentLang].tp2}</div>
                 <div class="price-val text-green">${takeProfit2.toFixed(2)}</div>
                 <div class="pips-sub text-green">+${pipsReward2} pips</div>
               </div>
@@ -281,7 +315,6 @@
 
       } catch (error) {
         console.error(error);
-        document.getElementById('signalBox').innerHTML = `<div class="loading text-red">Error analyzing market.</div>`;
       }
     }
   </script>
