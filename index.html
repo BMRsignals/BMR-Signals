@@ -3,22 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SMC Signal Dashboard (Sample)</title>
+  <title>SMC Signal Dashboard</title>
+  <!-- Lightweight Charts Library -->
   <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
-  <script src="https://unpkg.com/biquote/dist/biquote.umd.js"></script>
   <style>
     * { box-sizing: border-box; }
     body {
-      margin: 0; display: flex; background: #131722; color: #d1d4dc;
+      margin: 0; background: #131722; color: #d1d4dc;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      height: 100vh; overflow: hidden;
+      display: flex; flex-direction: column; min-height: 100vh;
     }
-    #chart { flex: 1; height: 100vh; }
+    #chart { width: 100%; height: 50vh; }
     #panel {
-      width: 360px; padding: 20px; border-left: 1px solid #2a2e39;
-      overflow-y: auto; background: #1a1e2a;
+      width: 100%; padding: 16px; background: #1a1e2a; flex: 1;
+      overflow-y: auto;
     }
-    h3 { margin: 0 0 16px 0; font-size: 14px; color: #787b86; text-transform: uppercase; letter-spacing: 0.5px; }
+    h3 { margin: 0 0 12px 0; font-size: 13px; color: #787b86; text-transform: uppercase; letter-spacing: 0.5px; }
     .card {
       background: #1e222d; border-radius: 8px; padding: 16px;
       margin-bottom: 16px; border: 1px solid #2a2e39;
@@ -31,29 +31,35 @@
     .red { color: #ef5350; }
     .yellow { color: #ffd700; }
     .gray { color: #787b86; }
-    .row { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; }
-    .status { font-size: 12px; padding: 2px 8px; border-radius: 4px; }
-    .status.active { background: #26a69a33; color: #26a69a; }
-    .status.inactive { background: #787b8633; color: #787b86; }
-    .loading { text-align: center; padding: 40px; color: #787b86; }
+    .row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #2a2e39; }
+    .row:last-child { border-bottom: none; }
+    .loading { text-align: center; padding: 20px; color: #787b86; }
+    
+    /* Desktop layout (side-by-side) */
+    @media (min-width: 768px) {
+      body { flex-direction: row; height: 100vh; overflow: hidden; }
+      #chart { width: 70%; height: 100vh; }
+      #panel { width: 30%; height: 100vh; border-left: 1px solid #2a2e39; }
+    }
   </style>
 </head>
 <body>
   <div id="chart"></div>
+  
   <div id="panel">
     <h3>Latest Signal</h3>
-    <div id="signalBox"><div class="loading">Loading data...</div></div>
+    <div id="signalBox"><div class="loading">Loading market data...</div></div>
 
-    <h3>MTF Trend (Simulated)</h3>
-    <div id="mtfBox" class="card">
+    <h3>MTF Trend (Demo)</h3>
+    <div class="card">
       <div class="row"><span>5m</span><span class="green">Bull</span></div>
       <div class="row"><span>15m</span><span class="green">Bull</span></div>
       <div class="row"><span>1h</span><span class="red">Bear</span></div>
       <div class="row"><span>4h</span><span class="gray">Neutral</span></div>
     </div>
 
-    <h3>Key Levels (Simulated)</h3>
-    <div id="levelsBox" class="card">
+    <h3>Key Levels (Demo)</h3>
+    <div class="card">
       <div class="row"><span>POC</span><span class="yellow" id="pocVal">—</span></div>
       <div class="row"><span>VAH</span><span class="gray" id="vahVal">—</span></div>
       <div class="row"><span>VAL</span><span class="gray" id="valVal">—</span></div>
@@ -61,45 +67,50 @@
   </div>
 
   <script>
-    // 1. 初始化图表
-    const chart = LightweightCharts.createChart(document.getElementById('chart'), {
+    // 1. Initialize the chart
+    const chartContainer = document.getElementById('chart');
+    const chart = LightweightCharts.createChart(chartContainer, {
       layout: { background: { color: '#131722' }, textColor: '#d1d4dc' },
       grid: { vertLines: { color: '#2a2e39' }, horzLines: { color: '#2a2e39' } },
-      crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
-      timeScale: { borderColor: '#2a2e39' },
+      timeScale: { borderColor: '#2a2e39', timeVisible: true },
       rightPriceScale: { borderColor: '#2a2e39' },
+      autoSize: true, // Automatically adjusts to container size
     });
+
     const candleSeries = chart.addCandlestickSeries({
       upColor: '#26a69a', downColor: '#ef5350',
       borderUpColor: '#26a69a', borderDownColor: '#ef5350',
       wickUpColor: '#26a69a', wickDownColor: '#ef5350',
     });
 
-    // 2. 使用 biquote 获取真实 XAUUSD 数据（无需 API Key）[citation:3]
-    const bq = new Biquote();
-    bq.ohlc('XAUUSD', { interval: '1h', limit: 200 })
-      .then(bars => {
-        // biquote 返回时间可能是毫秒，Lightweight Charts 需要秒
-        const formatted = bars.map(b => ({
-          time: Math.floor(b.time / 1000),
-          open: b.open,
-          high: b.high,
-          low: b.low,
-          close: b.close,
+    // 2. Fetch real XAUUSD data from a public API
+    async function loadData() {
+      try {
+        // Using a reliable free API for gold (XAUUSD)
+        const response = await fetch('https://api.binance.com/api/v3/klines?symbol=PAXGUSDT&interval=1h&limit=200');
+        const data = await response.json();
+
+        // Map Binance data to Lightweight Charts format
+        const formattedBars = data.map(item => ({
+          time: item[0] / 1000, // Convert ms to seconds
+          open: parseFloat(item[1]),
+          high: parseFloat(item[2]),
+          low: parseFloat(item[3]),
+          close: parseFloat(item[4]),
         }));
-        candleSeries.setData(formatted);
+
+        candleSeries.setData(formattedBars);
         chart.timeScale().fitContent();
 
-        // 3. 基于最后一根 K 线生成示例信号（后续替换为你的指标逻辑）
-        const last = formatted[formatted.length - 1];
+        // 3. Generate Demo Signal based on latest candle
+        const lastBar = formattedBars[formattedBars.length - 1];
         const direction = Math.random() > 0.5 ? 'BUY' : 'SELL';
-        const entry = last.close;
+        const entry = lastBar.close;
         const stopLoss = direction === 'BUY' ? entry - 15 : entry + 15;
         const takeProfit = direction === 'BUY' ? entry + 30 : entry - 30;
 
-        // 4. 渲染信号卡片
-        const box = document.getElementById('signalBox');
-        box.innerHTML = `
+        // Render Signal Card
+        document.getElementById('signalBox').innerHTML = `
           <div class="card ${direction === 'BUY' ? 'buy' : 'sell'}">
             <div class="label">Direction</div>
             <div class="price ${direction === 'BUY' ? 'green' : 'red'}">${direction}</div>
@@ -112,24 +123,25 @@
           </div>
         `;
 
-        // 5. 在图表上画出入场/止损/止盈线
+        // Draw Price Lines
         candleSeries.createPriceLine({ price: entry, color: '#ffd700', lineWidth: 2, lineStyle: 2, title: 'Entry' });
         candleSeries.createPriceLine({ price: stopLoss, color: '#ef5350', lineWidth: 1, lineStyle: 2, title: 'SL' });
         candleSeries.createPriceLine({ price: takeProfit, color: '#26a69a', lineWidth: 1, lineStyle: 2, title: 'TP' });
 
-        // 6. 模拟 POC/VAH/VAL（示例值，后续可从指标计算）
+        // Render Demo Levels
         document.getElementById('pocVal').textContent = (entry - 5).toFixed(2);
         document.getElementById('vahVal').textContent = (entry + 8).toFixed(2);
         document.getElementById('valVal').textContent = (entry - 12).toFixed(2);
-      })
-      .catch(err => {
-        console.error('Data fetch failed:', err);
-        document.getElementById('signalBox').innerHTML =
-          '<div class="card"><div class="label red">Failed to load XAUUSD data. Check console.</div></div>';
-      });
 
-    // 响应式调整
-    window.addEventListener('resize', () => chart.applyOptions({ width: document.getElementById('chart').clientWidth }));
+      } catch (error) {
+        console.error('Error loading data:', error);
+        document.getElementById('signalBox').innerHTML = 
+          '<div class="card"><div class="label red">Failed to load market data. Please check your connection.</div></div>';
+      }
+    }
+
+    // Run the loader
+    loadData();
   </script>
 </body>
 </html>
