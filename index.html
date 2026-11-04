@@ -72,6 +72,13 @@
 
     .lang-btn { background: #222; border: 1px solid #444; color: #ffd700; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; }
 
+    /* Performance Stats */
+    .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 20px; }
+    .stat-box { background: #111; border: 1px solid #222; border-radius: 12px; padding: 12px; text-align: center; }
+    .stat-title { font-size: 10px; color: #888; text-transform: uppercase; font-weight: 700; }
+    .stat-value { font-size: 20px; font-weight: 700; margin-top: 4px; }
+
+    /* History List */
     .history-item { background: #111; border: 1px solid #222; border-radius: 12px; padding: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
     .history-title { font-weight: 700; font-size: 14px; }
     .history-date { font-size: 11px; color: #888; }
@@ -132,9 +139,26 @@
       </div>
     </div>
 
-    <!-- HISTORY -->
+    <!-- HISTORY & PERFORMANCE -->
     <div id="page-history" class="page">
-      <h2 style="font-size: 18px; margin-bottom: 16px;">Trade History</h2>
+      <h2 style="font-size: 18px; margin-bottom: 16px;">Performance & History</h2>
+      
+      <!-- STATS DASHBOARD -->
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="stat-title">Win Rate</div>
+          <div class="stat-value text-green" id="statWinRate">0%</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-title">Total Trades</div>
+          <div class="stat-value" id="statTotalTrades">0</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-title">Total Pips</div>
+          <div class="stat-value text-yellow" id="statTotalPips">0</div>
+        </div>
+      </div>
+
       <div id="historyList">
         <div class="loading">No previous trades.</div>
       </div>
@@ -358,7 +382,6 @@
       }
     }
 
-    // --- FIXED DYNAMIC ATR CALCULATION ---
     async function startAnalysis() {
       if (activeTrade) {
         const confirmReset = confirm(currentLang === 'ar' ? "هل تريد حذف الصفقة والبحث عن جديدة؟" : "Delete current trade and scan again?");
@@ -381,7 +404,6 @@
       let dir = lastBar.close > ema20 ? "BUY" : "SELL";
       const entry = lastBar.close; 
       
-      // 1. Calculate the True Range (ATR) of the last 14 candles for THIS timeframe
       let trSum = 0;
       for (let i = bars.length - 14; i < bars.length; i++) {
         const highLow = bars[i].high - bars[i].low;
@@ -391,12 +413,9 @@
       }
       const atr = trSum / 14;
 
-      // 2. Set Stop Loss dynamically based on the ATR of the timeframe
-      // 1.2x ATR gives a tight but safe stop loss that respects the timeframe's volatility
       const slDistance = atr * 1.2; 
       const sl = dir === 'BUY' ? entry - slDistance : entry + slDistance;
       
-      // 3. Take Profit based on Risk (1.5x and 2.5x)
       const risk = Math.abs(entry - sl);
       const tp1 = dir === 'BUY' ? entry + (risk * 1.5) : entry - (risk * 1.5);
       const tp2 = dir === 'BUY' ? entry + (risk * 2.5) : entry - (risk * 2.5);
@@ -433,7 +452,6 @@
         statusText = isBuy ? dict[currentLang].activeBuy : dict[currentLang].activeSell;
       }
       
-      // Multiply by 10 to get Gold Pips
       const pipsRisk = (Math.abs(trade.entry - trade.sl) * 10).toFixed(0);
       const pipsReward1 = (Math.abs(trade.tp1 - trade.entry) * 10).toFixed(0);
       const pipsReward2 = (Math.abs(trade.tp2 - trade.entry) * 10).toFixed(0);
@@ -460,10 +478,37 @@
 
     function renderHistoryList() {
       const list = document.getElementById('historyList');
-      if (tradeHistory.length === 0) {
+      
+      // Calculate Stats
+      let wins = 0;
+      let totalPips = 0;
+      const totalTrades = tradeHistory.length;
+
+      tradeHistory.forEach(t => {
+        const pips = Math.abs(t.exitPrice - t.entry) * 10;
+        if (t.result === 'WIN') {
+          wins++;
+          totalPips += pips;
+        } else {
+          totalPips -= pips;
+        }
+      });
+
+      const winRate = totalTrades > 0 ? ((wins / totalTrades) * 100).toFixed(1) : 0;
+      
+      document.getElementById('statWinRate').innerText = winRate + '%';
+      document.getElementById('statTotalTrades').innerText = totalTrades;
+      
+      const pipsElement = document.getElementById('statTotalPips');
+      pipsElement.innerText = (totalPips > 0 ? '+' : '') + totalPips.toFixed(0);
+      pipsElement.className = totalPips >= 0 ? 'stat-value text-green' : 'stat-value text-red';
+
+      // Render List
+      if (totalTrades === 0) {
         list.innerHTML = `<div class="loading">${dict[currentLang].noHistory}</div>`;
         return;
       }
+      
       const sorted = [...tradeHistory].reverse();
       let html = '';
       sorted.forEach(t => {
