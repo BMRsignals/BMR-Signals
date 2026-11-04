@@ -25,7 +25,13 @@
     }
     .login-box { width: 100%; max-width: 400px; background: #111; border: 1px solid #222; border-radius: 16px; padding: 24px; text-align: center; }
     .login-input { width: 100%; padding: 14px; margin-bottom: 12px; background: #000; border: 1px solid #333; color: #fff; border-radius: 8px; font-size: 14px; }
-    .btn-login { width: 100%; padding: 14px; border-radius: 8px; border: none; font-size: 16px; font-weight: 700; cursor: pointer; background: #ffd700; color: #000; }
+    .btn-primary { width: 100%; padding: 14px; border-radius: 8px; border: none; font-size: 16px; font-weight: 700; cursor: pointer; background: #ffd700; color: #000; margin-bottom: 10px; }
+    .btn-secondary { width: 100%; padding: 14px; border-radius: 8px; border: 1px solid #ffd700; font-size: 16px; font-weight: 700; cursor: pointer; background: transparent; color: #ffd700; }
+    
+    /* Toggle Switch */
+    .toggle-container { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
+    .toggle-btn { padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: 700; cursor: pointer; border: 1px solid #333; background: #000; color: #888; }
+    .toggle-btn.active { background: #ffd700; color: #000; border-color: #ffd700; }
     
     /* App Pages */
     .page { display: none; padding: 16px; animation: fadeIn 0.3s; }
@@ -70,7 +76,6 @@
 
     .lang-btn { background: #222; border: 1px solid #444; color: #ffd700; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; }
 
-    /* History Cards */
     .history-item { background: #111; border: 1px solid #222; border-radius: 12px; padding: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
     .history-title { font-weight: 700; font-size: 14px; }
     .history-date { font-size: 11px; color: #888; }
@@ -83,10 +88,28 @@
   <div id="loginScreen">
     <div class="login-box">
       <h2 style="color: #ffd700; margin-bottom: 20px;">MR.Trader AI</h2>
-      <p style="color: #888; font-size: 14px; margin-bottom: 20px;">Login to access live AI signals</p>
       
+      <!-- Toggle Options -->
+      <div class="toggle-container">
+        <button class="toggle-btn active" id="tabPassword" onclick="switchLoginMode('password')">Password</button>
+        <button class="toggle-btn" id="tabMagic" onclick="switchLoginMode('magic')">Magic Link</button>
+      </div>
+
       <input type="email" id="emailInput" class="login-input" placeholder="Enter your email">
-      <button class="btn-login" onclick="loginWithEmail()">Login with Email</button>
+      
+      <!-- Password Field (Hidden by default when Magic is selected) -->
+      <div id="passwordSection">
+        <input type="password" id="passwordInput" class="login-input" placeholder="Enter password">
+        <button class="btn-primary" onclick="loginUser()">Login</button>
+        <button class="btn-secondary" onclick="signUpUser()">Create Account</button>
+      </div>
+
+      <!-- Magic Link Section -->
+      <div id="magicSection" style="display: none;">
+        <button class="btn-primary" onclick="sendMagicLink()">Send Login Link</button>
+        <p style="color: #888; font-size: 12px; margin-top: 10px;">We will email you a secure link to log in instantly.</p>
+      </div>
+
     </div>
   </div>
 
@@ -149,23 +172,58 @@
     const SUPABASE_KEY = 'sb_publishable_6U7d-ihEr1ivc362mhkDeQ_2suPM3gy';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // --- 2. AUTHENTICATION LOGIC ---
-    async function loginWithEmail() {
+    // --- 2. LOGIN MODE SWITCHER ---
+    function switchLoginMode(mode) {
+      if (mode === 'password') {
+        document.getElementById('tabPassword').classList.add('active');
+        document.getElementById('tabMagic').classList.remove('active');
+        document.getElementById('passwordSection').style.display = 'block';
+        document.getElementById('magicSection').style.display = 'none';
+      } else {
+        document.getElementById('tabPassword').classList.remove('active');
+        document.getElementById('tabMagic').classList.add('active');
+        document.getElementById('passwordSection').style.display = 'none';
+        document.getElementById('magicSection').style.display = 'block';
+      }
+    }
+
+    // --- 3. AUTHENTICATION LOGIC ---
+    
+    // Password Login
+    async function loginUser() {
+      const email = document.getElementById('emailInput').value;
+      const password = document.getElementById('passwordInput').value;
+      if (!email || !password) return alert('Please enter email and password.');
+
+      const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+      if (error) alert("Login Error: " + error.message);
+      else checkUser();
+    }
+
+    // Create Account (Password)
+    async function signUpUser() {
+      const email = document.getElementById('emailInput').value;
+      const password = document.getElementById('passwordInput').value;
+      if (!email || !password) return alert('Please enter email and password.');
+      if (password.length < 6) return alert('Password must be at least 6 characters.');
+
+      const { error } = await supabaseClient.auth.signUp({ email, password });
+      if (error) alert("Sign Up Error: " + error.message);
+      else alert('Account created! You can now log in.');
+    }
+
+    // Magic Link Login
+    async function sendMagicLink() {
       const email = document.getElementById('emailInput').value;
       if (!email) return alert('Please enter an email.');
-      
+
       const { error } = await supabaseClient.auth.signInWithOtp({ 
         email: email,
-        options: {
-          emailRedirectTo: window.location.origin + window.location.pathname
-        }
+        options: { emailRedirectTo: window.location.origin + window.location.pathname }
       });
       
-      if (error) {
-        alert("Error: " + error.message);
-      } else {
-        alert('Check your email for the login link!');
-      }
+      if (error) alert("Error: " + error.message);
+      else alert('Check your email for the login link!');
     }
 
     async function logout() {
@@ -187,15 +245,11 @@
       }
     }
     
-    supabaseClient.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN') checkUser();
-    });
-    
     document.addEventListener('DOMContentLoaded', () => {
       checkUser();
     });
 
-    // --- 3. APP LOGIC ---
+    // --- 4. APP LOGIC ---
     const dict = {
       en: { analyze: "⚡ ANALYZE MARKET", loading: "Select a timeframe and click Analyze.", scanning: "Scanning Market Structure...", buy: "BUY", sell: "SELL", activeBuy: "ACTIVE BUY", activeSell: "ACTIVE SELL", pending: "PENDING (WAIT)", entry: "SNIPER ENTRY", sl: "STOP LOSS", tp1: "TAKE PROFIT 1", tp2: "TAKE PROFIT 2", live: "Live", account: "Account", history: "History", noHistory: "No previous trades yet." },
       ar: { analyze: "⚡ تحليل السوق", loading: "اختر الفريم واضغط تحليل.", scanning: "جاري تحليل هيكل السوق...", buy: "شراء", sell: "بيع", activeBuy: "شراء نشط", activeSell: "بيع نشط", pending: "معلق (انتظار)", entry: "الدخول", sl: "وقف خسارة", tp1: "هدف", tp2: "هدف", live: "مباشر", account: "الحساب", history: "السجل", noHistory: "لا يوجد صفقات سابقة." }
@@ -206,22 +260,16 @@
     let chart, candleSeries;
     let priceLines = [];
     
-    // Read from URL and LocalStorage
     let activeTrade = null;
     let tradeHistory = [];
     try {
       const savedActive = localStorage.getItem('activeTrade');
       if (savedActive) activeTrade = JSON.parse(savedActive);
-      
       const savedHistory = localStorage.getItem('tradeHistory');
       if (savedHistory) tradeHistory = JSON.parse(savedHistory);
-      
-      // URL Backup check
       const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.has('t')) {
-        activeTrade = JSON.parse(decodeURIComponent(urlParams.get('t')));
-      }
-    } catch (e) { console.error(e); }
+      if (urlParams.has('t')) activeTrade = JSON.parse(decodeURIComponent(urlParams.get('t')));
+    } catch (e) {}
 
     function applyLanguage() {
       document.getElementById('langBtn2').innerText = currentLang === 'en' ? 'AR' : 'EN';
@@ -246,7 +294,7 @@
     }
 
     function initApp() {
-      if (chart) return; // Prevent double init
+      if (chart) return; 
       
       chart = LightweightCharts.createChart(document.getElementById('chart-container'), {
         layout: { background: { type: 'solid', color: '#000000' }, textColor: '#888' },
@@ -260,11 +308,7 @@
       });
       
       applyLanguage();
-      
-      // Load Chart
-      loadChartData(currentTF).then(() => { 
-        if (activeTrade) drawTradeLines(activeTrade); 
-      });
+      loadChartData(currentTF).then(() => { if (activeTrade) drawTradeLines(activeTrade); });
     }
 
     function switchTab(tabId, element) {
@@ -327,7 +371,6 @@
 
       activeTrade = { id: Date.now(), dir, entry, sl, tp1, tp2, tf: currentTF, status: 'PENDING', date: new Date().toLocaleString() };
       
-      // Save via both LocalStorage and URL
       localStorage.setItem('activeTrade', JSON.stringify(activeTrade));
       const urlParams = new URLSearchParams(window.location.search);
       urlParams.set('t', encodeURIComponent(JSON.stringify(activeTrade)));
@@ -412,7 +455,6 @@
       list.innerHTML = html;
     }
 
-    // --- 4. LIVE PRICE CHECKER ---
     setInterval(async () => {
       if (!activeTrade) return;
       try {
@@ -445,9 +487,8 @@
         } else {
           renderTradeCard(activeTrade, livePrice);
         }
-      } catch (e) { console.log("Live price error"); }
+      } catch (e) { }
     }, 5000);
-
   </script>
 </body>
 </html>
