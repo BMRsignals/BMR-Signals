@@ -334,7 +334,6 @@
       
       applyLanguage();
       
-      // Delay chart loading slightly to ensure container is ready
       setTimeout(() => {
         loadChartData(currentTF).then(() => { if (activeTrade) drawTradeLines(activeTrade); });
       }, 100);
@@ -360,7 +359,6 @@
     // --- REAL FOREX DATA (TwelveData) ---
     async function loadChartData(tf) {
       try {
-        // TwelveData uses 5min, 15min, 1h, etc.
         const res = await fetch(`https://api.twelvedata.com/time_series?symbol=XAU/USD&interval=${tf}&outputsize=300&apikey=${TWELVEDATA_API_KEY}`);
         const data = await res.json();
 
