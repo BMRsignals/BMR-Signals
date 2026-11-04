@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>MR.Trader AI</title>
+  <!-- Lightweight Charts & Supabase -->
   <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   
@@ -159,18 +160,18 @@
   </div>
 
   <script>
+    // --- 1. CONFIGURATION ---
     const SUPABASE_URL = 'https://wdexwfoplycblaxmrfws.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_6U7d-ihEr1ivc362mhkDeQ_2suPM3gy';
-    const TWELVEDATA_API_KEY = 'a76abacdca7b4bd39dbf6caf65654e6a'; 
-
+    
     let supabaseClient = null;
     let isRecoveryMode = false; 
-    let REAL_GOLD_PRICE = 2300; 
     let chart, candleSeries;
     let priceLines = [];
     let currentLang = localStorage.getItem('lang') || 'en';
     let currentTF = '5m';
-    
+    let liveInterval;
+
     let activeTrade = null;
     let tradeHistory = [];
     try {
@@ -198,6 +199,7 @@
       }
     };
 
+    // --- 2. AUTHENTICATION ---
     function showForgotPassword() { document.getElementById('loginBox').style.display = 'none'; document.getElementById('forgotBox').style.display = 'block'; }
     function showLogin() { document.getElementById('loginBox').style.display = 'block'; document.getElementById('forgotBox').style.display = 'none'; document.getElementById('newPasswordBox').style.display = 'none'; }
 
@@ -264,6 +266,7 @@
       }
     }
 
+    // --- 3. UI LOGIC ---
     const dict = {
       en: { analyze: "⚡ ANALYZE MARKET", loading: "Select a timeframe and click Analyze.", scanning: "Scanning Market Structure...", buy: "BUY", sell: "SELL", activeBuy: "ACTIVE BUY", activeSell: "ACTIVE SELL", pending: "PENDING (WAIT)", entry: "SNIPER ENTRY", sl: "STOP LOSS", tp1: "TAKE PROFIT 1", tp2: "TAKE PROFIT 2", live: "Live", account: "Account", history: "History", noHistory: "No previous trades yet." },
       ar: { analyze: "⚡ تحليل السوق", loading: "اختر الفريم واضغط تحليل.", scanning: "جاري تحليل هيكل السوق...", buy: "شراء", sell: "بيع", activeBuy: "شراء نشط", activeSell: "بيع نشط", pending: "معلق (انتظار)", entry: "الدخول", sl: "وقف خسارة", tp1: "هدف", tp2: "هدف", live: "مباشر", account: "الحساب", history: "السجل", noHistory: "لا يوجد صفقات سابقة." }
@@ -291,15 +294,9 @@
       applyLanguage();
     }
 
-    async function initApp() {
+    function initApp() {
       if (chart) return; 
       
-      try {
-        const res = await fetch(`https://api.twelvedata.com/price?symbol=XAU/USD&apikey=${TWELVEDATA_API_KEY}`);
-        const data = await res.json();
-        if (data.price) REAL_GOLD_PRICE = parseFloat(data.price);
-      } catch(e) { }
-
       chart = LightweightCharts.createChart(document.getElementById('chart-container'), {
         layout: { background: { type: 'solid', color: '#000000' }, textColor: '#888' },
         grid: { vertLines: { color: '#111' }, horzLines: { color: '#111' } },
@@ -313,6 +310,9 @@
       
       applyLanguage();
       loadChartData(currentTF).then(() => { if (activeTrade) drawTradeLines(activeTrade); });
+      
+      // Start live price checking
+      startLiveTracking();
     }
 
     function switchTab(tabId, element) {
@@ -330,52 +330,46 @@
       loadChartData(tf); 
     }
 
-    // --- FIXED: LIVE CHART TRACKING (Uses candle highs/lows to detect touches) ---
+    // --- 4. REAL FOREX DATA (Biquote) ---
     async function loadChartData(tf) {
       try {
-        const response = await fetch(`https://api.binance.com/api/v3/klines?symbol=PAXGUSDT&interval=${tf}&limit=300`);
-        const data = await response.json();
+        // Using Biquote API (Free, Real Forex Data, No Rate Limits)
+        const res = await fetch(`https://api.biquote.io/v1/ohlc/XAUUSD?interval=${tf}&limit=300`);
+        const data = await res.json();
         
-        const bars = data.map(item => {
-          const bOpen = parseFloat(item[1]);
-          const bClose = parseFloat(item[4]);
-          const bHigh = parseFloat(item[2]);
-          const bLow = parseFloat(item[3]);
-          const ratio = REAL_GOLD_PRICE / bClose;
-          
-          return { 
-            time: item[0] / 1000, 
-            open: bOpen * ratio, 
-            high: bHigh * ratio, 
-            low: bLow * ratio, 
-            close: bClose * ratio
-          };
-        });
+        // Biquote returns newest first, we reverse it for the chart
+        const bars = data.reverse().map(item => ({
+          time: Math.floor(item.time / 1000),
+          open: item.open, 
+          high: item.high, 
+          low: item.low, 
+          close: item.close
+        }));
 
         candleSeries.setData(bars);
         chart.timeScale().setVisibleLogicalRange({ from: bars.length - 60, to: bars.length + 10 });
 
-        // --- LIVE TRACKING FROM CHART CANDLES ---
+        // Live Tracking from Candles
         if (activeTrade && activeTrade.status === 'PENDING') {
           const lastBar = bars[bars.length - 1];
           let touched = false;
-          
           if (activeTrade.dir === 'BUY' && lastBar.low <= activeTrade.entry) touched = true;
           if (activeTrade.dir === 'SELL' && lastBar.high >= activeTrade.entry) touched = true;
           
           if (touched) {
             activeTrade.status = 'ACTIVE';
             localStorage.setItem('activeTrade', JSON.stringify(activeTrade));
-            renderTradeCard(activeTrade); // Update card instantly
+            renderTradeCard(activeTrade);
           }
         }
-
         return bars;
       } catch (e) { 
+        console.error("Chart data error", e);
         return null; 
       }
     }
 
+    // --- 5. SNIPER LOGIC ---
     async function startAnalysis() {
       if (activeTrade) {
         const confirmReset = confirm(currentLang === 'ar' ? "هل تريد حذف الصفقة والبحث عن جديدة؟" : "Delete current trade and scan again?");
@@ -397,9 +391,10 @@
       
       let dir = lastBar.close > ema20 ? "BUY" : "SELL";
       
-      // Set Entry at exactly the current live price
-      const entry = REAL_GOLD_PRICE; 
+      // Entry is exactly the current price
+      const entry = lastBar.close; 
       
+      // Dynamic ATR calculation
       let trSum = 0;
       for (let i = bars.length - 14; i < bars.length; i++) {
         const highLow = bars[i].high - bars[i].low;
@@ -435,7 +430,7 @@
       priceLines.push(candleSeries.createPriceLine({ price: trade.tp2, color: '#26a69a', lineWidth: 1, lineStyle: 2, title: 'TP2' }));
     }
 
-    function renderTradeCard(trade, currentPrice = null) {
+    function renderTradeCard(trade) {
       const isBuy = trade.dir === 'BUY';
       let statusClass = "status-pending";
       let statusText = dict[currentLang].pending;
@@ -525,44 +520,48 @@
       list.innerHTML = html;
     }
 
-    setInterval(async () => {
-      if (!activeTrade) return;
-      try {
-        const res = await fetch(`https://api.twelvedata.com/price?symbol=XAU/USD&apikey=${TWELVEDATA_API_KEY}`);
-        const data = await res.json();
-        
-        if (data.status === 'error' || !data.price) return; 
-        
-        const livePrice = parseFloat(data.price);
-        REAL_GOLD_PRICE = livePrice; 
-        
-        let result = null;
-        let exitPrice = 0;
-        
-        if (activeTrade.dir === 'BUY') {
-          if (livePrice <= activeTrade.sl) { result = 'LOSS'; exitPrice = activeTrade.sl; }
-          if (livePrice >= activeTrade.tp2) { result = 'WIN'; exitPrice = activeTrade.tp2; }
-        } else {
-          if (livePrice >= activeTrade.sl) { result = 'LOSS'; exitPrice = activeTrade.sl; }
-          if (livePrice <= activeTrade.tp2) { result = 'WIN'; exitPrice = activeTrade.tp2; }
-        }
+    // --- 6. LIVE PRICE TRACKING (Biquote) ---
+    function startLiveTracking() {
+      if (liveInterval) clearInterval(liveInterval);
+      
+      liveInterval = setInterval(async () => {
+        if (!activeTrade) return;
+        try {
+          // Fetch current live price from Biquote
+          const res = await fetch(`https://api.biquote.io/v1/ohlc/XAUUSD?interval=1m&limit=1`);
+          const data = await res.json();
+          if (!data || data.length === 0) return;
+          
+          const livePrice = data[0].close;
+          
+          let result = null;
+          let exitPrice = 0;
+          
+          if (activeTrade.dir === 'BUY') {
+            if (livePrice <= activeTrade.sl) { result = 'LOSS'; exitPrice = activeTrade.sl; }
+            if (livePrice >= activeTrade.tp2) { result = 'WIN'; exitPrice = activeTrade.tp2; }
+          } else {
+            if (livePrice >= activeTrade.sl) { result = 'LOSS'; exitPrice = activeTrade.sl; }
+            if (livePrice <= activeTrade.tp2) { result = 'WIN'; exitPrice = activeTrade.tp2; }
+          }
 
-        if (result) {
-          const finishedTrade = { ...activeTrade, result: result, exitPrice: exitPrice };
-          tradeHistory.push(finishedTrade);
-          localStorage.setItem('tradeHistory', JSON.stringify(tradeHistory));
-          
-          localStorage.removeItem('activeTrade');
-          activeTrade = null;
-          window.history.replaceState({}, document.title, window.location.pathname);
-          
-          alert(`TRADE HIT ${result === 'WIN' ? 'TAKE PROFIT' : 'STOP LOSS'}!`);
-          location.reload();
-        } else if (activeTrade.status === 'ACTIVE') {
-          renderTradeCard(activeTrade, livePrice);
-        }
-      } catch (e) { }
-    }, 5000); // Sped up to 5 seconds so it feels faster
+          if (result) {
+            const finishedTrade = { ...activeTrade, result: result, exitPrice: exitPrice };
+            tradeHistory.push(finishedTrade);
+            localStorage.setItem('tradeHistory', JSON.stringify(tradeHistory));
+            
+            localStorage.removeItem('activeTrade');
+            activeTrade = null;
+            window.history.replaceState({}, document.title, window.location.pathname);
+            
+            alert(`TRADE HIT ${result === 'WIN' ? 'TAKE PROFIT' : 'STOP LOSS'}!`);
+            location.reload();
+          } else if (activeTrade.status === 'ACTIVE') {
+            renderTradeCard(activeTrade, livePrice);
+          }
+        } catch (e) { }
+      }, 10000); // Checks every 10 seconds
+    }
   </script>
 </body>
 </html>
