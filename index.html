@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>MR.Trader AI</title>
   <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
-  <!-- SUPABASE LIBRARY -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   
   <style>
@@ -26,8 +25,7 @@
     }
     .login-box { width: 100%; max-width: 400px; background: #111; border: 1px solid #222; border-radius: 16px; padding: 24px; text-align: center; }
     .login-input { width: 100%; padding: 14px; margin-bottom: 12px; background: #000; border: 1px solid #333; color: #fff; border-radius: 8px; font-size: 14px; }
-    .btn-login { width: 100%; padding: 14px; border-radius: 8px; border: none; font-size: 16px; font-weight: 700; cursor: pointer; margin-bottom: 12px; }
-    .btn-email { background: #ffd700; color: #000; }
+    .btn-login { width: 100%; padding: 14px; border-radius: 8px; border: none; font-size: 16px; font-weight: 700; cursor: pointer; background: #ffd700; color: #000; }
     
     /* App Pages */
     .page { display: none; padding: 16px; animation: fadeIn 0.3s; }
@@ -71,6 +69,12 @@
     .nav-icon { font-size: 20px; margin-bottom: 4px; display: block; }
 
     .lang-btn { background: #222; border: 1px solid #444; color: #ffd700; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; }
+
+    /* History Cards */
+    .history-item { background: #111; border: 1px solid #222; border-radius: 12px; padding: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+    .history-title { font-weight: 700; font-size: 14px; }
+    .history-date { font-size: 11px; color: #888; }
+    .history-result { font-weight: 700; font-size: 14px; text-align: right;}
   </style>
 </head>
 <body id="mainBody">
@@ -82,7 +86,7 @@
       <p style="color: #888; font-size: 14px; margin-bottom: 20px;">Login to access live AI signals</p>
       
       <input type="email" id="emailInput" class="login-input" placeholder="Enter your email">
-      <button class="btn-login btn-email" onclick="loginWithEmail()">Login with Email</button>
+      <button class="btn-login" onclick="loginWithEmail()">Login with Email</button>
     </div>
   </div>
 
@@ -90,7 +94,6 @@
   <div id="appContent" style="display: none;">
     <header>
       <h1>MR.Trader <span class="text-yellow">AI</span></h1>
-      <button class="lang-btn" id="langBtn" onclick="toggleLanguage()" style="display:none;">AR</button>
     </header>
 
     <!-- LIVE -->
@@ -107,6 +110,14 @@
       <div id="chart-container"></div>
       <div style="padding: 16px;">
         <div id="signalBox"><div class="loading" id="loadingText">Loading saved data...</div></div>
+      </div>
+    </div>
+
+    <!-- HISTORY -->
+    <div id="page-history" class="page">
+      <h2 style="font-size: 18px; margin-bottom: 16px;">Trade History</h2>
+      <div id="historyList">
+        <div class="loading">No previous trades.</div>
       </div>
     </div>
 
@@ -127,6 +138,7 @@
     <!-- NAVIGATION -->
     <div class="bottom-nav">
       <div class="nav-item active" onclick="switchTab('live', this)"><span class="nav-icon">⚡</span> <span class="nav-text">Live</span></div>
+      <div class="nav-item" onclick="switchTab('history', this)"><span class="nav-icon">🕒</span> <span class="nav-text">History</span></div>
       <div class="nav-item" onclick="switchTab('account', this)"><span class="nav-icon">👤</span> <span class="nav-text">Account</span></div>
     </div>
   </div>
@@ -141,12 +153,18 @@
     async function loginWithEmail() {
       const email = document.getElementById('emailInput').value;
       if (!email) return alert('Please enter an email.');
-      // This sends a magic link to their email
-      const { error } = await supabaseClient.auth.signInWithOtp({ email });
+      
+      const { error } = await supabaseClient.auth.signInWithOtp({ 
+        email: email,
+        options: {
+          emailRedirectTo: window.location.origin + window.location.pathname
+        }
+      });
+      
       if (error) {
         alert("Error: " + error.message);
       } else {
-        alert('Check your email for the login link! (Check spam folder too)');
+        alert('Check your email for the login link!');
       }
     }
 
@@ -162,7 +180,6 @@
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('appContent').style.display = 'block';
         document.getElementById('userEmail').innerText = session.user.email;
-        document.getElementById('langBtn').style.display = 'block';
         initApp();
       } else {
         document.getElementById('loginScreen').style.display = 'flex';
@@ -170,39 +187,56 @@
       }
     }
     
-    // Listen for login state changes
     supabaseClient.auth.onAuthStateChange((event, session) => {
-      checkUser();
+      if (event === 'SIGNED_IN') checkUser();
     });
     
-    // Check on page load
-    checkUser();
+    document.addEventListener('DOMContentLoaded', () => {
+      checkUser();
+    });
 
     // --- 3. APP LOGIC ---
     const dict = {
-      en: { analyze: "⚡ ANALYZE MARKET", loading: "Select a timeframe and click Analyze.", scanning: "Scanning Market Structure...", buy: "BUY", sell: "SELL", activeBuy: "ACTIVE BUY", activeSell: "ACTIVE SELL", pending: "PENDING (WAIT)", entry: "SNIPER ENTRY", sl: "STOP LOSS", tp1: "TAKE PROFIT 1", tp2: "TAKE PROFIT 2", live: "Live", account: "Account" },
-      ar: { analyze: "⚡ تحليل السوق", loading: "اختر الفريم واضغط تحليل.", scanning: "جاري تحليل هيكل السوق...", buy: "شراء", sell: "بيع", activeBuy: "شراء نشط", activeSell: "بيع نشط", pending: "معلق (انتظار)", entry: "الدخول", sl: "وقف خسارة", tp1: "هدف", tp2: "هدف", live: "مباشر", account: "الحساب" }
+      en: { analyze: "⚡ ANALYZE MARKET", loading: "Select a timeframe and click Analyze.", scanning: "Scanning Market Structure...", buy: "BUY", sell: "SELL", activeBuy: "ACTIVE BUY", activeSell: "ACTIVE SELL", pending: "PENDING (WAIT)", entry: "SNIPER ENTRY", sl: "STOP LOSS", tp1: "TAKE PROFIT 1", tp2: "TAKE PROFIT 2", live: "Live", account: "Account", history: "History", noHistory: "No previous trades yet." },
+      ar: { analyze: "⚡ تحليل السوق", loading: "اختر الفريم واضغط تحليل.", scanning: "جاري تحليل هيكل السوق...", buy: "شراء", sell: "بيع", activeBuy: "شراء نشط", activeSell: "بيع نشط", pending: "معلق (انتظار)", entry: "الدخول", sl: "وقف خسارة", tp1: "هدف", tp2: "هدف", live: "مباشر", account: "الحساب", history: "السجل", noHistory: "لا يوجد صفقات سابقة." }
     };
 
     let currentLang = localStorage.getItem('lang') || 'en';
     let currentTF = '5m';
     let chart, candleSeries;
     let priceLines = [];
+    
+    // Read from URL and LocalStorage
     let activeTrade = null;
+    let tradeHistory = [];
     try {
-      const saved = localStorage.getItem('activeTrade');
-      if (saved) activeTrade = JSON.parse(saved);
-    } catch (e) {}
+      const savedActive = localStorage.getItem('activeTrade');
+      if (savedActive) activeTrade = JSON.parse(savedActive);
+      
+      const savedHistory = localStorage.getItem('tradeHistory');
+      if (savedHistory) tradeHistory = JSON.parse(savedHistory);
+      
+      // URL Backup check
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.has('t')) {
+        activeTrade = JSON.parse(decodeURIComponent(urlParams.get('t')));
+      }
+    } catch (e) { console.error(e); }
 
     function applyLanguage() {
-      document.getElementById('langBtn').innerText = currentLang === 'en' ? 'AR' : 'EN';
       document.getElementById('langBtn2').innerText = currentLang === 'en' ? 'AR' : 'EN';
       if (currentLang === 'ar') document.getElementById('mainBody').classList.add('rtl');
       else document.getElementById('mainBody').classList.remove('rtl');
       
       document.getElementById('btnAnalyze').innerText = dict[currentLang].analyze;
       if (!activeTrade) document.getElementById('loadingText').innerText = dict[currentLang].loading;
+      
+      document.querySelectorAll('.nav-text')[0].innerText = dict[currentLang].live;
+      document.querySelectorAll('.nav-text')[1].innerText = dict[currentLang].history;
+      document.querySelectorAll('.nav-text')[2].innerText = dict[currentLang].account;
+      
       if (activeTrade) renderTradeCard(activeTrade); 
+      renderHistoryList();
     }
 
     function toggleLanguage() {
@@ -224,8 +258,13 @@
       candleSeries = chart.addCandlestickSeries({
         upColor: '#ffd700', downColor: '#555', borderUpColor: '#ffd700', borderDownColor: '#555', wickUpColor: '#ffd700', wickDownColor: '#555',
       });
+      
       applyLanguage();
-      loadChartData(currentTF).then(() => { if (activeTrade) drawTradeLines(activeTrade); });
+      
+      // Load Chart
+      loadChartData(currentTF).then(() => { 
+        if (activeTrade) drawTradeLines(activeTrade); 
+      });
     }
 
     function switchTab(tabId, element) {
@@ -264,13 +303,14 @@
       priceLines = [];
       activeTrade = null;
       localStorage.removeItem('activeTrade');
+      window.history.replaceState({}, document.title, window.location.pathname);
 
       const bars = await loadChartData(currentTF);
       if (!bars) return;
 
       const closes = bars.map(b => b.close);
       const lastBar = bars[bars.length - 1];
-      const ema20 = closes.reduce((a, b) => a + b, 0) / 20; // Simplified EMA
+      const ema20 = closes.reduce((a, b) => a + b, 0) / 20; 
       
       let dir = lastBar.close > ema20 ? "BUY" : "SELL";
       const entry = ema20; 
@@ -285,8 +325,14 @@
         sl = entry + (atr * 1.0); tp1 = entry - ((sl - entry) * 1.5); tp2 = entry - ((sl - entry) * 2.5);
       }
 
-      activeTrade = { dir, entry, sl, tp1, tp2, tf: currentTF, status: 'PENDING' };
+      activeTrade = { id: Date.now(), dir, entry, sl, tp1, tp2, tf: currentTF, status: 'PENDING', date: new Date().toLocaleString() };
+      
+      // Save via both LocalStorage and URL
       localStorage.setItem('activeTrade', JSON.stringify(activeTrade));
+      const urlParams = new URLSearchParams(window.location.search);
+      urlParams.set('t', encodeURIComponent(JSON.stringify(activeTrade)));
+      window.history.replaceState({}, '', `${window.location.pathname}?${urlParams.toString()}`);
+      
       renderTradeCard(activeTrade);
     }
 
@@ -335,25 +381,73 @@
       drawTradeLines(trade);
     }
 
+    function renderHistoryList() {
+      const list = document.getElementById('historyList');
+      if (tradeHistory.length === 0) {
+        list.innerHTML = `<div class="loading">${dict[currentLang].noHistory}</div>`;
+        return;
+      }
+      const sorted = [...tradeHistory].reverse();
+      let html = '';
+      sorted.forEach(t => {
+        const isBuy = t.dir === 'BUY';
+        const isWin = t.result === 'WIN';
+        const color = isWin ? 'text-green' : 'text-red';
+        const sign = isWin ? '+' : '-';
+        const pips = (Math.abs(t.exitPrice - t.entry) * 10).toFixed(0);
+
+        html += `
+          <div class="history-item">
+            <div>
+              <div class="history-title">XAUUSD <span class="${isBuy ? 'text-green' : 'text-red'}">${isBuy ? dict[currentLang].buy : dict[currentLang].sell}</span></div>
+              <div class="history-date">${t.date} | ${t.tf.toUpperCase()}</div>
+            </div>
+            <div>
+              <div class="history-result ${color}">${t.result}</div>
+              <div class="history-date ${color}">${sign}${pips} Pips</div>
+            </div>
+          </div>
+        `;
+      });
+      list.innerHTML = html;
+    }
+
+    // --- 4. LIVE PRICE CHECKER ---
     setInterval(async () => {
       if (!activeTrade) return;
       try {
         const res = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=PAXGUSDT');
         const json = await res.json();
         const livePrice = parseFloat(json.price);
-        let finished = false;
+        
+        let result = null;
+        let exitPrice = 0;
+        
         if (activeTrade.dir === 'BUY') {
-          if (livePrice <= activeTrade.sl || livePrice >= activeTrade.tp2) finished = true;
+          if (livePrice <= activeTrade.sl) { result = 'LOSS'; exitPrice = activeTrade.sl; }
+          if (livePrice >= activeTrade.tp2) { result = 'WIN'; exitPrice = activeTrade.tp2; }
         } else {
-          if (livePrice >= activeTrade.sl || livePrice <= activeTrade.tp2) finished = true;
+          if (livePrice >= activeTrade.sl) { result = 'LOSS'; exitPrice = activeTrade.sl; }
+          if (livePrice <= activeTrade.tp2) { result = 'WIN'; exitPrice = activeTrade.tp2; }
         }
-        if (finished) {
-          localStorage.removeItem('activeTrade'); activeTrade = null; alert("TRADE FINISHED!"); location.reload();
+
+        if (result) {
+          const finishedTrade = { ...activeTrade, result: result, exitPrice: exitPrice };
+          tradeHistory.push(finishedTrade);
+          localStorage.setItem('tradeHistory', JSON.stringify(tradeHistory));
+          
+          localStorage.removeItem('activeTrade');
+          activeTrade = null;
+          window.history.replaceState({}, document.title, window.location.pathname);
+          
+          alert(`TRADE HIT ${result === 'WIN' ? 'TAKE PROFIT' : 'STOP LOSS'}!`);
+          location.reload();
         } else {
           renderTradeCard(activeTrade, livePrice);
         }
-      } catch (e) {}
+      } catch (e) { console.log("Live price error"); }
     }, 5000);
+
   </script>
 </body>
 </html>
