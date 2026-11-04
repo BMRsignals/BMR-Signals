@@ -45,7 +45,7 @@
     .btn-analyze { width: 100%; padding: 16px; background: #222; color: #fff; border: none; border-top: 1px solid #333; font-size: 16px; font-weight: 700; cursor: pointer; }
     .btn-analyze:active { background: #ffd700; color: #000; }
 
-    #chart-container { width: 100%; height: 35vh; border-bottom: 1px solid #1a1a1a; position: relative; }
+    #chart-container { width: 100%; height: 35vh; border-bottom: 1px solid #1a1a1a; }
 
     .signal-card { background: linear-gradient(145deg, #111a14 0%, #0a0f0c 100%); border: 1px solid #1e3a2a; border-radius: 16px; padding: 16px; margin-top: 16px; }
     .signal-card.sell { background: linear-gradient(145deg, #1a1111 0%, #0f0a0a 100%); border-color: #3a1e1e; }
@@ -110,7 +110,10 @@
   </div>
 
   <div id="appContent" style="display: none;">
-    <header><h1>MR.Trader <span class="text-yellow">AI</span></h1></header>
+    <header>
+      <h1>MR.Trader <span class="text-yellow">AI</span></h1>
+      <div id="trialText" style="font-size: 12px; color: #888; font-weight: 600;">Tries left: 3</div>
+    </header>
 
     <div id="page-live" class="page active" style="padding: 0;">
       <div class="tf-selector" id="tfSelector">
@@ -171,6 +174,7 @@
     let currentLang = localStorage.getItem('lang') || 'en';
     let currentTF = '5m';
     let liveInterval;
+    let userTries = 3; // Default free tries
 
     let activeTrade = null;
     let tradeHistory = [];
@@ -217,7 +221,12 @@
       const email = document.getElementById('emailInput').value;
       const password = document.getElementById('passwordInput').value;
       if (!email || !password) return alert('Please enter email and password.');
-      const { error } = await supabaseClient.auth.signUp({ email, password });
+      // Initialize user with 3 tries when they sign up
+      const { error } = await supabaseClient.auth.signUp({ 
+        email, 
+        password,
+        options: { data: { tries_left: 3 } } 
+      });
       if (error) alert("Sign Up Error: " + error.message);
       else alert('Account created! You can now click Login.');
     }
@@ -258,10 +267,30 @@
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('appContent').style.display = 'block';
         document.getElementById('userEmail').innerText = session.user.email;
+        
+        // Load how many tries the user has left from Supabase
+        if (session.user.user_metadata && session.user.user_metadata.tries_left !== undefined) {
+          userTries = session.user.user_metadata.tries_left;
+        } else {
+          userTries = 3; // Fallback for old accounts
+        }
+        updateTryText();
+
         initApp();
       } else {
         document.getElementById('loginScreen').style.display = 'flex';
         document.getElementById('appContent').style.display = 'none';
+      }
+    }
+
+    function updateTryText() {
+      const el = document.getElementById('trialText');
+      if (userTries > 0) {
+        el.innerText = `Tries left: ${userTries}`;
+        el.style.color = '#888';
+      } else {
+        el.innerText = `Free trial ended`;
+        el.style.color = '#ef5350';
       }
     }
 
@@ -292,15 +321,9 @@
       applyLanguage();
     }
 
-    async function initApp() {
+    function initApp() {
       if (chart) return; 
       
-      try {
-        const res = await fetch(`https://api.twelvedata.com/price?symbol=XAU/USD&apikey=${TWELVEDATA_API_KEY}`);
-        const data = await res.json();
-        if (data.price) REAL_GOLD_PRICE = parseFloat(data.price);
-      } catch(e) { }
-
       chart = LightweightCharts.createChart(document.getElementById('chart-container'), {
         layout: { background: { type: 'solid', color: '#000000' }, textColor: '#888' },
         grid: { vertLines: { color: '#111' }, horzLines: { color: '#111' } },
@@ -333,24 +356,17 @@
       loadChartData(tf); 
     }
 
-    // --- FIXED DATA FEED: Binance Proxy (No Limits, Smooth Chart) ---
     async function loadChartData(tf) {
       try {
-        document.getElementById('chart-container').innerHTML = '<div style="position:absolute; top:40%; left:0; width:100%; text-align:center; color:#888;">Loading Chart...</div>';
-        
         const response = await fetch(`https://api.binance.com/api/v3/klines?symbol=PAXGUSDT&interval=${tf}&limit=300`);
         const data = await response.json();
         
-        // Clear the loading text
-        document.getElementById('chart-container').innerHTML = '';
-
         const bars = data.map(item => {
           const bOpen = parseFloat(item[1]);
           const bClose = parseFloat(item[4]);
           const bHigh = parseFloat(item[2]);
           const bLow = parseFloat(item[3]);
           
-          // Adjust the ratio so the chart visually aligns with real Gold
           const ratio = REAL_GOLD_PRICE / bClose;
           
           return { 
@@ -365,7 +381,6 @@
         candleSeries.setData(bars);
         chart.timeScale().setVisibleLogicalRange({ from: bars.length - 60, to: bars.length + 10 });
 
-        // Live Tracking from Candles
         if (activeTrade && activeTrade.status === 'PENDING') {
           const lastBar = bars[bars.length - 1];
           let touched = false;
@@ -380,16 +395,22 @@
         }
         return bars;
       } catch (e) { 
-        document.getElementById('chart-container').innerHTML = '<div style="position:absolute; top:40%; left:0; width:100%; text-align:center; color:#ef5350;">Failed to load chart data.</div>';
         return null; 
       }
     }
 
     async function startAnalysis() {
+      // --- 3 TRIES LIMIT LOGIC ---
+      if (userTries <= 0) {
+        alert("You have used all your 3 free trials.\nPlease upgrade to Pro to continue getting signals.");
+        return;
+      }
+
       if (activeTrade) {
         const confirmReset = confirm(currentLang === 'ar' ? "هل تريد حذف الصفقة والبحث عن جديدة؟" : "Delete current trade and scan again?");
         if (!confirmReset) return;
       }
+      
       document.getElementById('signalBox').innerHTML = `<div class="loading">${dict[currentLang].scanning}</div>`;
       priceLines.forEach(line => candleSeries.removePriceLine(line));
       priceLines = [];
@@ -398,9 +419,17 @@
       window.history.replaceState({}, document.title, window.location.pathname);
 
       const bars = await loadChartData(currentTF);
-      if (!bars || bars.length === 0) {
-        document.getElementById('signalBox').innerHTML = `<div class="loading text-red">Error analyzing market. Try again.</div>`;
-        return;
+      if (!bars || bars.length === 0) return;
+
+      // Decrease the try count
+      userTries--;
+      updateTryText();
+
+      // Save the new try count to Supabase
+      if (supabaseClient) {
+        await supabaseClient.auth.updateUser({
+          data: { tries_left: userTries }
+        });
       }
 
       const closes = bars.map(b => b.close);
