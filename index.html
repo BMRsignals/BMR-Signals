@@ -331,7 +331,6 @@
       loadChartData(tf); 
     }
 
-    // --- FIXED DATA FEED: Using TwelveData for perfect XAUUSD chart ---
     async function loadChartData(tf) {
       try {
         const res = await fetch(`https://api.twelvedata.com/time_series?symbol=XAU/USD&interval=${tf}&outputsize=200&apikey=${TWELVEDATA_API_KEY}`);
@@ -348,7 +347,7 @@
           high: parseFloat(item.high), 
           low: parseFloat(item.low), 
           close: parseFloat(item.close)
-        })).reverse(); // TwelveData returns newest first, we need oldest first
+        })).reverse(); 
 
         candleSeries.setData(bars);
         chart.timeScale().setVisibleLogicalRange({ from: bars.length - 60, to: bars.length + 10 });
@@ -359,6 +358,7 @@
       }
     }
 
+    // --- FIXED DYNAMIC ATR CALCULATION ---
     async function startAnalysis() {
       if (activeTrade) {
         const confirmReset = confirm(currentLang === 'ar' ? "هل تريد حذف الصفقة والبحث عن جديدة؟" : "Delete current trade and scan again?");
@@ -379,17 +379,27 @@
       const ema20 = closes.reduce((a, b) => a + b, 0) / 20; 
       
       let dir = lastBar.close > ema20 ? "BUY" : "SELL";
-      
-      // --- FIXED MATH FOR XAUUSD ---
       const entry = lastBar.close; 
       
-      // Tight Stop Loss ($1.50 difference for Gold)
-      const slDistance = 1.50; 
+      // 1. Calculate the True Range (ATR) of the last 14 candles for THIS timeframe
+      let trSum = 0;
+      for (let i = bars.length - 14; i < bars.length; i++) {
+        const highLow = bars[i].high - bars[i].low;
+        const highPrevClose = Math.abs(bars[i].high - bars[i-1].close);
+        const lowPrevClose = Math.abs(bars[i].low - bars[i-1].close);
+        trSum += Math.max(highLow, highPrevClose, lowPrevClose);
+      }
+      const atr = trSum / 14;
+
+      // 2. Set Stop Loss dynamically based on the ATR of the timeframe
+      // 1.2x ATR gives a tight but safe stop loss that respects the timeframe's volatility
+      const slDistance = atr * 1.2; 
       const sl = dir === 'BUY' ? entry - slDistance : entry + slDistance;
       
-      // Take Profit 1 (1.5x Risk) and TP2 (2.5x Risk)
-      const tp1 = dir === 'BUY' ? entry + (slDistance * 1.5) : entry - (slDistance * 1.5);
-      const tp2 = dir === 'BUY' ? entry + (slDistance * 2.5) : entry - (slDistance * 2.5);
+      // 3. Take Profit based on Risk (1.5x and 2.5x)
+      const risk = Math.abs(entry - sl);
+      const tp1 = dir === 'BUY' ? entry + (risk * 1.5) : entry - (risk * 1.5);
+      const tp2 = dir === 'BUY' ? entry + (risk * 2.5) : entry - (risk * 2.5);
 
       activeTrade = { id: Date.now(), dir, entry, sl, tp1, tp2, tf: currentTF, status: 'PENDING', date: new Date().toLocaleString() };
       
@@ -423,6 +433,7 @@
         statusText = isBuy ? dict[currentLang].activeBuy : dict[currentLang].activeSell;
       }
       
+      // Multiply by 10 to get Gold Pips
       const pipsRisk = (Math.abs(trade.entry - trade.sl) * 10).toFixed(0);
       const pipsReward1 = (Math.abs(trade.tp1 - trade.entry) * 10).toFixed(0);
       const pipsReward2 = (Math.abs(trade.tp2 - trade.entry) * 10).toFixed(0);
@@ -434,7 +445,7 @@
               <div style="font-size: 18px; font-weight: 700; margin-bottom: 4px;">XAUUSD <span class="${isBuy ? 'text-green' : 'text-red'}">${isBuy ? dict[currentLang].buy : dict[currentLang].sell}</span></div>
               <div class="status-badge ${statusClass}">${statusText}</div>
             </div>
-            <div style="font-size: 12px; color: #888; font-weight: 600; text-align: ${currentLang === 'ar' ? 'left' : 'right'};">${trade.tf.toUpperCase()} <br> CHART</div>
+            <div style="font-size: 12px; color: #888; font-weight: 600; text-align: ${currentLang === 'ar' ? 'left' : 'right'};">${trade.tf.replace('min', 'M').replace('day', 'D').toUpperCase()} <br> CHART</div>
           </div>
           <div class="price-grid">
             <div class="price-box"><div class="price-label">${dict[currentLang].entry}</div><div class="price-val text-yellow">${trade.entry.toFixed(2)}</div></div>
@@ -478,15 +489,14 @@
       list.innerHTML = html;
     }
 
-    // --- 4. LIVE PRICE CHECKER (TWELVEDATA) ---
+    // --- 4. LIVE PRICE CHECKER ---
     setInterval(async () => {
       if (!activeTrade) return;
       try {
-        // Fetch REAL Gold price directly from the API
         const res = await fetch(`https://api.twelvedata.com/price?symbol=XAU/USD&apikey=${TWELVEDATA_API_KEY}`);
         const data = await res.json();
         
-        if (data.status === 'error' || !data.price) return; // Skip if API limit hit
+        if (data.status === 'error' || !data.price) return; 
         
         const livePrice = parseFloat(data.price);
         
@@ -516,7 +526,7 @@
           renderTradeCard(activeTrade, livePrice);
         }
       } catch (e) { }
-    }, 10000); // Checking every 10 seconds to save free API limits
+    }, 10000);
   </script>
 </body>
 </html>
