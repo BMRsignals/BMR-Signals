@@ -100,7 +100,9 @@
     .wallet-address { background: #111; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 12px; color: #ffd700; word-break: break-all; margin: 12px 0; border: 1px solid #333; text-align: center; }
     
     .btn-copy { width: 100%; padding: 10px; background: #ffd700; color: #000; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; margin-bottom: 8px; }
-    .btn-verify { width: 100%; padding: 10px; background: #26a69a; color: #fff; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; }
+    
+    /* Telegram Verify Button */
+    .btn-verify { display: block; text-align: center; text-decoration: none; width: 100%; padding: 12px; background: #229ED9; color: #fff; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 14px; }
 
     /* Risk Note on Live Page */
     .risk-note-live { font-size: 12px; color: #888; background: #111; padding: 12px; border-radius: 8px; border: 1px solid #222; margin-top: 16px; line-height: 1.5; }
@@ -150,7 +152,7 @@
       <div style="padding: 16px;">
         <div id="signalBox"><div class="loading" id="loadingText">Loading saved data...</div></div>
         
-        <!-- RISK DISCLAIMER MOVED HERE -->
+        <!-- RISK DISCLAIMER -->
         <div class="risk-note-live">
           <strong>Risk Management Rules:</strong><br>
           • Minimum balance to trade: <strong>$200</strong><br>
@@ -211,7 +213,11 @@
           <div class="wallet-address" id="walletAddress">TLgREYohGVK6V9zUS6gNowq2WjPavmfEj3</div>
           
           <button class="btn-copy" onclick="copyWallet()">Copy Address</button>
-          <button class="btn-verify" onclick="alert('Please send a screenshot of your payment to support@mrtraderai.com to activate your account.')">Verify Payment</button>
+          
+          <!-- UPDATED VERIFY BUTTON: TELEGRAM LINK -->
+          <a href="https://t.me/mrtraderai_official" target="_blank" class="btn-verify" onclick="return confirmVerify()">
+            Verify via Telegram
+          </a>
         </div>
 
       </div>
@@ -365,6 +371,10 @@
       });
     }
 
+    function confirmVerify() {
+      return confirm("Before going to Telegram, please make sure you have your Payment Screenshot and Account Email ready to send to support.");
+    }
+
     const dict = {
       en: { analyze: "⚡ ANALYZE MARKET", loading: "Select a timeframe and click Analyze.", scanning: "Scanning Market Structure...", buy: "BUY LIMIT", sell: "SELL LIMIT", activeBuy: "ACTIVE BUY", activeSell: "ACTIVE SELL", pending: "PENDING (WAIT)", entry: "SNIPER ENTRY", sl: "STOP LOSS", tp1: "TAKE PROFIT 1", tp2: "TAKE PROFIT 2", live: "Live", account: "Account", history: "History", noHistory: "No previous trades yet." },
       ar: { analyze: "⚡ تحليل السوق", loading: "اختر الفريم واضغط تحليل.", scanning: "جاري تحليل هيكل السوق...", buy: "شراء معلق", sell: "بيع معلق", activeBuy: "شراء نشط", activeSell: "بيع نشط", pending: "معلق (انتظار)", entry: "الدخول", sl: "وقف خسارة", tp1: "هدف", tp2: "هدف", live: "مباشر", account: "الحساب", history: "السجل", noHistory: "لا يوجد صفقات سابقة." }
@@ -502,7 +512,13 @@
       const ema20 = closes.reduce((a, b) => a + b, 0) / 20; 
       let trendDir = lastBar.close > ema20 ? "BUY" : "SELL";
 
-      const lookback = 30;
+      // Determine lookback based on timeframe
+      let lookback = 30;
+      if (currentTF === '5min') lookback = 10; // Short term
+      if (currentTF === '15min') lookback = 20; // Medium term
+      if (currentTF === '30min' || currentTF === '1h') lookback = 40; // Swing
+      if (currentTF === '4h' || currentTF === '1day') lookback = 60; // Macro
+
       const recentBars = bars.slice(-lookback);
       
       const recentHigh = Math.max(...recentBars.map(b => b.high));
@@ -528,7 +544,7 @@
       }
 
       // 2. Calculate Raw SL distance (Standard structure)
-      let slDistance = 2.5; // Default if structure is too tight
+      let slDistance = 2.5; // Default
 
       // 3. Apply Scalping Rules based on timeframe
       if (currentTF === '5min') {
@@ -536,7 +552,6 @@
       } else if (currentTF === '15min') {
         slDistance = Math.min(slDistance, 7.0); // MAX 70 pips for M15
       }
-      // For M30, 1H, 4H, 1D it stays at the structural 2.5 (or you can make it wider if needed)
 
       // 4. Calculate Final SL and TPs
       if (dir === "SELL") {
