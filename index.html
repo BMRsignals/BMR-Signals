@@ -479,7 +479,7 @@
       }
     }
 
-    // --- THE SNIPER LOGIC (Supply / Demand + Pip Caps) ---
+    // --- THE SNIPER LOGIC (Supply / Demand + Dynamic ATR) ---
     async function startAnalysis() {
       if (activeTrade) {
         const confirmReset = confirm(currentLang === 'ar' ? "هل تريد حذف الصفقة والبحث عن جديدة؟" : "Delete current trade and scan again?");
@@ -512,21 +512,20 @@
       const ema20 = closes.reduce((a, b) => a + b, 0) / 20; 
       let trendDir = lastBar.close > ema20 ? "BUY" : "SELL";
 
-      // Determine lookback based on timeframe
+      // 1. Determine Swing High/Low based on timeframe
       let lookback = 30;
-      if (currentTF === '5min') lookback = 10; // Short term
-      if (currentTF === '15min') lookback = 20; // Medium term
-      if (currentTF === '30min' || currentTF === '1h') lookback = 40; // Swing
-      if (currentTF === '4h' || currentTF === '1day') lookback = 60; // Macro
+      if (currentTF === '5min') lookback = 10;
+      if (currentTF === '15min') lookback = 20;
+      if (currentTF === '30min' || currentTF === '1h') lookback = 40;
+      if (currentTF === '4h' || currentTF === '1day') lookback = 60;
 
       const recentBars = bars.slice(-lookback);
-      
       const recentHigh = Math.max(...recentBars.map(b => b.high));
       const recentLow = Math.min(...recentBars.map(b => b.low));
 
       let dir, entry, sl, tp1, tp2;
       
-      // 1. Determine Entry
+      // 2. Set Entry at recent swing high/low
       if (lastBar.high > recentHigh && lastBar.close < recentHigh) {
         dir = "SELL"; 
         entry = recentHigh + 0.2; 
@@ -543,17 +542,17 @@
         }
       }
 
-      // 2. Calculate Raw SL distance (Standard structure)
-      let slDistance = 2.5; // Default
+      // 3. Calculate Raw SL distance (Standard structure)
+      let slDistance = 2.5; // Default if structure is too tight
 
-      // 3. Apply Scalping Rules based on timeframe
+      // 4. Apply Scalping Rules based on timeframe
       if (currentTF === '5min') {
         slDistance = Math.min(slDistance, 5.0); // MAX 50 pips for M5
       } else if (currentTF === '15min') {
         slDistance = Math.min(slDistance, 7.0); // MAX 70 pips for M15
       }
 
-      // 4. Calculate Final SL and TPs
+      // 5. Calculate Final SL and TPs
       if (dir === "SELL") {
         sl = entry + slDistance; 
         const risk = sl - entry;
