@@ -507,12 +507,9 @@
         }
       }
 
-      const closes = bars.map(b => b.close);
+      // --- NEW LOGIC: Check which zone the price is closest to ---
       const lastBar = bars[bars.length - 1];
-      const ema20 = closes.reduce((a, b) => a + b, 0) / 20; 
-      let trendDir = lastBar.close > ema20 ? "BUY" : "SELL";
-
-      // 1. Determine Swing High/Low based on timeframe
+      
       let lookback = 30;
       if (currentTF === '5min') lookback = 10;
       if (currentTF === '15min') lookback = 20;
@@ -524,35 +521,31 @@
       const recentLow = Math.min(...recentBars.map(b => b.low));
 
       let dir, entry, sl, tp1, tp2;
-      
-      // 2. Set Entry at recent swing high/low
-      if (lastBar.high > recentHigh && lastBar.close < recentHigh) {
+
+      // Compare distance to High vs Low
+      const distToHigh = Math.abs(recentHigh - lastBar.close);
+      const distToLow = Math.abs(lastBar.close - recentLow);
+
+      // If closer to the high, place a SELL LIMIT. If closer to the low, place a BUY LIMIT.
+      if (distToHigh < distToLow) {
         dir = "SELL"; 
         entry = recentHigh + 0.2; 
-      } else if (lastBar.low < recentLow && lastBar.close > recentLow) {
+      } else {
         dir = "BUY"; 
         entry = recentLow - 0.2; 
-      } else {
-        if (trendDir === "SELL") {
-            dir = "SELL";
-            entry = recentHigh + 0.2;
-        } else {
-            dir = "BUY";
-            entry = recentLow - 0.2;
-        }
       }
 
-      // 3. Calculate Raw SL distance (Standard structure)
-      let slDistance = 2.5; // Default if structure is too tight
+      // 2. Calculate Raw SL distance (Standard structure)
+      let slDistance = 2.5; // Default
 
-      // 4. Apply Scalping Rules based on timeframe
+      // 3. Apply Scalping Rules based on timeframe
       if (currentTF === '5min') {
         slDistance = Math.min(slDistance, 5.0); // MAX 50 pips for M5
       } else if (currentTF === '15min') {
         slDistance = Math.min(slDistance, 7.0); // MAX 70 pips for M15
       }
 
-      // 5. Calculate Final SL and TPs
+      // 4. Calculate Final SL and TPs
       if (dir === "SELL") {
         sl = entry + slDistance; 
         const risk = sl - entry;
