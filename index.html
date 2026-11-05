@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>MR.Trader AI</title>
+  <title>MR.Trader AI - Autopilot</title>
   <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -41,15 +41,31 @@
     .header-icons { display: flex; align-items: center; gap: 12px; }
     .bell-icon { font-size: 20px; cursor: pointer; position: relative; }
     .bell-badge { position: absolute; top: -4px; right: -4px; background: #ef5350; color: #fff; font-size: 10px; font-weight: 700; padding: 2px 5px; border-radius: 10px; }
-    .pro-badge { background: linear-gradient(90deg, #d4af37, #ffd700); color: #000; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 800; }
 
-    /* Top Bar (Asset Selector) */
-    .top-bar { display: flex; padding: 10px 16px; gap: 10px; border-bottom: 1px solid #1a1a1a; align-items: center; }
+    /* Top Bar (Asset Selector & Sessions) */
+    .top-bar { display: flex; flex-direction: column; gap: 8px; padding: 10px 16px; border-bottom: 1px solid #1a1a1a; }
+    .top-row { display: flex; justify-content: space-between; align-items: center; }
     .asset-select { background: #111; color: #fff; border: 1px solid #333; padding: 8px; border-radius: 8px; font-size: 14px; font-weight: 700; }
+    
+    .autopilot-status { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; color: #26a69a; }
+    .pulse-dot { width: 8px; height: 8px; background: #26a69a; border-radius: 50%; animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(38, 166, 154, 0.4); } 70% { box-shadow: 0 0 0 8px rgba(38, 166, 154, 0); } 100% { box-shadow: 0 0 0 0 rgba(38, 166, 154, 0); } }
 
-    /* News Banner */
-    #newsBanner { display: none; background: #ef535022; border: 1px solid #ef535055; color: #ef5350; padding: 10px 16px; font-size: 12px; font-weight: 700; text-align: center; }
-    #newsBanner.active { display: block; }
+    /* Session Tracker */
+    .session-tracker { display: flex; gap: 6px; margin-top: 4px; }
+    .session-pill { flex: 1; text-align: center; font-size: 9px; font-weight: 700; padding: 4px; border-radius: 4px; border: 1px solid #333; color: #666; }
+    .session-pill.open { background: rgba(38, 166, 154, 0.15); border-color: #26a69a; color: #26a69a; }
+
+    /* Filter Panel */
+    .filter-panel { background: #111; border-bottom: 1px solid #1a1a1a; padding: 12px 16px; display: none; flex-direction: column; gap: 12px; }
+    .filter-panel.active { display: flex; }
+    .filter-row { display: flex; justify-content: space-between; align-items: center; }
+    .filter-label { font-size: 12px; font-weight: 700; color: #ccc; }
+    .filter-select { background: #000; color: #fff; border: 1px solid #333; padding: 6px 10px; border-radius: 6px; font-size: 12px; }
+    
+    .session-checkboxes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+    .session-check { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #ccc; }
+    .session-check input { accent-color: #ffd700; }
 
     /* Notification Modal */
     #notifModal { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: rgba(0,0,0,0.9); z-index: 2000; display: none; flex-direction: column; padding: 20px; }
@@ -66,10 +82,6 @@
     .tf-selector::-webkit-scrollbar { display: none; }
     .tf-btn { background: #111; border: 1px solid #333; color: #888; padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
     .tf-btn.active { background: #ffd700; border-color: #ffd700; color: #000; }
-
-    .btn-analyze { width: 100%; padding: 16px; background: #222; color: #fff; border: none; border-top: 1px solid #333; font-size: 16px; font-weight: 700; cursor: pointer; transition: 0.3s; }
-    .btn-analyze:active { background: #ffd700; color: #000; }
-    .btn-analyze:disabled { opacity: 0.5; cursor: not-allowed; background: #111; }
 
     #chart-container { width: 100%; height: 35vh; border-bottom: 1px solid #1a1a1a; }
 
@@ -101,7 +113,6 @@
     .status-pending { background: #ffd70022; color: #ffd700; border: 1px solid #ffd70055; }
     .status-active-buy { background: #26a69a22; color: #26a69a; border: 1px solid #26a69a55; animation: pulse 2s infinite; }
     .status-active-sell { background: #ef535022; color: #ef5350; border: 1px solid #ef535055; animation: pulse 2s infinite; }
-    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(38, 166, 154, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(38, 166, 154, 0); } 100% { box-shadow: 0 0 0 0 rgba(38, 166, 154, 0); } }
 
     .text-green { color: #26a69a; } .text-red { color: #ef5350; } .text-yellow { color: #ffd700; }
     .loading { text-align: center; padding: 40px; color: #888; font-weight: 600; }
@@ -132,12 +143,6 @@
     .history-date { font-size: 11px; color: #888; }
     .history-result { font-weight: 700; font-size: 14px; text-align: right;}
 
-    /* Journal Modal */
-    #journalModal { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: rgba(0,0,0,0.9); z-index: 3000; display: none; justify-content: center; align-items: center; padding: 20px; }
-    .journal-box { background: #111; border: 1px solid #333; border-radius: 16px; width: 100%; max-width: 400px; padding: 24px; }
-    .journal-box h3 { margin-top: 0; color: #ffd700; }
-    .journal-input { width: 100%; height: 100px; background: #000; border: 1px solid #333; color: #fff; border-radius: 8px; padding: 12px; margin-bottom: 16px; font-family: inherit; resize: none; }
-
     /* Account & Subscription */
     .sub-banner { background: linear-gradient(145deg, #1a1505 0%, #000 100%); border: 1px solid #ffd70055; border-radius: 16px; padding: 20px; text-align: center; margin-top: 16px; }
     .sub-banner h3 { color: #ffd700; margin: 0 0 8px 0; letter-spacing: 1px; }
@@ -152,22 +157,6 @@
 
     /* Risk Note on Live Page */
     .risk-note-live { font-size: 12px; color: #888; background: #111; padding: 12px; border-radius: 8px; border: 1px solid #222; margin-top: 16px; line-height: 1.5; }
-
-    /* Upgrade Modal (Slide Up) */
-    #upgradeModal { position: fixed; bottom: -100%; left: 0; width: 100%; background: #111; border-top: 1px solid #ffd700; border-radius: 24px 24px 0 0; z-index: 4000; padding: 24px; transition: bottom 0.3s ease-in-out; text-align: center; }
-    #upgradeModal.active { bottom: 0; }
-    .upgrade-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: rgba(0,0,0,0.8); z-index: 3999; display: none; }
-    .upgrade-overlay.active { display: block; }
-    
-    /* News Tab Styles */
-    .news-card { background: #111; border: 1px solid #222; border-radius: 12px; padding: 16px; margin-bottom: 12px; }
-    .news-card.high { border-left: 4px solid #ef5350; }
-    .news-card.medium { border-left: 4px solid #ffd700; }
-    .news-title { font-weight: 700; font-size: 15px; margin-bottom: 8px; }
-    .news-meta { font-size: 12px; color: #888; display: flex; justify-content: space-between; margin-bottom: 8px; }
-    .news-impact { padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
-    .news-impact.high { background: #ef535022; color: #ef5350; }
-    .news-impact.medium { background: #ffd70022; color: #ffd700; }
   </style>
 </head>
 <body id="mainBody">
@@ -201,20 +190,53 @@
         <div class="bell-icon" onclick="openNotifications()">
           🔔<div class="bell-badge" id="notifBadge" style="display:none;">0</div>
         </div>
-        <div id="trialText" style="font-size: 12px; color: #888; font-weight: 600;">Tries: 5</div>
+        <div id="trialText" style="font-size: 12px; color: #888; font-weight: 600;">PRO AUTOPILOT</div>
       </div>
     </header>
 
-    <div id="newsBanner">⚠️ High Impact News Today. Trade with caution.</div>
-
-    <!-- TOP BAR (Asset Selector) -->
+    <!-- TOP BAR (Asset Selector & Sessions) -->
     <div class="top-bar">
-      <select id="assetSelector" class="asset-select" onchange="changeAsset()">
-        <option value="XAU/USD">XAUUSD (Gold)</option>
-        <option value="EUR/USD">EURUSD</option>
-        <option value="BTC/USD">BTCUSD</option>
-      </select>
-      <span style="font-size: 12px; color: #888;">Live Data</span>
+      <div class="top-row">
+        <select id="assetSelector" class="asset-select" onchange="changeAsset()">
+          <option value="XAU/USD">XAUUSD (Gold)</option>
+          <option value="EUR/USD">EURUSD</option>
+          <option value="BTC/USD">BTCUSD</option>
+        </select>
+        <div class="autopilot-status">
+          <div class="pulse-dot"></div> ACTIVE
+        </div>
+        <button onclick="toggleFilters()" style="background:none; border:none; color:#fff; font-size:18px;">⚙️</button>
+      </div>
+      
+      <!-- SESSION TRACKER -->
+      <div class="session-tracker" id="sessionTracker">
+        <div class="session-pill" id="sess-sydney">SYDNEY</div>
+        <div class="session-pill" id="sess-tokyo">TOKYO</div>
+        <div class="session-pill" id="sess-london">LONDON</div>
+        <div class="session-pill" id="sess-ny">NEW YORK</div>
+      </div>
+    </div>
+
+    <!-- FILTER PANEL -->
+    <div class="filter-panel" id="filterPanel">
+      <div class="filter-row">
+        <span class="filter-label">Max Stop Loss (Pips)</span>
+        <select id="maxSLFilter" class="filter-select" onchange="saveFilters()">
+          <option value="30">30 Pips</option>
+          <option value="50" selected>50 Pips</option>
+          <option value="70">70 Pips</option>
+          <option value="100">100 Pips</option>
+        </select>
+      </div>
+      <div>
+        <span class="filter-label">Trading Sessions</span>
+        <div class="session-checkboxes">
+          <label class="session-check"><input type="checkbox" id="chk-sydney" checked onchange="saveFilters()"> Sydney</label>
+          <label class="session-check"><input type="checkbox" id="chk-tokyo" checked onchange="saveFilters()"> Tokyo</label>
+          <label class="session-check"><input type="checkbox" id="chk-london" checked onchange="saveFilters()"> London</label>
+          <label class="session-check"><input type="checkbox" id="chk-ny" checked onchange="saveFilters()"> New York</label>
+        </div>
+      </div>
     </div>
 
     <div id="page-live" class="page active" style="padding: 0;">
@@ -226,10 +248,9 @@
         <button class="tf-btn" onclick="selectTF('4h', this)">4H</button>
         <button class="tf-btn" onclick="selectTF('1day', this)">1D</button>
       </div>
-      <button class="btn-analyze" id="btnAnalyze" onclick="startAnalysis()">⚡ ANALYZE MARKET</button>
       <div id="chart-container"></div>
       <div style="padding: 16px;">
-        <div id="signalBox"><div class="loading" id="loadingText">Loading saved data...</div></div>
+        <div id="signalBox"><div class="loading" id="loadingText">Scanning for setups automatically...</div></div>
         
         <!-- RISK DISCLAIMER -->
         <div class="risk-note-live">
@@ -238,14 +259,6 @@
           • Position size: <strong>0.02 lots for every $200</strong><br>
           • Close <strong>0.01 at TP1</strong> and <strong>0.01 at TP2</strong>.
         </div>
-      </div>
-    </div>
-
-    <!-- NEWS TAB -->
-    <div id="page-news" class="page">
-      <h2 style="font-size: 18px; margin-bottom: 16px;">High Impact News (Gold & USD)</h2>
-      <div id="newsList">
-        <div class="loading">Loading news...</div>
       </div>
     </div>
 
@@ -259,15 +272,8 @@
         </div>
       </div>
       
-      <!-- EQUITY CURVE -->
-      <div style="background: #111; padding: 16px; border-radius: 12px; border: 1px solid #222; margin-bottom: 16px;">
-        <div style="font-size: 12px; color: #888; margin-bottom: 8px;">Equity Curve (Simulated)</div>
-        <div style="height: 60px; background: linear-gradient(to right, transparent, #26a69a22); border-bottom: 2px solid #26a69a;"></div>
-      </div>
-
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-        <div style="font-size: 12px; color: #888;">Best: +120 Pips | Avg RR: 1:3</div>
-        <button class="reset-btn" onclick="clearHistory()">Clear History</button>
+      <div style="display: flex; justify-content: flex-end; margin-bottom: 12px;">
+         <button class="reset-btn" onclick="clearHistory()">Clear History</button>
       </div>
 
       <div class="stats-grid">
@@ -294,33 +300,10 @@
         </div>
         <button onclick="logout()" style="width: 100%; padding: 12px; background: #ef535022; color: #ef5350; border: 1px solid #ef535055; border-radius: 8px; font-weight: 700; cursor: pointer;">Log Out</button>
       </div>
-
-      <!-- UPGRADE BANNER & CRYPTO PAYMENT -->
-      <div class="sub-banner">
-        <h3>MR.TRADER FAMILY</h3>
-        <div style="font-size: 32px; font-weight: 700; margin-bottom: 8px;">$49<span style="font-size: 14px; color: #888;">/mo</span></div>
-        <p>Unlock unlimited live AI signals, advanced volume profile, and priority support.</p>
-        
-        <!-- USDT TRC20 PAYMENT BOX -->
-        <div class="payment-box">
-          <div style="font-size: 12px; color: #888; margin-bottom: 8px; font-weight: 700;">PAY WITH USDT (TRC20)</div>
-          
-          <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=TLgREYohGVK6V9zUS6gNowq2WjPavmfEj3" alt="TRC20 QR Code" class="qr-code">
-          
-          <div class="wallet-address" id="walletAddress">TLgREYohGVK6V9zUS6gNowq2WjPavmfEj3</div>
-          
-          <button class="btn-copy" onclick="copyWallet()">Copy Address</button>
-          
-          <a href="https://t.me/mrtraderai_official" target="_blank" class="btn-verify" onclick="return confirmVerify()">
-            Verify via Telegram
-          </a>
-        </div>
-      </div>
     </div>
 
     <div class="bottom-nav">
       <div class="nav-item active" onclick="switchTab('live', this)"><span class="nav-icon">⚡</span> <span class="nav-text">Live</span></div>
-      <div class="nav-item" onclick="switchTab('news', this)"><span class="nav-icon">📰</span> <span class="nav-text">News</span></div>
       <div class="nav-item" onclick="switchTab('history', this)"><span class="nav-icon">🕒</span> <span class="nav-text">History</span></div>
       <div class="nav-item" onclick="switchTab('account', this)"><span class="nav-icon">👤</span> <span class="nav-text">Account</span></div>
     </div>
@@ -340,25 +323,6 @@
     </div>
   </div>
 
-  <!-- JOURNAL MODAL -->
-  <div id="journalModal" onclick="closeJournal(event)">
-    <div class="journal-box" onclick="event.stopPropagation()">
-      <h3>Trade Journal</h3>
-      <p style="font-size:12px; color:#888; margin-top:0;">Write your notes for this trade.</p>
-      <textarea id="journalInput" class="journal-input" placeholder="e.g. I took this because the price swept the high..."></textarea>
-      <button class="btn-primary" onclick="saveJournal()">Save Notes</button>
-    </div>
-  </div>
-
-  <!-- UPGRADE MODAL (SLIDE UP) -->
-  <div class="upgrade-overlay" id="upgradeOverlay" onclick="closeUpgradeModal()"></div>
-  <div id="upgradeModal">
-    <h2 style="color: #ffd700; margin-top: 0;">Unlock Full Access</h2>
-    <p style="color: #ccc; font-size: 14px; margin-bottom: 24px;">You have used all your free trials. Upgrade to MR.Trader Family for unlimited signals.</p>
-    <button class="btn-primary" onclick="switchTab('account', document.querySelectorAll('.nav-item')[3]); closeUpgradeModal();">Go to Upgrade Page</button>
-    <button class="btn-secondary" style="margin-top: 10px; border-color: #444; color: #888;" onclick="closeUpgradeModal()">Cancel</button>
-  </div>
-
   <script>
     const SUPABASE_URL = 'https://wdexwfoplycblaxmrfws.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_6U7d-ihEr1ivc362mhkDeQ_2suPM3gy';
@@ -372,15 +336,17 @@
     let currentTF = '5min';
     let currentAsset = 'XAU/USD';
     let liveInterval;
-    let userTries = 5; 
+    let autopilotInterval;
     let currentFilter = 'all';
-    let isPro = false;
+
+    // FILTERS
+    let maxSL = localStorage.getItem('maxSL') || '50';
+    let enabledSessions = JSON.parse(localStorage.getItem('enabledSessions')) || { sydney: true, tokyo: true, london: true, ny: true };
 
     // MULTI-TIMEFRAME TRADES
     let activeTrades = {}; 
     let tradeHistory = [];
     let notifications = [];
-    let journalEntryId = null;
 
     try {
       activeTrades = JSON.parse(localStorage.getItem('activeTrades')) || {};
@@ -425,7 +391,7 @@
       const { error } = await supabaseClient.auth.signUp({ 
         email, 
         password,
-        options: { data: { tries_left: 5, is_pro: false } }
+        options: { data: { tries_left: 9999, is_pro: true } }
       });
       if (error) alert("Sign Up Error: " + error.message);
       else alert('Account created! You can now click Login.');
@@ -468,57 +434,69 @@
         document.getElementById('appContent').style.display = 'block';
         document.getElementById('userEmail').innerText = session.user.email;
         
-        if (session.user.user_metadata && session.user.user_metadata.tries_left !== undefined) {
-          userTries = session.user.user_metadata.tries_left;
-        } else {
-          userTries = 5;
-        }
-        
-        if (session.user.user_metadata && session.user.user_metadata.is_pro === true) {
-          isPro = true;
-          document.getElementById('proBadge').style.display = 'inline-block';
-        }
-
-        updateTryText();
         renderNotifBadge();
-
         initApp();
+        
+        // Load Filters
+        document.getElementById('maxSLFilter').value = maxSL;
+        document.getElementById('chk-sydney').checked = enabledSessions.sydney;
+        document.getElementById('chk-tokyo').checked = enabledSessions.tokyo;
+        document.getElementById('chk-london').checked = enabledSessions.london;
+        document.getElementById('chk-ny').checked = enabledSessions.ny;
+
+        startAutopilot(); 
+        updateSessionUI();
+        setInterval(updateSessionUI, 60000); // Update sessions every minute
       } else {
         document.getElementById('loginScreen').style.display = 'flex';
         document.getElementById('appContent').style.display = 'none';
       }
     }
 
-    function updateTryText() {
-      const el = document.getElementById('trialText');
-      if (isPro) {
-        el.innerText = `PRO`;
-        el.style.color = '#ffd700';
-      } else if (userTries > 0) {
-        el.innerText = `Tries: ${userTries}`;
-        el.style.color = '#888';
-      } else {
-        el.innerText = `Trial ended`;
-        el.style.color = '#ef5350';
-      }
+    function toggleFilters() {
+      document.getElementById('filterPanel').classList.toggle('active');
     }
 
-    function copyWallet() {
-      const address = "TLgREYohGVK6V9zUS6gNowq2WjPavmfEj3";
-      navigator.clipboard.writeText(address).then(() => {
-        alert("Wallet Address Copied!");
-      }).catch(err => {
-        alert("Failed to copy: " + err);
-      });
+    function saveFilters() {
+      maxSL = document.getElementById('maxSLFilter').value;
+      enabledSessions = {
+        sydney: document.getElementById('chk-sydney').checked,
+        tokyo: document.getElementById('chk-tokyo').checked,
+        london: document.getElementById('chk-london').checked,
+        ny: document.getElementById('chk-ny').checked
+      };
+      localStorage.setItem('maxSL', maxSL);
+      localStorage.setItem('enabledSessions', JSON.stringify(enabledSessions));
     }
 
-    function confirmVerify() {
-      return confirm("Before going to Telegram, please make sure you have your Payment Screenshot and Account Email ready to send to support.");
+    function getActiveSessions() {
+      const now = new Date();
+      const utcHour = now.getUTCHours();
+      
+      // Basic UTC session times
+      // Sydney: 21:00 - 06:00 UTC
+      const isSydney = utcHour >= 21 || utcHour < 6;
+      // Tokyo: 00:00 - 09:00 UTC
+      const isTokyo = utcHour >= 0 && utcHour < 9;
+      // London: 07:00 - 16:00 UTC
+      const isLondon = utcHour >= 7 && utcHour < 16;
+      // New York: 12:00 - 21:00 UTC
+      const isNY = utcHour >= 12 && utcHour < 21;
+
+      return { sydney: isSydney, tokyo: isTokyo, london: isLondon, ny: isNY };
+    }
+
+    function updateSessionUI() {
+      const active = getActiveSessions();
+      document.getElementById('sess-sydney').classList.toggle('open', active.sydney);
+      document.getElementById('sess-tokyo').classList.toggle('open', active.tokyo);
+      document.getElementById('sess-london').classList.toggle('open', active.london);
+      document.getElementById('sess-ny').classList.toggle('open', active.ny);
     }
 
     const dict = {
-      en: { analyze: "⚡ ANALYZE MARKET", loading: "Select a timeframe and click Analyze.", scanning: "Scanning Market Structure...", buy: "BUY LIMIT", sell: "SELL LIMIT", activeBuy: "ACTIVE BUY", activeSell: "ACTIVE SELL", pending: "PENDING (WAIT)", entry: "SNIPER ENTRY", sl: "STOP LOSS", tp1: "TAKE PROFIT 1", tp2: "TAKE PROFIT 2", live: "Live", account: "Account", history: "History", noHistory: "No previous trades yet." },
-      ar: { analyze: "⚡ تحليل السوق", loading: "اختر الفريم واضغط تحليل.", scanning: "جاري تحليل هيكل السوق...", buy: "شراء معلق", sell: "بيع معلق", activeBuy: "شراء نشط", activeSell: "بيع نشط", pending: "معلق (انتظار)", entry: "الدخول", sl: "وقف خسارة", tp1: "هدف", tp2: "هدف", live: "مباشر", account: "الحساب", history: "السجل", noHistory: "لا يوجد صفقات سابقة." }
+      en: { analyze: "⚡ ANALYZE MARKET", loading: "Autopilot is scanning...", scanning: "Scanning Market Structure...", buy: "BUY LIMIT", sell: "SELL LIMIT", activeBuy: "ACTIVE BUY", activeSell: "ACTIVE SELL", pending: "PENDING (WAIT)", entry: "SNIPER ENTRY", sl: "STOP LOSS", tp1: "TAKE PROFIT 1", tp2: "TAKE PROFIT 2", live: "Live", account: "Account", history: "History", noHistory: "No previous trades yet." },
+      ar: { analyze: "⚡ تحليل السوق", loading: "الأوتوبايلوت يمسح السوق...", scanning: "جاري تحليل هيكل السوق...", buy: "شراء معلق", sell: "بيع معلق", activeBuy: "شراء نشط", activeSell: "بيع نشط", pending: "معلق (انتظار)", entry: "الدخول", sl: "وقف خسارة", tp1: "هدف", tp2: "هدف", live: "مباشر", account: "الحساب", history: "السجل", noHistory: "لا يوجد صفقات سابقة." }
     };
 
     function applyLanguage() {
@@ -526,13 +504,11 @@
       if (currentLang === 'ar') document.getElementById('mainBody').classList.add('rtl');
       else document.getElementById('mainBody').classList.remove('rtl');
       
-      document.getElementById('btnAnalyze').innerText = dict[currentLang].analyze;
       if (!activeTrades[currentTF]) document.getElementById('loadingText').innerText = dict[currentLang].loading;
       
       document.querySelectorAll('.nav-text')[0].innerText = dict[currentLang].live;
-      document.querySelectorAll('.nav-text')[1].innerText = "News";
-      document.querySelectorAll('.nav-text')[2].innerText = dict[currentLang].history;
-      document.querySelectorAll('.nav-text')[3].innerText = dict[currentLang].account;
+      document.querySelectorAll('.nav-text')[1].innerText = dict[currentLang].history;
+      document.querySelectorAll('.nav-text')[2].innerText = dict[currentLang].account;
       
       if (activeTrades[currentTF]) renderTradeCard(activeTrades[currentTF]); 
       renderHistoryList();
@@ -572,7 +548,6 @@
       }, 100);
       
       startLiveTracking();
-      checkNewsWarning();
     }
 
     function switchTab(tabId, element) {
@@ -584,9 +559,6 @@
       if (tabId === 'live' && chart) {
         setTimeout(() => chart.applyOptions({ width: document.getElementById('chart-container').clientWidth }), 50);
       }
-      if (tabId === 'news') {
-        loadNews();
-      }
     }
 
     function selectTF(tf, btn) {
@@ -595,7 +567,6 @@
       btn.classList.add('active');
       loadChartData(tf); 
       
-      // Restore trade for this specific timeframe
       if (activeTrades[currentTF]) {
         renderTradeCard(activeTrades[currentTF]);
         drawTradeLines(activeTrades[currentTF]);
@@ -608,14 +579,10 @@
 
     async function loadChartData(tf) {
       try {
-        const symbol = currentAsset.replace('/', '');
         const res = await fetch(`https://api.twelvedata.com/time_series?symbol=${currentAsset}&interval=${tf}&outputsize=300&apikey=${TWELVEDATA_API_KEY}`);
         const data = await res.json();
 
-        if (data.status === 'error') {
-          console.log("API Error: " + data.message);
-          return null;
-        }
+        if (data.status === 'error') return null;
 
         const bars = data.values.map(item => ({
           time: new Date(item.datetime).getTime() / 1000,
@@ -628,132 +595,95 @@
         candleSeries.setData(bars);
         chart.timeScale().setVisibleLogicalRange({ from: bars.length - 60, to: bars.length + 10 });
 
-        if (activeTrades[tf] && activeTrades[tf].status === 'PENDING') {
-          const lastBar = bars[bars.length - 1];
-          let touched = false;
-          if (activeTrades[tf].dir === 'BUY' && lastBar.low <= activeTrades[tf].entry) touched = true;
-          if (activeTrades[tf].dir === 'SELL' && lastBar.high >= activeTrades[tf].entry) touched = true;
-          
-          if (touched) {
-            activeTrades[tf].status = 'ACTIVE';
-            localStorage.setItem('activeTrades', JSON.stringify(activeTrades));
-            if (tf === currentTF) renderTradeCard(activeTrades[tf]);
-          }
-        }
         return bars;
-      } catch (e) { 
-        return null; 
-      }
+      } catch (e) { return null; }
     }
 
-    // --- MASTER ENGINE (SMC + POC + S/R) ---
-    async function startAnalysis() {
-      if (!isPro && userTries <= 0) {
-        document.getElementById('upgradeOverlay').classList.add('active');
-        document.getElementById('upgradeModal').classList.add('active');
-        return;
-      }
-
-      if (activeTrades[currentTF]) {
-        const confirmReset = confirm(currentLang === 'ar' ? "هل تريد حذف الصفقة والبحث عن جديدة؟" : "Delete current trade and scan again?");
-        if (!confirmReset) return;
-      }
+    // --- AUTOPILOT ENGINE ---
+    function startAutopilot() {
+      if (autopilotInterval) clearInterval(autopilotInterval);
       
-      // AI THINKING SEQUENCE
-      const signalBox = document.getElementById('signalBox');
-      const steps = [
-        "🧠 Agent 1: Scanning Liquidity Sweeps...",
-        "📊 Agent 2: Checking Volume Profile (POC)...",
-        "🎯 Agent 3: Calculating Sniper Entry..."
-      ];
-      
-      for (let i = 0; i < steps.length; i++) {
-        signalBox.innerHTML = `<div class="loading" style="color:#ffd700; font-weight:700;">${steps[i]}</div>`;
-        await new Promise(r => setTimeout(r, 800));
-      }
+      autopilotInterval = setInterval(async () => {
+        // Only scan if there is no active trade for the current timeframe
+        if (activeTrades[currentTF]) return;
+        
+        // Check Sessions
+        const activeSess = getActiveSessions();
+        const canTradeSession = 
+          (activeSess.sydney && enabledSessions.sydney) ||
+          (activeSess.tokyo && enabledSessions.tokyo) ||
+          (activeSess.london && enabledSessions.london) ||
+          (activeSess.ny && enabledSessions.ny);
 
-      priceLines.forEach(line => candleSeries.removePriceLine(line));
-      priceLines = [];
-      delete activeTrades[currentTF];
-      localStorage.setItem('activeTrades', JSON.stringify(activeTrades));
-      window.history.replaceState({}, document.title, window.location.pathname);
+        if (!canTradeSession) return; // Not in an enabled session
 
-      const bars = await loadChartData(currentTF);
-      if (!bars || bars.length === 0) {
-        signalBox.innerHTML = `<div class="loading text-red">Failed to load chart. Wait 1 minute and refresh.</div>`;
-        return;
-      }
+        const bars = await loadChartData(currentTF);
+        if (!bars || bars.length === 0) return;
 
-      if (!isPro && userTries > 0) {
-        userTries--;
-        updateTryText();
-        if (supabaseClient) {
-          await supabaseClient.auth.updateUser({ data: { tries_left: userTries } });
-        }
-      }
+        const lastBar = bars[bars.length - 1];
+        let bullishOB = null;
+        let bearishOB = null;
+        const lookbackOB = 50;
+        const recentBars = bars.slice(-lookbackOB);
 
-      // Logic (SMC + POC)
-      const lastBar = bars[bars.length - 1];
-      let bullishOB = null;
-      let bearishOB = null;
-      const lookbackOB = 50;
-      const recentBars = bars.slice(-lookbackOB);
+        for (let i = recentBars.length - 1; i >= 2; i--) {
+          const c1 = recentBars[i];
+          const c2 = recentBars[i-1];
+          const c3 = recentBars[i-2];
 
-      for (let i = recentBars.length - 1; i >= 2; i--) {
-        const c1 = recentBars[i];
-        const c2 = recentBars[i-1];
-        const c3 = recentBars[i-2];
-
-        if (c3.close < c3.open && c2.close > c2.open && c2.close > c3.high) {
-            if (!bullishOB && c3.low > (lastBar.close - 30)) bullishOB = c3;
-        }
-        if (c3.close > c3.open && c2.close < c2.open && c2.close < c3.low) {
-            if (!bearishOB && c3.high < (lastBar.close + 30)) bearishOB = c3;
-        }
-      }
-
-      let dir, entry, sl, tp1, tp2;
-      
-      const distToBullish = bullishOB ? Math.abs(lastBar.close - bullishOB.high) : 9999;
-      const distToBearish = bearishOB ? Math.abs(lastBar.close - bearishOB.low) : 9999;
-
-      if (distToBullish < distToBearish && bullishOB) {
-          dir = "BUY";
-          entry = bullishOB.high; 
-          sl = bullishOB.low - 0.5; 
-      } else if (bearishOB) {
-          dir = "SELL";
-          entry = bearishOB.low; 
-          sl = bearishOB.high + 0.5; 
-      } else {
-          const closes = bars.map(b => b.close);
-          const ema20 = closes.reduce((a, b) => a + b, 0) / 20; 
-          let trendDir = lastBar.close > ema20 ? "BUY" : "SELL";
-          if (trendDir === "BUY") {
-              dir = "BUY"; entry = lastBar.close - 1.0; sl = entry - 2.0;
-          } else {
-              dir = "SELL"; entry = lastBar.close + 1.0; sl = entry + 2.0;
+          if (c3.close < c3.open && c2.close > c2.open && c2.close > c3.high) {
+              if (!bullishOB && c3.low > (lastBar.close - 30)) bullishOB = c3;
           }
-      }
+          if (c3.close > c3.open && c2.close < c2.open && c2.close < c3.low) {
+              if (!bearishOB && c3.high < (lastBar.close + 30)) bearishOB = c3;
+          }
+        }
 
-      if (currentTF === '5min') {
-          if (dir === 'BUY' && (entry - sl) > 5.0) sl = entry - 5.0; 
-          if (dir === 'SELL' && (sl - entry) > 5.0) sl = entry + 5.0; 
-      } else if (currentTF === '15min') {
-          if (dir === 'BUY' && (entry - sl) > 7.0) sl = entry - 7.0; 
-          if (dir === 'SELL' && (sl - entry) > 7.0) sl = entry + 7.0; 
-      }
+        let dir, entry, sl, tp1, tp2;
+        
+        const distToBullish = bullishOB ? Math.abs(lastBar.close - bullishOB.high) : 9999;
+        const distToBearish = bearishOB ? Math.abs(lastBar.close - bearishOB.low) : 9999;
 
-      const risk = Math.abs(entry - sl);
-      tp1 = dir === 'BUY' ? entry + (risk * 1.5) : entry - (risk * 1.5);
-      tp2 = dir === 'BUY' ? entry + (risk * 3.5) : entry - (risk * 3.5);
+        if (distToBullish < 2.0 && bullishOB) {
+            dir = "BUY";
+            entry = bullishOB.high; 
+            sl = bullishOB.low - 0.5; 
+        } else if (distToBearish < 2.0 && bearishOB) {
+            dir = "SELL";
+            entry = bearishOB.low; 
+            sl = bearishOB.high + 0.5; 
+        } else {
+            return; // No setup found
+        }
 
-      activeTrades[currentTF] = { id: Date.now(), dir, entry, sl, tp1, tp2, tf: currentTF, status: 'PENDING', date: new Date().toLocaleString(), journal: "" };
-      
-      addNotification(dir, entry, sl, tp1, tp2, currentTF);
-      
-      localStorage.setItem('activeTrades', JSON.stringify(activeTrades));
-      renderTradeCard(activeTrades[currentTF]);
+        // Apply User Max SL Filter
+        const slPips = Math.abs(entry - sl) * 10;
+        if (slPips > parseInt(maxSL)) {
+            return; // SL is too big for the user's filter
+        }
+
+        // Apply strict caps
+        if (currentTF === '5min') {
+            if (dir === 'BUY' && (entry - sl) > 5.0) sl = entry - 5.0; 
+            if (dir === 'SELL' && (sl - entry) > 5.0) sl = entry + 5.0; 
+        } else if (currentTF === '15min') {
+            if (dir === 'BUY' && (entry - sl) > 7.0) sl = entry - 7.0; 
+            if (dir === 'SELL' && (sl - entry) > 7.0) sl = entry + 7.0; 
+        }
+
+        const risk = Math.abs(entry - sl);
+        tp1 = dir === 'BUY' ? entry + (risk * 1.5) : entry - (risk * 1.5);
+        tp2 = dir === 'BUY' ? entry + (risk * 3.5) : entry - (risk * 3.5);
+
+        activeTrades[currentTF] = { id: Date.now(), dir, entry, sl, tp1, tp2, tf: currentTF, status: 'PENDING', date: new Date().toLocaleString() };
+        addNotification(dir, entry, sl, tp1, tp2, currentTF);
+        localStorage.setItem('activeTrades', JSON.stringify(activeTrades));
+        
+        if (document.getElementById('page-live').classList.contains('active')) {
+          renderTradeCard(activeTrades[currentTF]);
+        }
+
+      }, 30000); // Scan every 30 seconds
     }
 
     function drawTradeLines(trade) {
@@ -797,32 +727,6 @@
         </div>
       `;
       drawTradeLines(trade);
-    }
-
-    // NEWS LOGIC
-    async function checkNewsWarning() {
-      // Simulate checking news
-      const hasNews = true; 
-      if (hasNews) {
-        document.getElementById('newsBanner').classList.add('active');
-      }
-    }
-
-    function loadNews() {
-      const list = document.getElementById('newsList');
-      // Simulated news feed
-      list.innerHTML = `
-        <div class="news-card high">
-          <div class="news-title">US Non-Farm Payrolls (NFP)</div>
-          <div class="news-meta"><span>USD</span><span class="news-impact high">High Impact</span></div>
-          <div style="font-size:12px; color:#888;">Expect high volatility in Gold and USD pairs.</div>
-        </div>
-        <div class="news-card medium">
-          <div class="news-title">FOMC Member Speech</div>
-          <div class="news-meta"><span>USD</span><span class="news-impact medium">Medium Impact</span></div>
-          <div style="font-size:12px; color:#888;">Potential short-term volatility.</div>
-        </div>
-      `;
     }
 
     // NOTIFICATIONS
@@ -879,38 +783,6 @@
       localStorage.setItem('notifications', JSON.stringify(notifications));
       renderNotifBadge();
       renderNotifList();
-    }
-
-    // JOURNAL LOGIC
-    function openJournal(id) {
-      journalEntryId = id;
-      const trade = tradeHistory.find(t => t.id === id);
-      if (trade) {
-        document.getElementById('journalInput').value = trade.journal || "";
-        document.getElementById('journalModal').style.display = 'flex';
-      }
-    }
-
-    function closeJournal(event) {
-      if (event && event.target.id !== 'journalModal' && !event.target.classList.contains('journal-box') && event.target.tagName !== 'BUTTON') return;
-      document.getElementById('journalModal').style.display = 'none';
-    }
-
-    function saveJournal() {
-      const text = document.getElementById('journalInput').value;
-      const tradeIndex = tradeHistory.findIndex(t => t.id === journalEntryId);
-      if (tradeIndex > -1) {
-        tradeHistory[tradeIndex].journal = text;
-        localStorage.setItem('tradeHistory', JSON.stringify(tradeHistory));
-        alert('Journal saved!');
-      }
-      document.getElementById('journalModal').style.display = 'none';
-    }
-
-    // UPGRADE MODAL
-    function closeUpgradeModal() {
-      document.getElementById('upgradeOverlay').classList.remove('active');
-      document.getElementById('upgradeModal').classList.remove('active');
     }
 
     // HISTORY
@@ -981,7 +853,7 @@
         const pips = (Math.abs(t.exitPrice - t.entry) * 10).toFixed(0);
 
         html += `
-          <div class="history-item" onclick="openJournal(${t.id})">
+          <div class="history-item">
             <div>
               <div class="history-title">${currentAsset} <span class="${isBuy ? 'text-green' : 'text-red'}">${isBuy ? dict[currentLang].buy : dict[currentLang].sell}</span></div>
               <div class="history-date">${t.date} | ${t.tf.toUpperCase()}</div>
@@ -1016,6 +888,16 @@
             let result = null;
             let exitPrice = 0;
             
+            // Check if price touched entry
+            if (trade.status === 'PENDING') {
+              if (trade.dir === 'BUY' && livePrice <= trade.entry) trade.status = 'ACTIVE';
+              if (trade.dir === 'SELL' && livePrice >= trade.entry) trade.status = 'ACTIVE';
+              localStorage.setItem('activeTrades', JSON.stringify(activeTrades));
+              if (tf === currentTF && document.getElementById('page-live').classList.contains('active')) {
+                renderTradeCard(trade);
+              }
+            }
+
             if (trade.dir === 'BUY') {
               if (livePrice <= trade.sl) { result = 'LOSS'; exitPrice = trade.sl; }
               if (livePrice >= trade.tp2) { result = 'WIN'; exitPrice = trade.tp2; }
