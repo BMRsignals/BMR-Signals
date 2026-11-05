@@ -649,12 +649,27 @@
 
         if (trendDir === "BUY") {
             dir = "BUY";
-            entry = recentLow; // Buy limit at support
+            entry = recentLow; 
             sl = entry - 2.0; 
         } else {
             dir = "SELL";
-            entry = recentHigh; // Sell limit at resistance
+            entry = recentHigh; 
             sl = entry + 2.0;
+        }
+
+        // **NEW: SIGNAL DEDUPLICATION**
+        // Check if we already have a trade very close to this entry price
+        let isDuplicate = false;
+        const recentHistory = tradeHistory.slice(-5); // Check last 5 trades
+        recentHistory.forEach(t => {
+            if (t.tf === currentTF && Math.abs(t.entry - entry) < 1.0) {
+                isDuplicate = true;
+            }
+        });
+        
+        if (isDuplicate) {
+            console.log("Duplicate signal ignored.");
+            return;
         }
 
         // Apply User Max SL Filter
@@ -697,7 +712,6 @@
       const isBuy = trade.dir === 'BUY';
       let statusClass = "status-pending";
       
-      // NEW TEXT LOGIC
       let statusText = trade.dir === 'BUY' ? `${dict[currentLang].waitBuy} ${trade.entry.toFixed(2)}` : `${dict[currentLang].waitSell} ${trade.entry.toFixed(2)}`;
       
       if (trade.status === 'ACTIVE') {
