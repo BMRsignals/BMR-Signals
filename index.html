@@ -157,6 +157,16 @@
 
     /* Risk Note on Live Page */
     .risk-note-live { font-size: 12px; color: #888; background: #111; padding: 12px; border-radius: 8px; border: 1px solid #222; margin-top: 16px; line-height: 1.5; }
+
+    /* News Tab Styles */
+    .news-card { background: #111; border: 1px solid #222; border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+    .news-card.high { border-left: 4px solid #ef5350; }
+    .news-card.medium { border-left: 4px solid #ffd700; }
+    .news-title { font-weight: 700; font-size: 15px; margin-bottom: 8px; }
+    .news-meta { font-size: 12px; color: #888; display: flex; justify-content: space-between; margin-bottom: 8px; }
+    .news-impact { padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+    .news-impact.high { background: #ef535022; color: #ef5350; }
+    .news-impact.medium { background: #ffd70022; color: #ffd700; }
   </style>
 </head>
 <body id="mainBody">
@@ -250,7 +260,7 @@
       </div>
       <div id="chart-container"></div>
       <div style="padding: 16px;">
-        <div id="signalBox"><div class="loading" id="loadingText">Scanning for setups automatically...</div></div>
+        <div id="signalBox"><div class="loading" id="loadingText">Autopilot is scanning...</div></div>
         
         <!-- RISK DISCLAIMER -->
         <div class="risk-note-live">
@@ -259,6 +269,14 @@
           • Position size: <strong>0.02 lots for every $200</strong><br>
           • Close <strong>0.01 at TP1</strong> and <strong>0.01 at TP2</strong>.
         </div>
+      </div>
+    </div>
+
+    <!-- NEWS TAB -->
+    <div id="page-news" class="page">
+      <h2 style="font-size: 18px; margin-bottom: 16px;">High Impact News (Gold & USD)</h2>
+      <div id="newsList">
+        <div class="loading">Loading news...</div>
       </div>
     </div>
 
@@ -300,10 +318,33 @@
         </div>
         <button onclick="logout()" style="width: 100%; padding: 12px; background: #ef535022; color: #ef5350; border: 1px solid #ef535055; border-radius: 8px; font-weight: 700; cursor: pointer;">Log Out</button>
       </div>
+
+      <!-- UPGRADE BANNER & CRYPTO PAYMENT -->
+      <div class="sub-banner">
+        <h3>MR.TRADER FAMILY</h3>
+        <div style="font-size: 32px; font-weight: 700; margin-bottom: 8px;">$49<span style="font-size: 14px; color: #888;">/mo</span></div>
+        <p>Unlock unlimited live AI signals, advanced volume profile, and priority support.</p>
+        
+        <!-- USDT TRC20 PAYMENT BOX -->
+        <div class="payment-box">
+          <div style="font-size: 12px; color: #888; margin-bottom: 8px; font-weight: 700;">PAY WITH USDT (TRC20)</div>
+          
+          <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=TLgREYohGVK6V9zUS6gNowq2WjPavmfEj3" alt="TRC20 QR Code" class="qr-code">
+          
+          <div class="wallet-address" id="walletAddress">TLgREYohGVK6V9zUS6gNowq2WjPavmfEj3</div>
+          
+          <button class="btn-copy" onclick="copyWallet()">Copy Address</button>
+          
+          <a href="https://t.me/mrtraderai_official" target="_blank" class="btn-verify" onclick="return confirmVerify()">
+            Verify via Telegram
+          </a>
+        </div>
+      </div>
     </div>
 
     <div class="bottom-nav">
       <div class="nav-item active" onclick="switchTab('live', this)"><span class="nav-icon">⚡</span> <span class="nav-text">Live</span></div>
+      <div class="nav-item" onclick="switchTab('news', this)"><span class="nav-icon">📰</span> <span class="nav-text">News</span></div>
       <div class="nav-item" onclick="switchTab('history', this)"><span class="nav-icon">🕒</span> <span class="nav-text">History</span></div>
       <div class="nav-item" onclick="switchTab('account', this)"><span class="nav-icon">👤</span> <span class="nav-text">Account</span></div>
     </div>
@@ -446,7 +487,7 @@
 
         startAutopilot(); 
         updateSessionUI();
-        setInterval(updateSessionUI, 60000); // Update sessions every minute
+        setInterval(updateSessionUI, 60000); 
       } else {
         document.getElementById('loginScreen').style.display = 'flex';
         document.getElementById('appContent').style.display = 'none';
@@ -473,14 +514,9 @@
       const now = new Date();
       const utcHour = now.getUTCHours();
       
-      // Basic UTC session times
-      // Sydney: 21:00 - 06:00 UTC
       const isSydney = utcHour >= 21 || utcHour < 6;
-      // Tokyo: 00:00 - 09:00 UTC
       const isTokyo = utcHour >= 0 && utcHour < 9;
-      // London: 07:00 - 16:00 UTC
       const isLondon = utcHour >= 7 && utcHour < 16;
-      // New York: 12:00 - 21:00 UTC
       const isNY = utcHour >= 12 && utcHour < 21;
 
       return { sydney: isSydney, tokyo: isTokyo, london: isLondon, ny: isNY };
@@ -507,8 +543,9 @@
       if (!activeTrades[currentTF]) document.getElementById('loadingText').innerText = dict[currentLang].loading;
       
       document.querySelectorAll('.nav-text')[0].innerText = dict[currentLang].live;
-      document.querySelectorAll('.nav-text')[1].innerText = dict[currentLang].history;
-      document.querySelectorAll('.nav-text')[2].innerText = dict[currentLang].account;
+      document.querySelectorAll('.nav-text')[1].innerText = "News";
+      document.querySelectorAll('.nav-text')[2].innerText = dict[currentLang].history;
+      document.querySelectorAll('.nav-text')[3].innerText = dict[currentLang].account;
       
       if (activeTrades[currentTF]) renderTradeCard(activeTrades[currentTF]); 
       renderHistoryList();
@@ -559,6 +596,9 @@
       if (tabId === 'live' && chart) {
         setTimeout(() => chart.applyOptions({ width: document.getElementById('chart-container').clientWidth }), 50);
       }
+      if (tabId === 'news') {
+        loadNews();
+      }
     }
 
     function selectTF(tf, btn) {
@@ -604,10 +644,8 @@
       if (autopilotInterval) clearInterval(autopilotInterval);
       
       autopilotInterval = setInterval(async () => {
-        // Only scan if there is no active trade for the current timeframe
         if (activeTrades[currentTF]) return;
         
-        // Check Sessions
         const activeSess = getActiveSessions();
         const canTradeSession = 
           (activeSess.sydney && enabledSessions.sydney) ||
@@ -615,7 +653,7 @@
           (activeSess.london && enabledSessions.london) ||
           (activeSess.ny && enabledSessions.ny);
 
-        if (!canTradeSession) return; // Not in an enabled session
+        if (!canTradeSession) return;
 
         const bars = await loadChartData(currentTF);
         if (!bars || bars.length === 0) return;
@@ -653,16 +691,12 @@
             entry = bearishOB.low; 
             sl = bearishOB.high + 0.5; 
         } else {
-            return; // No setup found
+            return;
         }
 
-        // Apply User Max SL Filter
         const slPips = Math.abs(entry - sl) * 10;
-        if (slPips > parseInt(maxSL)) {
-            return; // SL is too big for the user's filter
-        }
+        if (slPips > parseInt(maxSL)) return;
 
-        // Apply strict caps
         if (currentTF === '5min') {
             if (dir === 'BUY' && (entry - sl) > 5.0) sl = entry - 5.0; 
             if (dir === 'SELL' && (sl - entry) > 5.0) sl = entry + 5.0; 
@@ -683,7 +717,7 @@
           renderTradeCard(activeTrades[currentTF]);
         }
 
-      }, 30000); // Scan every 30 seconds
+      }, 30000); 
     }
 
     function drawTradeLines(trade) {
@@ -727,6 +761,23 @@
         </div>
       `;
       drawTradeLines(trade);
+    }
+
+    // NEWS LOGIC
+    function loadNews() {
+      const list = document.getElementById('newsList');
+      list.innerHTML = `
+        <div class="news-card high">
+          <div class="news-title">US Non-Farm Payrolls (NFP)</div>
+          <div class="news-meta"><span>USD</span><span class="news-impact high">High Impact</span></div>
+          <div style="font-size:12px; color:#888;">Expect high volatility in Gold and USD pairs.</div>
+        </div>
+        <div class="news-card medium">
+          <div class="news-title">FOMC Member Speech</div>
+          <div class="news-meta"><span>USD</span><span class="news-impact medium">Medium Impact</span></div>
+          <div style="font-size:12px; color:#888;">Potential short-term volatility.</div>
+        </div>
+      `;
     }
 
     // NOTIFICATIONS
@@ -888,7 +939,6 @@
             let result = null;
             let exitPrice = 0;
             
-            // Check if price touched entry
             if (trade.status === 'PENDING') {
               if (trade.dir === 'BUY' && livePrice <= trade.entry) trade.status = 'ACTIVE';
               if (trade.dir === 'SELL' && livePrice >= trade.entry) trade.status = 'ACTIVE';
