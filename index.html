@@ -507,55 +507,79 @@
         }
       }
 
-      // --- NEW LOGIC: Check which zone the price is closest to ---
+      // --- SMC ORDER BLOCK LOGIC ---
       const lastBar = bars[bars.length - 1];
       
-      let lookback = 30;
-      if (currentTF === '5min') lookback = 10;
-      if (currentTF === '15min') lookback = 20;
-      if (currentTF === '30min' || currentTF === '1h') lookback = 40;
-      if (currentTF === '4h' || currentTF === '1day') lookback = 60;
-
+      // Find the most recent Order Blocks
+      let bullishOB = null;
+      let bearishOB = null;
+      
+      // Look back up to 50 candles to find OBs
+      const lookback = 50;
       const recentBars = bars.slice(-lookback);
-      const recentHigh = Math.max(...recentBars.map(b => b.high));
-      const recentLow = Math.min(...recentBars.map(b => b.low));
+
+      for (let i = recentBars.length - 1; i >= 2; i--) {
+        const c1 = recentBars[i];
+        const c2 = recentBars[i-1];
+        const c3 = recentBars[i-2];
+
+        // Bullish Order Block (Down candle before a strong up move)
+        if (c3.close < c3.open && c2.close > c2.open && c2.close > c3.high) {
+            if (!bullishOB && c3.low > (lastBar.close - 30)) { // Ensure it's not too far below current price
+                bullishOB = c3;
+            }
+        }
+
+        // Bearish Order Block (Up candle before a strong down move)
+        if (c3.close > c3.open && c2.close < c2.open && c2.close < c3.low) {
+            if (!bearishOB && c3.high < (lastBar.close + 30)) { // Ensure it's not too far above current price
+                bearishOB = c3;
+            }
+        }
+      }
 
       let dir, entry, sl, tp1, tp2;
 
-      // Compare distance to High vs Low
-      const distToHigh = Math.abs(recentHigh - lastBar.close);
-      const distToLow = Math.abs(lastBar.close - recentLow);
+      // Logic: If price is closer to Bullish OB, go BUY. If closer to Bearish OB, go SELL.
+      // If no OBs found, fall back to trend.
+      
+      const distToBullish = bullishOB ? Math.abs(lastBar.close - bullishOB.high) : 9999;
+      const distToBearish = bearishOB ? Math.abs(lastBar.close - bearishOB.low) : 9999;
 
-      // If closer to the high, place a SELL LIMIT. If closer to the low, place a BUY LIMIT.
-      if (distToHigh < distToLow) {
-        dir = "SELL"; 
-        entry = recentHigh + 0.2; 
+      if (distToBullish < distToBearish && bullishOB) {
+          // BUY LIMIT at Bullish Order Block
+          dir = "BUY";
+          entry = bullishOB.high; // Enter when price retraces into the OB
+          sl = bullishOB.low - 0.5; // Stop loss just below the OB
+          const risk = entry - sl;
+          tp1 = entry + (risk * 1.5);
+          tp2 = entry + (risk * 3.5);
+      } else if (bearishOB) {
+          // SELL LIMIT at Bearish Order Block
+          dir = "SELL";
+          entry = bearishOB.low; // Enter when price retraces into the OB
+          sl = bearishOB.high + 0.5; // Stop loss just above the OB
+          const risk = sl - entry;
+          tp1 = entry - (risk * 1.5);
+          tp2 = entry - (risk * 3.5);
       } else {
-        dir = "BUY"; 
-        entry = recentLow - 0.2; 
-      }
-
-      // 2. Calculate Raw SL distance (Standard structure)
-      let slDistance = 2.5; // Default
-
-      // 3. Apply Scalping Rules based on timeframe
-      if (currentTF === '5min') {
-        slDistance = Math.min(slDistance, 5.0); // MAX 50 pips for M5
-      } else if (currentTF === '15min') {
-        slDistance = Math.min(slDistance, 7.0); // MAX 70 pips for M15
-      }
-
-      // 4. Calculate Final SL and TPs
-      if (dir === "SELL") {
-        sl = entry + slDistance; 
-        const risk = sl - entry;
-        tp1 = entry - (risk * 1.5);
-        tp2 = entry - (risk * 3.5); 
-      } else {
-        sl = entry - slDistance; 
-        const risk = entry - sl;
-        tp1 = entry + (risk * 1.5);
-        tp2 = entry + (risk * 3.5); 
+          // Fallback to simple trend if no clear OBs
+          const closes = bars.map(b => b.close);
+          const ema20 = closes.reduce((a, b) => a + b, 0) / 20; 
+          let trendDir = lastBar.close > ema20 ? "BUY" : "SELL";
+          
+          if (trendDir === "BUY") {
+              dir = "BUY";
+              entry = lastBar.close - 1.0; 
+              sl = entry - 2.0;
+          } else {
+              dir = "SELL";
+              entry = lastBar.close + 1.0;
+              sl = entry + 2.0;
+          }
+          const risk = Math.abs(entry - sl);
+          tp1 = dir === 'BUY' ? entry + (risk * 1.5) : entry - (risk * 1.5);
+          tp2 = dir === 'BUY' ? entry + (risk * 3.5) : entry - (risk * 3.5);
       }
 
       activeTrade = { id: Date.now(), dir, entry, sl, tp1, tp2, tf: currentTF, status: 'PENDING', date: new Date().toLocaleString() };
