@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>MR.Trader AI - Autopilot</title>
+  <title>MR.Trader AI - Pro</title>
   <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -83,6 +83,9 @@
     .tf-btn { background: #111; border: 1px solid #333; color: #888; padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
     .tf-btn.active { background: #ffd700; border-color: #ffd700; color: #000; }
 
+    .btn-analyze { width: 100%; padding: 16px; background: #222; color: #fff; border: none; border-top: 1px solid #333; font-size: 16px; font-weight: 700; cursor: pointer; transition: 0.3s; }
+    .btn-analyze:active { background: #ffd700; color: #000; }
+
     #chart-container { width: 100%; height: 35vh; border-bottom: 1px solid #1a1a1a; }
 
     /* Glassmorphism Signal Card */
@@ -113,6 +116,7 @@
     .status-pending { background: #ffd70022; color: #ffd700; border: 1px solid #ffd70055; }
     .status-active-buy { background: #26a69a22; color: #26a69a; border: 1px solid #26a69a55; animation: pulse 2s infinite; }
     .status-active-sell { background: #ef535022; color: #ef5350; border: 1px solid #ef535055; animation: pulse 2s infinite; }
+    .status-tp1 { background: #ffd70033; color: #ffd700; border: 1px solid #ffd70077; }
 
     .text-green { color: #26a69a; } .text-red { color: #ef5350; } .text-yellow { color: #ffd700; }
     .loading { text-align: center; padding: 40px; color: #888; font-weight: 600; }
@@ -157,6 +161,21 @@
 
     /* Risk Note on Live Page */
     .risk-note-live { font-size: 12px; color: #888; background: #111; padding: 12px; border-radius: 8px; border: 1px solid #222; margin-top: 16px; line-height: 1.5; }
+
+    /* Auto Tab Styles */
+    .auto-log { background: #111; border: 1px solid #222; border-radius: 12px; padding: 16px; margin-bottom: 12px; font-family: monospace; font-size: 12px; }
+    .log-item { margin-bottom: 8px; border-bottom: 1px solid #222; padding-bottom: 8px; }
+    .log-time { color: #888; font-size: 10px; }
+    
+    /* News Tab Styles */
+    .news-card { background: #111; border: 1px solid #222; border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+    .news-card.high { border-left: 4px solid #ef5350; }
+    .news-card.medium { border-left: 4px solid #ffd700; }
+    .news-title { font-weight: 700; font-size: 15px; margin-bottom: 8px; }
+    .news-meta { font-size: 12px; color: #888; display: flex; justify-content: space-between; margin-bottom: 8px; }
+    .news-impact { padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+    .news-impact.high { background: #ef535022; color: #ef5350; }
+    .news-impact.medium { background: #ffd70022; color: #ffd700; }
   </style>
 </head>
 <body id="mainBody">
@@ -190,7 +209,7 @@
         <div class="bell-icon" onclick="openNotifications()">
           🔔<div class="bell-badge" id="notifBadge" style="display:none;">0</div>
         </div>
-        <div id="trialText" style="font-size: 12px; color: #888; font-weight: 600;">PRO AUTOPILOT</div>
+        <div id="trialText" style="font-size: 12px; color: #888; font-weight: 600;">PRO</div>
       </div>
     </header>
 
@@ -248,9 +267,10 @@
         <button class="tf-btn" onclick="selectTF('4h', this)">4H</button>
         <button class="tf-btn" onclick="selectTF('1day', this)">1D</button>
       </div>
+      <button class="btn-analyze" id="btnAnalyze" onclick="startAnalysis()">⚡ ANALYZE MARKET</button>
       <div id="chart-container"></div>
       <div style="padding: 16px;">
-        <div id="signalBox"><div class="loading" id="loadingText">Autopilot is scanning...</div></div>
+        <div id="signalBox"><div class="loading" id="loadingText">Press Analyze to scan, or wait for Auto.</div></div>
         
         <!-- RISK DISCLAIMER -->
         <div class="risk-note-live">
@@ -258,6 +278,31 @@
           • Minimum balance to trade: <strong>$200</strong><br>
           • Position size: <strong>0.02 lots for every $200</strong><br>
           • Close <strong>0.01 at TP1</strong> and <strong>0.01 at TP2</strong>.
+        </div>
+      </div>
+    </div>
+
+    <!-- AUTO TAB -->
+    <div id="page-auto" class="page">
+      <h2 style="font-size: 18px; margin-bottom: 16px;">Autopilot Logs</h2>
+      <div class="auto-log" id="autoLogBox">
+        <div class="log-item">
+          <div class="log-time">System</div>
+          <div>Autopilot initialized. Waiting for session...</div>
+        </div>
+      </div>
+      
+      <h2 style="font-size: 18px; margin-bottom: 16px; margin-top: 24px;">High Impact News</h2>
+      <div id="newsList">
+        <div class="news-card high">
+          <div class="news-title">US Non-Farm Payrolls (NFP)</div>
+          <div class="news-meta"><span>USD</span><span class="news-impact high">High Impact</span></div>
+          <div style="font-size:12px; color:#888;">Expect high volatility in Gold and USD pairs.</div>
+        </div>
+        <div class="news-card medium">
+          <div class="news-title">FOMC Member Speech</div>
+          <div class="news-meta"><span>USD</span><span class="news-impact medium">Medium Impact</span></div>
+          <div style="font-size:12px; color:#888;">Potential short-term volatility.</div>
         </div>
       </div>
     </div>
@@ -326,6 +371,7 @@
 
     <div class="bottom-nav">
       <div class="nav-item active" onclick="switchTab('live', this)"><span class="nav-icon">⚡</span> <span class="nav-text">Live</span></div>
+      <div class="nav-item" onclick="switchTab('auto', this)"><span class="nav-icon">🤖</span> <span class="nav-text">Auto</span></div>
       <div class="nav-item" onclick="switchTab('history', this)"><span class="nav-icon">🕒</span> <span class="nav-text">History</span></div>
       <div class="nav-item" onclick="switchTab('account', this)"><span class="nav-icon">👤</span> <span class="nav-text">Account</span></div>
     </div>
@@ -365,15 +411,17 @@
     let maxSL = localStorage.getItem('maxSL') || '50';
     let enabledSessions = JSON.parse(localStorage.getItem('enabledSessions')) || { sydney: true, tokyo: true, london: true, ny: true };
 
-    // MULTI-TIMEFRAME TRADES
+    // TRADES
     let activeTrades = {}; 
     let tradeHistory = [];
     let notifications = [];
+    let autoLogs = [];
 
     try {
       activeTrades = JSON.parse(localStorage.getItem('activeTrades')) || {};
       tradeHistory = JSON.parse(localStorage.getItem('tradeHistory')) || [];
       notifications = JSON.parse(localStorage.getItem('notifications')) || [];
+      autoLogs = JSON.parse(localStorage.getItem('autoLogs')) || [];
     } catch (e) {}
 
     window.onload = function() {
@@ -457,6 +505,7 @@
         document.getElementById('userEmail').innerText = session.user.email;
         
         renderNotifBadge();
+        renderAutoLogs();
         initApp();
         
         document.getElementById('maxSLFilter').value = maxSL;
@@ -511,8 +560,8 @@
     }
 
     const dict = {
-      en: { analyze: "⚡ ANALYZE MARKET", loading: "Scanning...", scanning: "Scanning Market Structure...", buy: "BUY LIMIT", sell: "SELL LIMIT", activeBuy: "ACTIVE BUY", activeSell: "ACTIVE SELL", pending: "PENDING (WAIT)", entry: "SNIPER ENTRY", sl: "STOP LOSS", tp1: "TAKE PROFIT 1", tp2: "TAKE PROFIT 2", live: "Live", account: "Account", history: "History", noHistory: "No previous trades yet.", waitBuy: "WAITING FOR BUY AT", waitSell: "WAITING FOR SELL AT" },
-      ar: { analyze: "⚡ تحليل السوق", loading: "الأوتوبايلوت يمسح السوق...", scanning: "جاري تحليل هيكل السوق...", buy: "شراء معلق", sell: "بيع معلق", activeBuy: "شراء نشط", activeSell: "بيع نشط", pending: "معلق (انتظار)", entry: "الدخول", sl: "وقف خسارة", tp1: "هدف", tp2: "هدف", live: "مباشر", account: "الحساب", history: "السجل", noHistory: "لا يوجد صفقات سابقة.", waitBuy: "في انتظار شراء عند", waitSell: "في انتظار بيع عند" }
+      en: { analyze: "⚡ ANALYZE MARKET", loading: "Press Analyze to scan, or wait for Auto.", scanning: "Analyzing Market...", buy: "BUY LIMIT", sell: "SELL LIMIT", activeBuy: "ACTIVE BUY", activeSell: "ACTIVE SELL", tp1hit: "TP1 HIT", pending: "PENDING (WAIT)", entry: "SNIPER ENTRY", sl: "STOP LOSS", tp1: "TAKE PROFIT 1", tp2: "TAKE PROFIT 2", live: "Live", account: "Account", history: "History", auto: "Auto", noHistory: "No previous trades yet.", waitBuy: "WAITING FOR BUY AT", waitSell: "WAITING FOR SELL AT" },
+      ar: { analyze: "⚡ تحليل السوق", loading: "اضغط تحليل، أو انتظر الأوتو.", scanning: "جاري تحليل السوق...", buy: "شراء معلق", sell: "بيع معلق", activeBuy: "شراء نشط", activeSell: "بيع نشط", tp1hit: "تم تحقيق الهدف 1", pending: "معلق (انتظار)", entry: "الدخول", sl: "وقف خسارة", tp1: "هدف 1", tp2: "هدف 2", live: "مباشر", account: "الحساب", history: "السجل", auto: "أوتو", noHistory: "لا يوجد صفقات سابقة.", waitBuy: "في انتظار شراء عند", waitSell: "في انتظار بيع عند" }
     };
 
     function applyLanguage() {
@@ -523,8 +572,9 @@
       if (!activeTrades[currentTF]) document.getElementById('loadingText').innerText = dict[currentLang].loading;
       
       document.querySelectorAll('.nav-text')[0].innerText = dict[currentLang].live;
-      document.querySelectorAll('.nav-text')[1].innerText = dict[currentLang].history;
-      document.querySelectorAll('.nav-text')[2].innerText = dict[currentLang].account;
+      document.querySelectorAll('.nav-text')[1].innerText = dict[currentLang].auto;
+      document.querySelectorAll('.nav-text')[2].innerText = dict[currentLang].history;
+      document.querySelectorAll('.nav-text')[3].innerText = dict[currentLang].account;
       
       if (activeTrades[currentTF]) renderTradeCard(activeTrades[currentTF]); 
       renderHistoryList();
@@ -615,6 +665,98 @@
       } catch (e) { return null; }
     }
 
+    // --- MANUAL ANALYZE BUTTON ---
+    async function startAnalysis() {
+      const signalBox = document.getElementById('signalBox');
+      const btn = document.getElementById('btnAnalyze');
+      
+      btn.disabled = true;
+      signalBox.innerHTML = `<div class="loading" style="color:#ffd700; font-weight:700;">${dict[currentLang].scanning}</div>`;
+      
+      // Fast AI Thinking Animation (1 second)
+      await new Promise(r => setTimeout(r, 1000));
+
+      // Remove old trade for this timeframe if it exists
+      if (activeTrades[currentTF]) {
+        delete activeTrades[currentTF];
+        localStorage.setItem('activeTrades', JSON.stringify(activeTrades));
+      }
+      
+      priceLines.forEach(line => candleSeries.removePriceLine(line));
+      priceLines = [];
+      
+      const bars = await loadChartData(currentTF);
+      if (!bars || bars.length === 0) {
+        signalBox.innerHTML = `<div class="loading text-red">Failed to load chart. Wait 1 minute and refresh.</div>`;
+        btn.disabled = false;
+        return;
+      }
+
+      // Logic (SMC + POC)
+      const lastBar = bars[bars.length - 1];
+      let bullishOB = null;
+      let bearishOB = null;
+      const lookbackOB = 50;
+      const recentBars = bars.slice(-lookbackOB);
+
+      for (let i = recentBars.length - 1; i >= 2; i--) {
+        const c1 = recentBars[i];
+        const c2 = recentBars[i-1];
+        const c3 = recentBars[i-2];
+
+        if (c3.close < c3.open && c2.close > c2.open && c2.close > c3.high) {
+            if (!bullishOB && c3.low > (lastBar.close - 30)) bullishOB = c3;
+        }
+        if (c3.close > c3.open && c2.close < c2.open && c2.close < c3.low) {
+            if (!bearishOB && c3.high < (lastBar.close + 30)) bearishOB = c3;
+        }
+      }
+
+      let dir, entry, sl, tp1, tp2;
+      
+      const distToBullish = bullishOB ? Math.abs(lastBar.close - bullishOB.high) : 9999;
+      const distToBearish = bearishOB ? Math.abs(lastBar.close - bearishOB.low) : 9999;
+
+      if (distToBullish < distToBearish && bullishOB) {
+          dir = "BUY";
+          entry = bullishOB.high; 
+          sl = bullishOB.low - 0.5; 
+      } else if (bearishOB) {
+          dir = "SELL";
+          entry = bearishOB.low; 
+          sl = bearishOB.high + 0.5; 
+      } else {
+          const closes = bars.map(b => b.close);
+          const ema20 = closes.reduce((a, b) => a + b, 0) / 20; 
+          let trendDir = lastBar.close > ema20 ? "BUY" : "SELL";
+          if (trendDir === "BUY") {
+              dir = "BUY"; entry = lastBar.close - 1.0; sl = entry - 2.0;
+          } else {
+              dir = "SELL"; entry = lastBar.close + 1.0; sl = entry + 2.0;
+          }
+      }
+
+      if (currentTF === '5min') {
+          if (dir === 'BUY' && (entry - sl) > 5.0) sl = entry - 5.0; 
+          if (dir === 'SELL' && (sl - entry) > 5.0) sl = entry + 5.0; 
+      } else if (currentTF === '15min') {
+          if (dir === 'BUY' && (entry - sl) > 7.0) sl = entry - 7.0; 
+          if (dir === 'SELL' && (sl - entry) > 7.0) sl = entry + 7.0; 
+      }
+
+      const risk = Math.abs(entry - sl);
+      tp1 = dir === 'BUY' ? entry + (risk * 1.5) : entry - (risk * 1.5);
+      tp2 = dir === 'BUY' ? entry + (risk * 3.5) : entry - (risk * 3.5);
+
+      activeTrades[currentTF] = { id: Date.now(), dir, entry, sl, tp1, tp2, tf: currentTF, status: 'PENDING', date: new Date().toLocaleString(), tp1Hit: false };
+      
+      addNotification(dir, entry, sl, tp1, tp2, currentTF);
+      localStorage.setItem('activeTrades', JSON.stringify(activeTrades));
+      renderTradeCard(activeTrades[currentTF]);
+      
+      btn.disabled = false;
+    }
+
     // --- AUTOPILOT ENGINE ---
     function startAutopilot() {
       if (autopilotInterval) clearInterval(autopilotInterval);
@@ -631,6 +773,7 @@
 
         if (!canTradeSession) return;
 
+        const startTime = performance.now();
         const bars = await loadChartData(currentTF);
         if (!bars || bars.length === 0) return;
 
@@ -639,7 +782,7 @@
         const ema20 = closes.reduce((a, b) => a + b, 0) / 20; 
         const trendDir = lastBar.close > ema20 ? "BUY" : "SELL";
 
-        // Find recent swing high/low (S/R Levels)
+        // Find recent swing high/low
         const lookback = 20;
         const recentBars = bars.slice(-lookback);
         const recentHigh = Math.max(...recentBars.map(b => b.high));
@@ -657,22 +800,14 @@
             sl = entry + 2.0;
         }
 
-        // **NEW: SIGNAL DEDUPLICATION**
-        // Check if we already have a trade very close to this entry price
+        // Deduplication
         let isDuplicate = false;
-        const recentHistory = tradeHistory.slice(-5); // Check last 5 trades
+        const recentHistory = tradeHistory.slice(-5);
         recentHistory.forEach(t => {
-            if (t.tf === currentTF && Math.abs(t.entry - entry) < 1.0) {
-                isDuplicate = true;
-            }
+            if (t.tf === currentTF && Math.abs(t.entry - entry) < 1.0) isDuplicate = true;
         });
-        
-        if (isDuplicate) {
-            console.log("Duplicate signal ignored.");
-            return;
-        }
+        if (isDuplicate) return;
 
-        // Apply User Max SL Filter
         const slPips = Math.abs(entry - sl) * 10;
         if (slPips > parseInt(maxSL)) return;
 
@@ -688,15 +823,45 @@
         tp1 = dir === 'BUY' ? entry + (risk * 1.5) : entry - (risk * 1.5);
         tp2 = dir === 'BUY' ? entry + (risk * 3.5) : entry - (risk * 3.5);
 
-        activeTrades[currentTF] = { id: Date.now(), dir, entry, sl, tp1, tp2, tf: currentTF, status: 'PENDING', date: new Date().toLocaleString() };
+        const endTime = performance.now();
+        const timeTaken = Math.round(endTime - startTime);
+
+        activeTrades[currentTF] = { id: Date.now(), dir, entry, sl, tp1, tp2, tf: currentTF, status: 'PENDING', date: new Date().toLocaleString(), tp1Hit: false };
         addNotification(dir, entry, sl, tp1, tp2, currentTF);
         localStorage.setItem('activeTrades', JSON.stringify(activeTrades));
+        
+        addAutoLog(`Found ${dir} setup at ${entry.toFixed(2)} | Took ${timeTaken}ms`);
         
         if (document.getElementById('page-live').classList.contains('active')) {
           renderTradeCard(activeTrades[currentTF]);
         }
 
-      }, 30000); 
+      }, 15000); // 15 seconds for faster scanning
+    }
+
+    function addAutoLog(text) {
+      autoLogs.unshift({ time: new Date().toLocaleTimeString(), text });
+      if (autoLogs.length > 20) autoLogs.pop(); // Keep last 20
+      localStorage.setItem('autoLogs', JSON.stringify(autoLogs));
+      renderAutoLogs();
+    }
+
+    function renderAutoLogs() {
+      const box = document.getElementById('autoLogBox');
+      if (autoLogs.length === 0) {
+        box.innerHTML = `<div class="log-item"><div>Waiting for scans...</div></div>`;
+        return;
+      }
+      let html = '';
+      autoLogs.forEach(l => {
+        html += `
+          <div class="log-item">
+            <div class="log-time">${l.time}</div>
+            <div>${l.text}</div>
+          </div>
+        `;
+      });
+      box.innerHTML = html;
     }
 
     function drawTradeLines(trade) {
@@ -714,7 +879,10 @@
       
       let statusText = trade.dir === 'BUY' ? `${dict[currentLang].waitBuy} ${trade.entry.toFixed(2)}` : `${dict[currentLang].waitSell} ${trade.entry.toFixed(2)}`;
       
-      if (trade.status === 'ACTIVE') {
+      if (trade.tp1Hit) {
+        statusClass = "status-tp1";
+        statusText = dict[currentLang].tp1hit;
+      } else if (trade.status === 'ACTIVE') {
         statusClass = isBuy ? "status-active-buy" : "status-active-sell";
         statusText = isBuy ? dict[currentLang].activeBuy : dict[currentLang].activeSell;
       }
@@ -735,8 +903,8 @@
           <div class="price-grid">
             <div class="price-box"><div class="price-label">${dict[currentLang].entry}</div><div class="price-val text-yellow">${trade.entry.toFixed(2)}</div></div>
             <div class="price-box"><div class="price-label">${dict[currentLang].sl}</div><div class="price-val text-red">${trade.sl.toFixed(2)}</div><div class="pips-sub text-red">-${pipsRisk} pips</div></div>
-            <div class="price-box tp1"><div class="price-label">${dict[currentLang].tp1} 1</div><div class="price-val text-green">${trade.tp1.toFixed(2)}</div><div class="pips-sub text-green">+${pipsReward1} pips</div></div>
-            <div class="price-box tp2"><div class="price-label">${dict[currentLang].tp2} 2</div><div class="price-val text-green">${trade.tp2.toFixed(2)}</div><div class="pips-sub text-green">+${pipsReward2} pips</div></div>
+            <div class="price-box tp1"><div class="price-label">${dict[currentLang].tp1}</div><div class="price-val text-green">${trade.tp1.toFixed(2)}</div><div class="pips-sub text-green">+${pipsReward1} pips</div></div>
+            <div class="price-box tp2"><div class="price-label">${dict[currentLang].tp2}</div><div class="price-val text-green">${trade.tp2.toFixed(2)}</div><div class="pips-sub text-green">+${pipsReward2} pips</div></div>
           </div>
         </div>
       `;
@@ -902,6 +1070,7 @@
             let result = null;
             let exitPrice = 0;
             
+            // Check if price touched entry (make active)
             if (trade.status === 'PENDING') {
               if (trade.dir === 'BUY' && livePrice <= trade.entry) trade.status = 'ACTIVE';
               if (trade.dir === 'SELL' && livePrice >= trade.entry) trade.status = 'ACTIVE';
@@ -911,6 +1080,17 @@
               }
             }
 
+            // Check for TP1
+            if (trade.status === 'ACTIVE' && !trade.tp1Hit) {
+              if (trade.dir === 'BUY' && livePrice >= trade.tp1) { trade.tp1Hit = true; }
+              if (trade.dir === 'SELL' && livePrice <= trade.tp1) { trade.tp1Hit = true; }
+              localStorage.setItem('activeTrades', JSON.stringify(activeTrades));
+              if (tf === currentTF && document.getElementById('page-live').classList.contains('active')) {
+                renderTradeCard(trade);
+              }
+            }
+
+            // Check final SL / TP2
             if (trade.dir === 'BUY') {
               if (livePrice <= trade.sl) { result = 'LOSS'; exitPrice = trade.sl; }
               if (livePrice >= trade.tp2) { result = 'WIN'; exitPrice = trade.tp2; }
@@ -933,13 +1113,13 @@
               
               if (tf === currentTF) {
                 window.history.replaceState({}, document.title, window.location.pathname);
-                alert(`TRADE HIT ${result === 'WIN' ? 'TAKE PROFIT' : 'STOP LOSS'}!`);
+                alert(`TRADE HIT ${result === 'WIN' ? 'TAKE PROFIT 2' : 'STOP LOSS'}!`);
                 location.reload();
               }
             }
           });
         } catch (e) { }
-      }, 15000); 
+      }, 5000); // 5 seconds for faster live tracking
     }
   </script>
 </body>
