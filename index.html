@@ -526,7 +526,7 @@
       }
     }
 
-    // --- REVERTED TO FIRST STRATEGY (EMA + ATR) ---
+    // --- MASTER ENGINE (SMC + POC + S/R) ---
     async function startAnalysis() {
       if (activeTrades[currentTF]) {
         const confirmReset = confirm(currentLang === 'ar' ? "هل تريد حذف الصفقة والبحث عن جديدة؟" : "Delete current trade and scan again?");
@@ -554,40 +554,82 @@
         }
       }
 
-      // 1. Calculate EMA Trend
-      const closes = bars.map(b => b.close);
+      // 1. Volume Profile (Calculate POC)
+      const lookbackVP = 100;
+      const vpBars = bars.slice(-lookbackVP);
+      let highVP = Math.max(...vpBars.map(b => b.high));
+      let lowVP = Math.min(...vpBars.map(b => b.low));
+      let binSize = (highVP - lowVP) / 30;
+      let bins = new Array(30).fill(0);
+      
+      vpBars.forEach(b => {
+        let avgPrice = (b.high + b.low + b.close) / 3;
+        let binIdx = Math.floor((avgPrice - lowVP) / binSize);
+        if (binIdx >= 0 && binIdx < 30) bins[binIdx] += 1; // simplified volume
+      });
+      let pocIdx = bins.indexOf(Math.max(...bins));
+      const poc = lowVP + (pocIdx * binSize);
+
+      // 2. SMC Order Blocks
       const lastBar = bars[bars.length - 1];
-      const ema20 = closes.reduce((a, b) => a + b, 0) / 20; 
-      
-      let dir = lastBar.close > ema20 ? "BUY" : "SELL";
-      const entry = lastBar.close; 
-      
-      // 2. Calculate ATR for SL
-      let trSum = 0;
-      for (let i = bars.length - 14; i < bars.length; i++) {
-        const highLow = bars[i].high - bars[i].low;
-        const highPrevClose = Math.abs(bars[i].high - bars[i-1].close);
-        const lowPrevClose = Math.abs(bars[i].low - bars[i-1].close);
-        trSum += Math.max(highLow, highPrevClose, lowPrevClose);
-      }
-      const atr = trSum / 14;
+      let bullishOB = null;
+      let bearishOB = null;
+      const lookbackOB = 50;
+      const recentBars = bars.slice(-lookbackOB);
 
-      // 3. Dynamic SL
-      let slDistance = atr * 1.2; 
+      for (let i = recentBars.length - 1; i >= 2; i--) {
+        const c1 = recentBars[i];
+        const c2 = recentBars[i-1];
+        const c3 = recentBars[i-2];
+
+        if (c3.close < c3.open && c2.close > c2.open && c2.close > c3.high) {
+            if (!bullishOB && c3.low > (lastBar.close - 30)) bullishOB = c3;
+        }
+        if (c3.close > c3.open && c2.close < c2.open && c2.close < c3.low) {
+            if (!bearishOB && c3.high < (lastBar.close + 30)) bearishOB = c3;
+        }
+      }
+
+      let dir, entry, sl, tp1, tp2;
       
-      // Apply strict caps for scalping
+      // 3. Confluence Logic
+      const distToBullish = bullishOB ? Math.abs(lastBar.close - bullishOB.high) : 9999;
+      const distToBearish = bearishOB ? Math.abs(lastBar.close - bearishOB.low) : 9999;
+
+      // If price is near POC or OB, take the trade
+      if (distToBullish < distToBearish && bullishOB) {
+          dir = "BUY";
+          entry = bullishOB.high; 
+          sl = bullishOB.low - 0.5; 
+      } else if (bearishOB) {
+          dir = "SELL";
+          entry = bearishOB.low; 
+          sl = bearishOB.high + 0.5; 
+      } else {
+          // Fallback to EMA if no OB
+          const closes = bars.map(b => b.close);
+          const ema20 = closes.reduce((a, b) => a + b, 0) / 20; 
+          let trendDir = lastBar.close > ema20 ? "BUY" : "SELL";
+          if (trendDir === "BUY") {
+              dir = "BUY"; entry = lastBar.close - 1.0; sl = entry - 2.0;
+          } else {
+              dir = "SELL"; entry = lastBar.close + 1.0; sl = entry + 2.0;
+          }
+      }
+
+      // 4. Scalping Rules (Strict Caps)
       if (currentTF === '5min') {
-        slDistance = Math.min(slDistance, 5.0); // Max 50 pips
+          if (dir === 'BUY' && (entry - sl) > 5.0) sl = entry - 5.0; 
+          if (dir === 'SELL' && (sl - entry) > 5.0) sl = entry + 5.0; 
       } else if (currentTF === '15min') {
-        slDistance = Math.min(slDistance, 7.0); // Max 70 pips
+          if (dir === 'BUY' && (entry - sl) > 7.0) sl = entry - 7.0; 
+          if (dir === 'SELL' && (sl - entry) > 7.0) sl = entry + 7.0; 
       }
 
-      const sl = dir === 'BUY' ? entry - slDistance : entry + slDistance;
-      
-      // 4. Calculate TPs
+      // 5. Final TPs
       const risk = Math.abs(entry - sl);
-      const tp1 = dir === 'BUY' ? entry + (risk * 1.5) : entry - (risk * 1.5);
-      const tp2 = dir === 'BUY' ? entry + (risk * 3.5) : entry - (risk * 3.5);
+      tp1 = dir === 'BUY' ? entry + (risk * 1.5) : entry - (risk * 1.5);
+      tp2 = dir === 'BUY' ? entry + (risk * 3.5) : entry - (risk * 3.5);
 
       activeTrades[currentTF] = { id: Date.now(), dir, entry, sl, tp1, tp2, tf: currentTF, status: 'PENDING', date: new Date().toLocaleString() };
       
