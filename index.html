@@ -36,6 +36,21 @@
 
     header { padding: 16px; border-bottom: 1px solid #1a1a1a; display: flex; justify-content: space-between; align-items: center; }
     header h1 { margin: 0; font-size: 18px; font-weight: 700; }
+    
+    .header-icons { display: flex; align-items: center; gap: 12px; }
+    .bell-icon { font-size: 20px; cursor: pointer; position: relative; }
+    .bell-badge { position: absolute; top: -4px; right: -4px; background: #ef5350; color: #fff; font-size: 10px; font-weight: 700; padding: 2px 5px; border-radius: 10px; }
+
+    /* Notification Modal */
+    #notifModal { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: rgba(0,0,0,0.9); z-index: 2000; display: none; flex-direction: column; padding: 20px; }
+    .notif-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .notif-close { font-size: 24px; color: #888; cursor: pointer; background: none; border: none; }
+    .notif-actions { display: flex; gap: 10px; margin-bottom: 16px; }
+    .btn-clear { background: #ef535022; color: #ef5350; border: 1px solid #ef535055; padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; }
+    .notif-list { overflow-y: auto; flex: 1; }
+    .notif-item { background: #111; border: 1px solid #222; padding: 12px; border-radius: 8px; margin-bottom: 10px; }
+    .notif-item.buy { border-left: 4px solid #26a69a; }
+    .notif-item.sell { border-left: 4px solid #ef5350; }
 
     .tf-selector { display: flex; overflow-x: auto; padding: 10px 16px; gap: 8px; border-bottom: 1px solid #1a1a1a; scrollbar-width: none; }
     .tf-selector::-webkit-scrollbar { display: none; }
@@ -135,7 +150,12 @@
   <div id="appContent" style="display: none;">
     <header>
       <h1>MR.Trader <span class="text-yellow">AI</span></h1>
-      <div id="trialText" style="font-size: 12px; color: #888; font-weight: 600;">Tries left: 5</div>
+      <div class="header-icons">
+        <div class="bell-icon" onclick="openNotifications()">
+          🔔<div class="bell-badge" id="notifBadge" style="display:none;">0</div>
+        </div>
+        <div id="trialText" style="font-size: 12px; color: #888; font-weight: 600;">Tries: 5</div>
+      </div>
     </header>
 
     <div id="page-live" class="page active" style="padding: 0;">
@@ -231,6 +251,20 @@
     </div>
   </div>
 
+  <!-- NOTIFICATION MODAL -->
+  <div id="notifModal">
+    <div class="notif-header">
+      <h3 style="margin:0;">Notifications</h3>
+      <button class="notif-close" onclick="closeNotifications()">✕</button>
+    </div>
+    <div class="notif-actions">
+      <button class="btn-clear" onclick="clearAllNotifications()">Clear All</button>
+    </div>
+    <div class="notif-list" id="notifList">
+      <div class="loading">No notifications yet.</div>
+    </div>
+  </div>
+
   <script>
     const SUPABASE_URL = 'https://wdexwfoplycblaxmrfws.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_6U7d-ihEr1ivc362mhkDeQ_2suPM3gy';
@@ -246,15 +280,15 @@
     let userTries = 5; 
     let currentFilter = 'all';
 
-    let activeTrade = null;
+    // MULTI-TIMEFRAME TRADES
+    let activeTrades = {}; 
     let tradeHistory = [];
+    let notifications = [];
+
     try {
-      const savedActive = localStorage.getItem('activeTrade');
-      if (savedActive) activeTrade = JSON.parse(savedActive);
-      const savedHistory = localStorage.getItem('tradeHistory');
-      if (savedHistory) tradeHistory = JSON.parse(savedHistory);
-      const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.has('t')) activeTrade = JSON.parse(decodeURIComponent(urlParams.get('t')));
+      activeTrades = JSON.parse(localStorage.getItem('activeTrades')) || {};
+      tradeHistory = JSON.parse(localStorage.getItem('tradeHistory')) || [];
+      notifications = JSON.parse(localStorage.getItem('notifications')) || [];
     } catch (e) {}
 
     window.onload = function() {
@@ -343,6 +377,7 @@
           userTries = 5;
         }
         updateTryText();
+        renderNotifBadge();
 
         initApp();
       } else {
@@ -354,10 +389,10 @@
     function updateTryText() {
       const el = document.getElementById('trialText');
       if (userTries > 0) {
-        el.innerText = `Tries left: ${userTries}`;
+        el.innerText = `Tries: ${userTries}`;
         el.style.color = '#888';
       } else {
-        el.innerText = `Free trial ended`;
+        el.innerText = `Trial ended`;
         el.style.color = '#ef5350';
       }
     }
@@ -386,13 +421,13 @@
       else document.getElementById('mainBody').classList.remove('rtl');
       
       document.getElementById('btnAnalyze').innerText = dict[currentLang].analyze;
-      if (!activeTrade) document.getElementById('loadingText').innerText = dict[currentLang].loading;
+      if (!activeTrades[currentTF]) document.getElementById('loadingText').innerText = dict[currentLang].loading;
       
       document.querySelectorAll('.nav-text')[0].innerText = dict[currentLang].live;
       document.querySelectorAll('.nav-text')[1].innerText = dict[currentLang].history;
       document.querySelectorAll('.nav-text')[2].innerText = dict[currentLang].account;
       
-      if (activeTrade) renderTradeCard(activeTrade); 
+      if (activeTrades[currentTF]) renderTradeCard(activeTrades[currentTF]); 
       renderHistoryList();
     }
 
@@ -419,7 +454,9 @@
       applyLanguage();
       
       setTimeout(() => {
-        loadChartData(currentTF).then(() => { if (activeTrade) drawTradeLines(activeTrade); });
+        loadChartData(currentTF).then(() => { 
+          if (activeTrades[currentTF]) drawTradeLines(activeTrades[currentTF]); 
+        });
       }, 100);
       
       startLiveTracking();
@@ -438,6 +475,16 @@
       document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       loadChartData(tf); 
+      
+      // Restore trade for this specific timeframe
+      if (activeTrades[currentTF]) {
+        renderTradeCard(activeTrades[currentTF]);
+        drawTradeLines(activeTrades[currentTF]);
+      } else {
+        document.getElementById('signalBox').innerHTML = `<div class="loading">${dict[currentLang].loading}</div>`;
+        priceLines.forEach(line => candleSeries.removePriceLine(line));
+        priceLines = [];
+      }
     }
 
     async function loadChartData(tf) {
@@ -461,16 +508,16 @@
         candleSeries.setData(bars);
         chart.timeScale().setVisibleLogicalRange({ from: bars.length - 60, to: bars.length + 10 });
 
-        if (activeTrade && activeTrade.status === 'PENDING') {
+        if (activeTrades[tf] && activeTrades[tf].status === 'PENDING') {
           const lastBar = bars[bars.length - 1];
           let touched = false;
-          if (activeTrade.dir === 'BUY' && lastBar.low <= activeTrade.entry) touched = true;
-          if (activeTrade.dir === 'SELL' && lastBar.high >= activeTrade.entry) touched = true;
+          if (activeTrades[tf].dir === 'BUY' && lastBar.low <= activeTrades[tf].entry) touched = true;
+          if (activeTrades[tf].dir === 'SELL' && lastBar.high >= activeTrades[tf].entry) touched = true;
           
           if (touched) {
-            activeTrade.status = 'ACTIVE';
-            localStorage.setItem('activeTrade', JSON.stringify(activeTrade));
-            renderTradeCard(activeTrade);
+            activeTrades[tf].status = 'ACTIVE';
+            localStorage.setItem('activeTrades', JSON.stringify(activeTrades));
+            if (tf === currentTF) renderTradeCard(activeTrades[tf]);
           }
         }
         return bars;
@@ -479,9 +526,9 @@
       }
     }
 
-    // --- THE SNIPER LOGIC (Supply / Demand + Dynamic ATR) ---
+    // --- SMC LOGIC (Order Blocks + Strict Pip Caps) ---
     async function startAnalysis() {
-      if (activeTrade) {
+      if (activeTrades[currentTF]) {
         const confirmReset = confirm(currentLang === 'ar' ? "هل تريد حذف الصفقة والبحث عن جديدة؟" : "Delete current trade and scan again?");
         if (!confirmReset) return;
       }
@@ -489,8 +536,8 @@
       document.getElementById('signalBox').innerHTML = `<div class="loading">${dict[currentLang].scanning}</div>`;
       priceLines.forEach(line => candleSeries.removePriceLine(line));
       priceLines = [];
-      activeTrade = null;
-      localStorage.removeItem('activeTrade');
+      delete activeTrades[currentTF];
+      localStorage.setItem('activeTrades', JSON.stringify(activeTrades));
       window.history.replaceState({}, document.title, window.location.pathname);
 
       const bars = await loadChartData(currentTF);
@@ -510,11 +557,9 @@
       // --- SMC ORDER BLOCK LOGIC ---
       const lastBar = bars[bars.length - 1];
       
-      // Find the most recent Order Blocks
       let bullishOB = null;
       let bearishOB = null;
       
-      // Look back up to 50 candles to find OBs
       const lookback = 50;
       const recentBars = bars.slice(-lookback);
 
@@ -523,16 +568,16 @@
         const c2 = recentBars[i-1];
         const c3 = recentBars[i-2];
 
-        // Bullish Order Block (Down candle before a strong up move)
+        // Bullish OB
         if (c3.close < c3.open && c2.close > c2.open && c2.close > c3.high) {
-            if (!bullishOB && c3.low > (lastBar.close - 30)) { // Ensure it's not too far below current price
+            if (!bullishOB && c3.low > (lastBar.close - 30)) {
                 bullishOB = c3;
             }
         }
 
-        // Bearish Order Block (Up candle before a strong down move)
+        // Bearish OB
         if (c3.close > c3.open && c2.close < c2.open && c2.close < c3.low) {
-            if (!bearishOB && c3.high < (lastBar.close + 30)) { // Ensure it's not too far above current price
+            if (!bearishOB && c3.high < (lastBar.close + 30)) {
                 bearishOB = c3;
             }
         }
@@ -540,30 +585,19 @@
 
       let dir, entry, sl, tp1, tp2;
 
-      // Logic: If price is closer to Bullish OB, go BUY. If closer to Bearish OB, go SELL.
-      // If no OBs found, fall back to trend.
-      
       const distToBullish = bullishOB ? Math.abs(lastBar.close - bullishOB.high) : 9999;
       const distToBearish = bearishOB ? Math.abs(lastBar.close - bearishOB.low) : 9999;
 
       if (distToBullish < distToBearish && bullishOB) {
-          // BUY LIMIT at Bullish Order Block
           dir = "BUY";
-          entry = bullishOB.high; // Enter when price retraces into the OB
-          sl = bullishOB.low - 0.5; // Stop loss just below the OB
-          const risk = entry - sl;
-          tp1 = entry + (risk * 1.5);
-          tp2 = entry + (risk * 3.5);
+          entry = bullishOB.high; 
+          sl = bullishOB.low - 0.5; 
       } else if (bearishOB) {
-          // SELL LIMIT at Bearish Order Block
           dir = "SELL";
-          entry = bearishOB.low; // Enter when price retraces into the OB
-          sl = bearishOB.high + 0.5; // Stop loss just above the OB
-          const risk = sl - entry;
-          tp1 = entry - (risk * 1.5);
-          tp2 = entry - (risk * 3.5);
+          entry = bearishOB.low; 
+          sl = bearishOB.high + 0.5; 
       } else {
-          // Fallback to simple trend if no clear OBs
+          // Fallback
           const closes = bars.map(b => b.close);
           const ema20 = closes.reduce((a, b) => a + b, 0) / 20; 
           let trendDir = lastBar.close > ema20 ? "BUY" : "SELL";
@@ -577,19 +611,28 @@
               entry = lastBar.close + 1.0;
               sl = entry + 2.0;
           }
-          const risk = Math.abs(entry - sl);
-          tp1 = dir === 'BUY' ? entry + (risk * 1.5) : entry - (risk * 1.5);
-          tp2 = dir === 'BUY' ? entry + (risk * 3.5) : entry - (risk * 3.5);
       }
 
-      activeTrade = { id: Date.now(), dir, entry, sl, tp1, tp2, tf: currentTF, status: 'PENDING', date: new Date().toLocaleString() };
+      // Strict Pip Caps based on Timeframe
+      if (currentTF === '5min') {
+          if (dir === 'BUY' && (entry - sl) > 5.0) sl = entry - 5.0; // Max 50 pips
+          if (dir === 'SELL' && (sl - entry) > 5.0) sl = entry + 5.0; // Max 50 pips
+      } else if (currentTF === '15min') {
+          if (dir === 'BUY' && (entry - sl) > 7.0) sl = entry - 7.0; // Max 70 pips
+          if (dir === 'SELL' && (sl - entry) > 7.0) sl = entry + 7.0; // Max 70 pips
+      }
+
+      const risk = Math.abs(entry - sl);
+      tp1 = dir === 'BUY' ? entry + (risk * 1.5) : entry - (risk * 1.5);
+      tp2 = dir === 'BUY' ? entry + (risk * 3.5) : entry - (risk * 3.5);
+
+      activeTrades[currentTF] = { id: Date.now(), dir, entry, sl, tp1, tp2, tf: currentTF, status: 'PENDING', date: new Date().toLocaleString() };
       
-      localStorage.setItem('activeTrade', JSON.stringify(activeTrade));
-      const urlParams = new URLSearchParams(window.location.search);
-      urlParams.set('t', encodeURIComponent(JSON.stringify(activeTrade)));
-      window.history.replaceState({}, '', `${window.location.pathname}?${urlParams.toString()}`);
+      // Save Notification
+      addNotification(dir, entry, sl, tp1, tp2, currentTF);
       
-      renderTradeCard(activeTrade);
+      localStorage.setItem('activeTrades', JSON.stringify(activeTrades));
+      renderTradeCard(activeTrades[currentTF]);
     }
 
     function drawTradeLines(trade) {
@@ -635,6 +678,63 @@
       drawTradeLines(trade);
     }
 
+    // NOTIFICATIONS
+    function addNotification(dir, entry, sl, tp1, tp2, tf) {
+      const newNotif = { id: Date.now(), dir, entry, sl, tp1, tp2, tf, date: new Date().toLocaleString() };
+      notifications.unshift(newNotif);
+      localStorage.setItem('notifications', JSON.stringify(notifications));
+      renderNotifBadge();
+      renderNotifList();
+    }
+
+    function renderNotifBadge() {
+      const badge = document.getElementById('notifBadge');
+      if (notifications.length > 0) {
+        badge.style.display = 'block';
+        badge.innerText = notifications.length;
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+
+    function renderNotifList() {
+      const list = document.getElementById('notifList');
+      if (notifications.length === 0) {
+        list.innerHTML = '<div class="loading">No notifications yet.</div>';
+        return;
+      }
+      let html = '';
+      notifications.forEach(n => {
+        html += `
+          <div class="notif-item ${n.dir === 'BUY' ? 'buy' : 'sell'}">
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+              <span style="font-weight:700;">XAUUSD <span class="${n.dir === 'BUY' ? 'text-green' : 'text-red'}">${n.dir}</span> (${n.tf})</span>
+              <span style="font-size:10px; color:#888;">${n.date}</span>
+            </div>
+            <div style="font-size:12px; color:#ccc;">Entry: ${n.entry.toFixed(2)} | SL: ${n.sl.toFixed(2)}</div>
+          </div>
+        `;
+      });
+      list.innerHTML = html;
+    }
+
+    function openNotifications() {
+      document.getElementById('notifModal').style.display = 'flex';
+      renderNotifList();
+    }
+
+    function closeNotifications() {
+      document.getElementById('notifModal').style.display = 'none';
+    }
+
+    function clearAllNotifications() {
+      notifications = [];
+      localStorage.setItem('notifications', JSON.stringify(notifications));
+      renderNotifBadge();
+      renderNotifList();
+    }
+
+    // HISTORY
     function setFilter(filter, element) {
       currentFilter = filter;
       document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
@@ -721,7 +821,9 @@
       if (liveInterval) clearInterval(liveInterval);
       
       liveInterval = setInterval(async () => {
-        if (!activeTrade) return;
+        let activeKeys = Object.keys(activeTrades);
+        if (activeKeys.length === 0) return;
+        
         try {
           const res = await fetch(`https://api.twelvedata.com/price?symbol=XAU/USD&apikey=${TWELVEDATA_API_KEY}`);
           const data = await res.json();
@@ -730,31 +832,34 @@
           
           const livePrice = parseFloat(data.price);
           
-          let result = null;
-          let exitPrice = 0;
-          
-          if (activeTrade.dir === 'BUY') {
-            if (livePrice <= activeTrade.sl) { result = 'LOSS'; exitPrice = activeTrade.sl; }
-            if (livePrice >= activeTrade.tp2) { result = 'WIN'; exitPrice = activeTrade.tp2; }
-          } else {
-            if (livePrice >= activeTrade.sl) { result = 'LOSS'; exitPrice = activeTrade.sl; }
-            if (livePrice <= activeTrade.tp2) { result = 'WIN'; exitPrice = activeTrade.tp2; }
-          }
+          activeKeys.forEach(tf => {
+            let trade = activeTrades[tf];
+            let result = null;
+            let exitPrice = 0;
+            
+            if (trade.dir === 'BUY') {
+              if (livePrice <= trade.sl) { result = 'LOSS'; exitPrice = trade.sl; }
+              if (livePrice >= trade.tp2) { result = 'WIN'; exitPrice = trade.tp2; }
+            } else {
+              if (livePrice >= trade.sl) { result = 'LOSS'; exitPrice = trade.sl; }
+              if (livePrice <= trade.tp2) { result = 'WIN'; exitPrice = trade.tp2; }
+            }
 
-          if (result) {
-            const finishedTrade = { ...activeTrade, result: result, exitPrice: exitPrice };
-            tradeHistory.push(finishedTrade);
-            localStorage.setItem('tradeHistory', JSON.stringify(tradeHistory));
-            
-            localStorage.removeItem('activeTrade');
-            activeTrade = null;
-            window.history.replaceState({}, document.title, window.location.pathname);
-            
-            alert(`TRADE HIT ${result === 'WIN' ? 'TAKE PROFIT' : 'STOP LOSS'}!`);
-            location.reload();
-          } else if (activeTrade.status === 'ACTIVE') {
-            renderTradeCard(activeTrade, livePrice);
-          }
+            if (result) {
+              const finishedTrade = { ...trade, result: result, exitPrice: exitPrice };
+              tradeHistory.push(finishedTrade);
+              localStorage.setItem('tradeHistory', JSON.stringify(tradeHistory));
+              
+              delete activeTrades[tf];
+              localStorage.setItem('activeTrades', JSON.stringify(activeTrades));
+              
+              if (tf === currentTF) {
+                window.history.replaceState({}, document.title, window.location.pathname);
+                alert(`TRADE HIT ${result === 'WIN' ? 'TAKE PROFIT' : 'STOP LOSS'}!`);
+                location.reload();
+              }
+            }
+          });
         } catch (e) { }
       }, 15000); 
     }
