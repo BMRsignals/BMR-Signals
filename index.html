@@ -157,16 +157,6 @@
 
     /* Risk Note on Live Page */
     .risk-note-live { font-size: 12px; color: #888; background: #111; padding: 12px; border-radius: 8px; border: 1px solid #222; margin-top: 16px; line-height: 1.5; }
-
-    /* News Tab Styles */
-    .news-card { background: #111; border: 1px solid #222; border-radius: 12px; padding: 16px; margin-bottom: 12px; }
-    .news-card.high { border-left: 4px solid #ef5350; }
-    .news-card.medium { border-left: 4px solid #ffd700; }
-    .news-title { font-weight: 700; font-size: 15px; margin-bottom: 8px; }
-    .news-meta { font-size: 12px; color: #888; display: flex; justify-content: space-between; margin-bottom: 8px; }
-    .news-impact { padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
-    .news-impact.high { background: #ef535022; color: #ef5350; }
-    .news-impact.medium { background: #ffd70022; color: #ffd700; }
   </style>
 </head>
 <body id="mainBody">
@@ -272,14 +262,6 @@
       </div>
     </div>
 
-    <!-- NEWS TAB -->
-    <div id="page-news" class="page">
-      <h2 style="font-size: 18px; margin-bottom: 16px;">High Impact News (Gold & USD)</h2>
-      <div id="newsList">
-        <div class="loading">Loading news...</div>
-      </div>
-    </div>
-
     <div id="page-history" class="page">
       <div class="stats-header">
         <h2 style="font-size: 18px; margin: 0;">Performance</h2>
@@ -344,7 +326,6 @@
 
     <div class="bottom-nav">
       <div class="nav-item active" onclick="switchTab('live', this)"><span class="nav-icon">⚡</span> <span class="nav-text">Live</span></div>
-      <div class="nav-item" onclick="switchTab('news', this)"><span class="nav-icon">📰</span> <span class="nav-text">News</span></div>
       <div class="nav-item" onclick="switchTab('history', this)"><span class="nav-icon">🕒</span> <span class="nav-text">History</span></div>
       <div class="nav-item" onclick="switchTab('account', this)"><span class="nav-icon">👤</span> <span class="nav-text">Account</span></div>
     </div>
@@ -478,7 +459,6 @@
         renderNotifBadge();
         initApp();
         
-        // Load Filters
         document.getElementById('maxSLFilter').value = maxSL;
         document.getElementById('chk-sydney').checked = enabledSessions.sydney;
         document.getElementById('chk-tokyo').checked = enabledSessions.tokyo;
@@ -531,8 +511,8 @@
     }
 
     const dict = {
-      en: { analyze: "⚡ ANALYZE MARKET", loading: "Autopilot is scanning...", scanning: "Scanning Market Structure...", buy: "BUY LIMIT", sell: "SELL LIMIT", activeBuy: "ACTIVE BUY", activeSell: "ACTIVE SELL", pending: "PENDING (WAIT)", entry: "SNIPER ENTRY", sl: "STOP LOSS", tp1: "TAKE PROFIT 1", tp2: "TAKE PROFIT 2", live: "Live", account: "Account", history: "History", noHistory: "No previous trades yet." },
-      ar: { analyze: "⚡ تحليل السوق", loading: "الأوتوبايلوت يمسح السوق...", scanning: "جاري تحليل هيكل السوق...", buy: "شراء معلق", sell: "بيع معلق", activeBuy: "شراء نشط", activeSell: "بيع نشط", pending: "معلق (انتظار)", entry: "الدخول", sl: "وقف خسارة", tp1: "هدف", tp2: "هدف", live: "مباشر", account: "الحساب", history: "السجل", noHistory: "لا يوجد صفقات سابقة." }
+      en: { analyze: "⚡ ANALYZE MARKET", loading: "Scanning...", scanning: "Scanning Market Structure...", buy: "BUY LIMIT", sell: "SELL LIMIT", activeBuy: "ACTIVE BUY", activeSell: "ACTIVE SELL", pending: "PENDING (WAIT)", entry: "SNIPER ENTRY", sl: "STOP LOSS", tp1: "TAKE PROFIT 1", tp2: "TAKE PROFIT 2", live: "Live", account: "Account", history: "History", noHistory: "No previous trades yet.", waitBuy: "WAITING FOR BUY AT", waitSell: "WAITING FOR SELL AT" },
+      ar: { analyze: "⚡ تحليل السوق", loading: "الأوتوبايلوت يمسح السوق...", scanning: "جاري تحليل هيكل السوق...", buy: "شراء معلق", sell: "بيع معلق", activeBuy: "شراء نشط", activeSell: "بيع نشط", pending: "معلق (انتظار)", entry: "الدخول", sl: "وقف خسارة", tp1: "هدف", tp2: "هدف", live: "مباشر", account: "الحساب", history: "السجل", noHistory: "لا يوجد صفقات سابقة.", waitBuy: "في انتظار شراء عند", waitSell: "في انتظار بيع عند" }
     };
 
     function applyLanguage() {
@@ -543,9 +523,8 @@
       if (!activeTrades[currentTF]) document.getElementById('loadingText').innerText = dict[currentLang].loading;
       
       document.querySelectorAll('.nav-text')[0].innerText = dict[currentLang].live;
-      document.querySelectorAll('.nav-text')[1].innerText = "News";
-      document.querySelectorAll('.nav-text')[2].innerText = dict[currentLang].history;
-      document.querySelectorAll('.nav-text')[3].innerText = dict[currentLang].account;
+      document.querySelectorAll('.nav-text')[1].innerText = dict[currentLang].history;
+      document.querySelectorAll('.nav-text')[2].innerText = dict[currentLang].account;
       
       if (activeTrades[currentTF]) renderTradeCard(activeTrades[currentTF]); 
       renderHistoryList();
@@ -595,9 +574,6 @@
       
       if (tabId === 'live' && chart) {
         setTimeout(() => chart.applyOptions({ width: document.getElementById('chart-container').clientWidth }), 50);
-      }
-      if (tabId === 'news') {
-        loadNews();
       }
     }
 
@@ -659,41 +635,29 @@
         if (!bars || bars.length === 0) return;
 
         const lastBar = bars[bars.length - 1];
-        let bullishOB = null;
-        let bearishOB = null;
-        const lookbackOB = 50;
-        const recentBars = bars.slice(-lookbackOB);
+        const closes = bars.map(b => b.close);
+        const ema20 = closes.reduce((a, b) => a + b, 0) / 20; 
+        const trendDir = lastBar.close > ema20 ? "BUY" : "SELL";
 
-        for (let i = recentBars.length - 1; i >= 2; i--) {
-          const c1 = recentBars[i];
-          const c2 = recentBars[i-1];
-          const c3 = recentBars[i-2];
-
-          if (c3.close < c3.open && c2.close > c2.open && c2.close > c3.high) {
-              if (!bullishOB && c3.low > (lastBar.close - 30)) bullishOB = c3;
-          }
-          if (c3.close > c3.open && c2.close < c2.open && c2.close < c3.low) {
-              if (!bearishOB && c3.high < (lastBar.close + 30)) bearishOB = c3;
-          }
-        }
+        // Find recent swing high/low (S/R Levels)
+        const lookback = 20;
+        const recentBars = bars.slice(-lookback);
+        const recentHigh = Math.max(...recentBars.map(b => b.high));
+        const recentLow = Math.min(...recentBars.map(b => b.low));
 
         let dir, entry, sl, tp1, tp2;
-        
-        const distToBullish = bullishOB ? Math.abs(lastBar.close - bullishOB.high) : 9999;
-        const distToBearish = bearishOB ? Math.abs(lastBar.close - bearishOB.low) : 9999;
 
-        if (distToBullish < 2.0 && bullishOB) {
+        if (trendDir === "BUY") {
             dir = "BUY";
-            entry = bullishOB.high; 
-            sl = bullishOB.low - 0.5; 
-        } else if (distToBearish < 2.0 && bearishOB) {
-            dir = "SELL";
-            entry = bearishOB.low; 
-            sl = bearishOB.high + 0.5; 
+            entry = recentLow; // Buy limit at support
+            sl = entry - 2.0; 
         } else {
-            return;
+            dir = "SELL";
+            entry = recentHigh; // Sell limit at resistance
+            sl = entry + 2.0;
         }
 
+        // Apply User Max SL Filter
         const slPips = Math.abs(entry - sl) * 10;
         if (slPips > parseInt(maxSL)) return;
 
@@ -732,7 +696,9 @@
     function renderTradeCard(trade) {
       const isBuy = trade.dir === 'BUY';
       let statusClass = "status-pending";
-      let statusText = dict[currentLang].pending;
+      
+      // NEW TEXT LOGIC
+      let statusText = trade.dir === 'BUY' ? `${dict[currentLang].waitBuy} ${trade.entry.toFixed(2)}` : `${dict[currentLang].waitSell} ${trade.entry.toFixed(2)}`;
       
       if (trade.status === 'ACTIVE') {
         statusClass = isBuy ? "status-active-buy" : "status-active-sell";
@@ -761,23 +727,6 @@
         </div>
       `;
       drawTradeLines(trade);
-    }
-
-    // NEWS LOGIC
-    function loadNews() {
-      const list = document.getElementById('newsList');
-      list.innerHTML = `
-        <div class="news-card high">
-          <div class="news-title">US Non-Farm Payrolls (NFP)</div>
-          <div class="news-meta"><span>USD</span><span class="news-impact high">High Impact</span></div>
-          <div style="font-size:12px; color:#888;">Expect high volatility in Gold and USD pairs.</div>
-        </div>
-        <div class="news-card medium">
-          <div class="news-title">FOMC Member Speech</div>
-          <div class="news-meta"><span>USD</span><span class="news-impact medium">Medium Impact</span></div>
-          <div style="font-size:12px; color:#888;">Potential short-term volatility.</div>
-        </div>
-      `;
     }
 
     // NOTIFICATIONS
