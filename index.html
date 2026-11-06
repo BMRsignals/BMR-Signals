@@ -9,65 +9,45 @@
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   
   <style>
+    /* CSS kello zeto zeto */
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    body {
-      margin: 0; background: #000000; color: #ffffff;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      min-height: 100vh; padding-bottom: 90px;
-    }
-    
+    body { margin: 0; background: #000; color: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; min-height: 100vh; padding-bottom: 90px; }
     body.rtl { direction: rtl; }
-    
-    /* Login Screen */
-    #loginScreen {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
-      background: #000; z-index: 1000; display: flex; flex-direction: column;
-      justify-content: center; align-items: center; padding: 20px;
-    }
+    #loginScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: #000; z-index: 1000; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
     .login-box { width: 100%; max-width: 400px; background: #111; border: 1px solid #222; border-radius: 16px; padding: 24px; text-align: center; }
     .login-input { width: 100%; padding: 14px; margin-bottom: 12px; background: #000; border: 1px solid #333; color: #fff; border-radius: 8px; font-size: 14px; }
     .btn-primary { width: 100%; padding: 14px; border-radius: 8px; border: none; font-size: 16px; font-weight: 700; cursor: pointer; background: #ffd700; color: #000; margin-bottom: 10px; }
     .btn-secondary { width: 100%; padding: 14px; border-radius: 8px; border: 1px solid #ffd700; font-size: 16px; font-weight: 700; cursor: pointer; background: transparent; color: #ffd700; }
     .forgot-link { color: #888; font-size: 12px; text-decoration: underline; cursor: pointer; margin-top: 10px; display: block; }
-    
-    /* App Pages */
     .page { display: none; padding: 16px; animation: fadeIn 0.3s; }
     .page.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
     header { padding: 16px; border-bottom: 1px solid #1a1a1a; display: flex; justify-content: space-between; align-items: center; }
     header h1 { margin: 0; font-size: 18px; font-weight: 700; }
-    
     .header-icons { display: flex; align-items: center; gap: 12px; }
     .bell-icon { font-size: 20px; cursor: pointer; position: relative; }
     .bell-badge { position: absolute; top: -4px; right: -4px; background: #ef5350; color: #fff; font-size: 10px; font-weight: 700; padding: 2px 5px; border-radius: 10px; }
-
-    /* Top Bar */
     .top-bar { display: flex; flex-direction: column; gap: 8px; padding: 10px 16px; border-bottom: 1px solid #1a1a1a; }
     .top-row { display: flex; justify-content: space-between; align-items: center; }
     .asset-select { background: #111; color: #fff; border: 1px solid #333; padding: 8px; border-radius: 8px; font-size: 14px; font-weight: 700; }
-    
     .autopilot-status { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; color: #26a69a; }
     .pulse-dot { width: 8px; height: 8px; background: #26a69a; border-radius: 50%; animation: pulse 1.5s infinite; }
     @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(38, 166, 154, 0.4); } 70% { box-shadow: 0 0 0 8px rgba(38, 166, 154, 0); } 100% { box-shadow: 0 0 0 0 rgba(38, 166, 154, 0); } }
-
-    /* Session Tracker */
-    .session-tracker { display: flex; gap: 6px; margin-top: 4px; }
-    .session-pill { flex: 1; text-align: center; font-size: 9px; font-weight: 700; padding: 4px; border-radius: 4px; border: 1px solid #333; color: #666; }
-    .session-pill.open { background: rgba(38, 166, 154, 0.15); border-color: #26a69a; color: #26a69a; }
-
-    /* Filter Panel */
+    .trend-row { display: flex; gap: 6px; justify-content: space-between; margin-top: 4px; }
+    .trend-box { flex: 1; text-align: center; font-size: 10px; font-weight: 700; padding: 6px 2px; border-radius: 4px; border: 1px solid #333; color: #666; }
+    .trend-box.bull { background: rgba(38, 166, 154, 0.15); border-color: #26a69a; color: #26a69a; }
+    .trend-box.bear { background: rgba(239, 83, 80, 0.15); border-color: #ef5350; color: #ef5350; }
+    .general-trend-bar { text-align: center; font-size: 12px; font-weight: 700; padding: 8px; border-radius: 8px; margin-top: 8px; background: #111; border: 1px solid #333; }
+    .general-trend-bar.bull { color: #26a69a; border-color: #26a69a; background: rgba(38, 166, 154, 0.1); }
+    .general-trend-bar.bear { color: #ef5350; border-color: #ef5350; background: rgba(239, 83, 80, 0.1); }
     .filter-panel { background: #111; border-bottom: 1px solid #1a1a1a; padding: 12px 16px; display: none; flex-direction: column; gap: 12px; }
     .filter-panel.active { display: flex; }
     .filter-row { display: flex; justify-content: space-between; align-items: center; }
     .filter-label { font-size: 12px; font-weight: 700; color: #ccc; }
     .filter-select { background: #000; color: #fff; border: 1px solid #333; padding: 6px 10px; border-radius: 6px; font-size: 12px; }
-    
     .session-checkboxes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
     .session-check { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #ccc; }
     .session-check input { accent-color: #ffd700; }
-
-    /* Notification Modal */
     #notifModal { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: rgba(0,0,0,0.9); z-index: 2000; display: none; flex-direction: column; padding: 20px; }
     .notif-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
     .notif-close { font-size: 24px; color: #888; cursor: pointer; background: none; border: none; }
@@ -77,95 +57,63 @@
     .notif-item { background: #111; border: 1px solid #222; padding: 12px; border-radius: 8px; margin-bottom: 10px; }
     .notif-item.buy { border-left: 4px solid #26a69a; }
     .notif-item.sell { border-left: 4px solid #ef5350; }
-
     .tf-selector { display: flex; overflow-x: auto; padding: 10px 16px; gap: 8px; border-bottom: 1px solid #1a1a1a; scrollbar-width: none; }
     .tf-selector::-webkit-scrollbar { display: none; }
     .tf-btn { background: #111; border: 1px solid #333; color: #888; padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
     .tf-btn.active { background: #ffd700; border-color: #ffd700; color: #000; }
-
     .btn-analyze { width: 100%; padding: 16px; background: #222; color: #fff; border: none; border-top: 1px solid #333; font-size: 16px; font-weight: 700; cursor: pointer; transition: 0.3s; }
     .btn-analyze:active { background: #ffd700; color: #000; }
-
     #chart-container { width: 100%; height: 35vh; border-bottom: 1px solid #1a1a1a; }
-
-    /* Glassmorphism Signal Card */
-    .signal-card { 
-      background: rgba(17, 26, 20, 0.7); 
-      backdrop-filter: blur(10px); 
-      -webkit-backdrop-filter: blur(10px);
-      border: 1px solid rgba(38, 166, 154, 0.3); 
-      border-radius: 16px; 
-      padding: 16px; 
-      margin-top: 16px; 
-      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-    }
-    .signal-card.sell { 
-      background: rgba(26, 17, 17, 0.7); 
-      border-color: rgba(239, 83, 80, 0.3); 
-    }
-    
+    .signal-card { background: rgba(17, 26, 20, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(38, 166, 154, 0.3); border-radius: 16px; padding: 16px; margin-top: 16px; box-shadow: 0 8px 32px 0 rgba(0,0,0,0.37); }
+    .signal-card.sell { background: rgba(26, 17, 17, 0.7); border-color: rgba(239, 83, 80, 0.3); }
     .price-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
-    .price-box { background: rgba(0, 0, 0, 0.6); border: 1px solid #222; border-radius: 12px; padding: 12px; }
+    .price-box { background: rgba(0,0,0,0.6); border: 1px solid #222; border-radius: 12px; padding: 12px; }
     .price-box.tp1 { border-color: #26a69a44; }
     .price-box.tp2 { border-color: #26a69a88; }
     .price-label { font-size: 11px; color: #888; font-weight: 600; text-transform: uppercase; }
     .price-val { font-size: 18px; font-weight: 700; margin-top: 4px; }
     .pips-sub { font-size: 11px; font-weight: 600; margin-top: 4px; }
-    
     .status-badge { padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 700; text-transform: uppercase; display: inline-block; margin-top: 8px; }
     .status-pending { background: #ffd70022; color: #ffd700; border: 1px solid #ffd70055; }
     .status-active-buy { background: #26a69a22; color: #26a69a; border: 1px solid #26a69a55; animation: pulse 2s infinite; }
     .status-active-sell { background: #ef535022; color: #ef5350; border: 1px solid #ef535055; animation: pulse 2s infinite; }
     .status-tp1 { background: #ffd70033; color: #ffd700; border: 1px solid #ffd70077; }
-
-    .text-green { color: #26a69a; } .text-red { color: #ef5350; } .text-yellow { color: #ffd700; }
-    .loading { text-align: center; padding: 40px; color: #888; font-weight: 600; }
-
+    .risk-note-live { font-size: 12px; color: #888; background: #111; padding: 12px; border-radius: 8px; border: 1px solid #222; margin-top: 16px; line-height: 1.5; }
+    .btn-copy-signal { display: block; width: 100%; margin-top: 12px; padding: 10px; background: #333; color: #fff; text-align: center; border-radius: 8px; font-weight: 700; text-decoration: none; cursor: pointer; border: 1px solid #555; }
     .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; height: 65px; background: #0a0a0a; border-top: 1px solid #222; display: flex; justify-content: space-around; align-items: center; z-index: 100; }
     .nav-item { color: #666; text-align: center; font-size: 11px; font-weight: 700; text-transform: uppercase; cursor: pointer; }
     .nav-item.active { color: #ffd700; }
     .nav-icon { font-size: 20px; margin-bottom: 4px; display: block; }
-
     .lang-btn { background: #222; border: 1px solid #444; color: #ffd700; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; }
-
-    /* Performance Stats */
+    .sub-banner { background: linear-gradient(145deg, #1a1505 0%, #000 100%); border: 1px solid #ffd70055; border-radius: 16px; padding: 20px; text-align: center; margin-top: 16px; }
+    .sub-banner h3 { color: #ffd700; margin: 0 0 8px 0; letter-spacing: 1px; }
+    .sub-banner p { color: #ccc; font-size: 14px; margin-bottom: 16px; }
+    .payment-box { background: #000; border: 1px dashed #ffd700; border-radius: 12px; padding: 16px; margin-top: 16px; }
+    .qr-code { width: 150px; height: 150px; margin: 0 auto; display: block; border-radius: 8px; background: #fff; padding: 5px; }
+    .wallet-address { background: #111; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 12px; color: #ffd700; word-break: break-all; margin: 12px 0; border: 1px solid #333; text-align: center; }
+    .btn-copy { width: 100%; padding: 10px; background: #ffd700; color: #000; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; margin-bottom: 8px; }
+    .btn-verify { display: block; text-align: center; text-decoration: none; width: 100%; padding: 12px; background: #229ED9; color: #fff; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 14px; }
     .stats-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
     .stats-filter { display: flex; gap: 4px; }
     .filter-btn { background: #111; border: 1px solid #333; color: #888; padding: 4px 10px; border-radius: 6px; font-size: 10px; cursor: pointer; }
     .filter-btn.active { background: #ffd700; color: #000; border-color: #ffd700; }
     .reset-btn { background: #ef535022; color: #ef5350; border: 1px solid #ef535055; padding: 4px 10px; border-radius: 6px; font-size: 10px; cursor: pointer; }
-
     .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 20px; }
     .stat-box { background: #111; border: 1px solid #222; border-radius: 12px; padding: 12px; text-align: center; }
     .stat-title { font-size: 10px; color: #888; text-transform: uppercase; font-weight: 700; }
     .stat-value { font-size: 20px; font-weight: 700; margin-top: 4px; }
-
-    /* History List */
     .history-item { background: #111; border: 1px solid #222; border-radius: 12px; padding: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: 0.2s; }
     .history-item:active { background: #1a1a1a; }
     .history-title { font-weight: 700; font-size: 14px; }
     .history-date { font-size: 11px; color: #888; }
     .history-result { font-weight: 700; font-size: 14px; text-align: right;}
-
-    /* Account & Subscription */
-    .sub-banner { background: linear-gradient(145deg, #1a1505 0%, #000 100%); border: 1px solid #ffd70055; border-radius: 16px; padding: 20px; text-align: center; margin-top: 16px; }
-    .sub-banner h3 { color: #ffd700; margin: 0 0 8px 0; letter-spacing: 1px; }
-    .sub-banner p { color: #ccc; font-size: 14px; margin-bottom: 16px; }
-    
-    .payment-box { background: #000; border: 1px dashed #ffd700; border-radius: 12px; padding: 16px; margin-top: 16px; }
-    .qr-code { width: 150px; height: 150px; margin: 0 auto; display: block; border-radius: 8px; background: #fff; padding: 5px; }
-    .wallet-address { background: #111; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 12px; color: #ffd700; word-break: break-all; margin: 12px 0; border: 1px solid #333; text-align: center; }
-    
-    .btn-copy { width: 100%; padding: 10px; background: #ffd700; color: #000; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; margin-bottom: 8px; }
-    .btn-verify { display: block; text-align: center; text-decoration: none; width: 100%; padding: 12px; background: #229ED9; color: #fff; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 14px; }
-
-    /* Risk Note on Live Page */
-    .risk-note-live { font-size: 12px; color: #888; background: #111; padding: 12px; border-radius: 8px; border: 1px solid #222; margin-top: 16px; line-height: 1.5; }
-
-    /* Auto Tab Styles */
+    #journalModal { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: rgba(0,0,0,0.9); z-index: 3000; display: none; justify-content: center; align-items: center; padding: 20px; }
+    .journal-box { background: #111; border: 1px solid #333; border-radius: 16px; width: 100%; max-width: 400px; padding: 24px; }
+    .journal-input { width: 100%; height: 100px; background: #000; border: 1px solid #333; color: #fff; border-radius: 8px; padding: 12px; margin-bottom: 16px; font-family: inherit; resize: none; }
     .auto-log { background: #111; border: 1px solid #222; border-radius: 12px; padding: 16px; margin-bottom: 12px; font-family: monospace; font-size: 12px; }
     .log-item { margin-bottom: 8px; border-bottom: 1px solid #222; padding-bottom: 8px; }
     .log-time { color: #888; font-size: 10px; }
+    .btn-refresh { width: 100%; padding: 10px; background: #333; color: #fff; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; margin-top: 12px; }
   </style>
 </head>
 <body id="mainBody">
@@ -203,7 +151,6 @@
       </div>
     </header>
 
-    <!-- TOP BAR (Asset Selector & Sessions) -->
     <div class="top-bar">
       <div class="top-row">
         <select id="assetSelector" class="asset-select" onchange="changeAsset()">
@@ -217,16 +164,16 @@
         <button onclick="toggleFilters()" style="background:none; border:none; color:#fff; font-size:18px;">⚙️</button>
       </div>
       
-      <!-- SESSION TRACKER -->
-      <div class="session-tracker" id="sessionTracker">
-        <div class="session-pill" id="sess-sydney">SYDNEY</div>
-        <div class="session-pill" id="sess-tokyo">TOKYO</div>
-        <div class="session-pill" id="sess-london">LONDON</div>
-        <div class="session-pill" id="sess-ny">NEW YORK</div>
+      <div class="trend-row" id="trendRow">
+        <div class="trend-box" id="t-m15">M15</div>
+        <div class="trend-box" id="t-m30">M30</div>
+        <div class="trend-box" id="t-h1">1H</div>
+        <div class="trend-box" id="t-h4">4H</div>
+        <div class="trend-box" id="t-d1">1D</div>
       </div>
+      <div class="general-trend-bar" id="generalTrendBar">Analyzing General Trend...</div>
     </div>
 
-    <!-- FILTER PANEL -->
     <div class="filter-panel" id="filterPanel">
       <div class="filter-row">
         <span class="filter-label">Max Stop Loss (Pips)</span>
@@ -262,7 +209,6 @@
       <div style="padding: 16px;">
         <div id="signalBox"><div class="loading" id="loadingText">Press Analyze to scan, or wait for Auto.</div></div>
         
-        <!-- RISK DISCLAIMER -->
         <div class="risk-note-live">
           <strong>Risk Management Rules:</strong><br>
           • Minimum balance to trade: <strong>$200</strong><br>
@@ -272,7 +218,6 @@
       </div>
     </div>
 
-    <!-- AUTO TAB -->
     <div id="page-auto" class="page">
       <h2 style="font-size: 18px; margin-bottom: 16px;">Autopilot Logs</h2>
       <div class="auto-log" id="autoLogBox">
@@ -281,6 +226,7 @@
           <div>Autopilot initialized. Waiting for session...</div>
         </div>
       </div>
+      <button class="btn-refresh" onclick="manualRefresh()">🔄 Manual Refresh Signals</button>
     </div>
 
     <div id="page-history" class="page">
@@ -322,13 +268,11 @@
         <button onclick="logout()" style="width: 100%; padding: 12px; background: #ef535022; color: #ef5350; border: 1px solid #ef535055; border-radius: 8px; font-weight: 700; cursor: pointer;">Log Out</button>
       </div>
 
-      <!-- UPGRADE BANNER & CRYPTO PAYMENT -->
       <div class="sub-banner">
         <h3>MR.TRADER FAMILY</h3>
         <div style="font-size: 32px; font-weight: 700; margin-bottom: 8px;">$49<span style="font-size: 14px; color: #888;">/mo</span></div>
         <p>Unlock unlimited live AI signals, advanced volume profile, and priority support.</p>
         
-        <!-- USDT TRC20 PAYMENT BOX -->
         <div class="payment-box">
           <div style="font-size: 12px; color: #888; margin-bottom: 8px; font-weight: 700;">PAY WITH USDT (TRC20)</div>
           
@@ -353,7 +297,6 @@
     </div>
   </div>
 
-  <!-- NOTIFICATION MODAL -->
   <div id="notifModal">
     <div class="notif-header">
       <h3 style="margin:0;">Notifications</h3>
@@ -364,6 +307,15 @@
     </div>
     <div class="notif-list" id="notifList">
       <div class="loading">No notifications yet.</div>
+    </div>
+  </div>
+
+  <div id="journalModal" onclick="closeJournal(event)">
+    <div class="journal-box" onclick="event.stopPropagation()">
+      <h3>Trade Journal</h3>
+      <p style="font-size:12px; color:#888; margin-top:0;">Write your notes for this trade.</p>
+      <textarea id="journalInput" class="journal-input" placeholder="e.g. I took this because the price swept the high..."></textarea>
+      <button class="btn-primary" onclick="saveJournal()">Save Notes</button>
     </div>
   </div>
 
@@ -383,15 +335,23 @@
     let autopilotInterval;
     let currentFilter = 'all';
 
-    // FILTERS
     let maxSL = localStorage.getItem('maxSL') || '50';
     let enabledSessions = JSON.parse(localStorage.getItem('enabledSessions')) || { sydney: true, tokyo: true, london: true, ny: true };
 
-    // TRADES
+    // TRADES ACTIVE PER ASSET
     let activeTrades = {}; 
     let tradeHistory = [];
     let notifications = [];
     let autoLogs = [];
+    let generalTrend = "NEUTRAL";
+    let journalEntryId = null;
+
+    // PIPS LOGIC PER ASSET
+    const pipMultiplier = {
+        'XAU/USD': 10,    // $0.10 = 1 pip
+        'EUR/USD': 10000, // 0.0001 = 1 pip
+        'BTC/USD': 1      // $1.00 = 1 pip
+    };
 
     try {
       activeTrades = JSON.parse(localStorage.getItem('activeTrades')) || {};
@@ -402,7 +362,6 @@
 
     window.onload = function() {
       supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-      
       const hash = window.location.hash;
       if (hash && hash.includes('type=recovery')) {
         isRecoveryMode = true;
@@ -480,6 +439,8 @@
         document.getElementById('appContent').style.display = 'block';
         document.getElementById('userEmail').innerText = session.user.email;
         
+        await loadUserData(session.user.id);
+
         renderNotifBadge();
         renderAutoLogs();
         initApp();
@@ -490,6 +451,8 @@
         document.getElementById('chk-london').checked = enabledSessions.london;
         document.getElementById('chk-ny').checked = enabledSessions.ny;
 
+        await updateGeneralTrend();
+
         startAutopilot(); 
         updateSessionUI();
         setInterval(updateSessionUI, 60000); 
@@ -499,6 +462,56 @@
       }
     }
 
+    // --- CLOUD ---
+    async function loadUserData(userId) {
+        const { data: histData } = await supabaseClient.from('trade_history').select('*').eq('user_id', userId).order('created_at', { ascending: false });
+        if (histData) {
+            tradeHistory = histData.map(t => ({
+                id: t.id, asset: t.asset, dir: t.direction, entry: t.entry, sl: t.sl, tp1: t.tp1, tp2: t.tp2, tf: t.tf, result: t.result, exitPrice: t.exit_price, date: t.date, journal: t.journal
+            }));
+            localStorage.setItem('tradeHistory', JSON.stringify(tradeHistory));
+        }
+
+        const { data: activeData } = await supabaseClient.from('active_trades').select('*').eq('user_id', userId);
+        if (activeData) {
+            activeTrades = {};
+            activeData.forEach(t => {
+                // Key by asset_tf to avoid conflicts
+                const key = `${t.asset}_${t.tf}`;
+                activeTrades[key] = { id: t.id, asset: t.asset, dir: t.direction, entry: t.entry, sl: t.sl, tp1: t.tp1, tp2: t.tp2, tf: t.tf, status: t.status, date: t.date, tp1Hit: t.tp1_hit };
+            });
+            localStorage.setItem('activeTrades', JSON.stringify(activeTrades));
+        }
+    }
+
+    async function saveActiveTradeToCloud(trade) {
+        if (!supabaseClient) return;
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (!session) return;
+
+        await supabaseClient.from('active_trades').upsert({
+            id: trade.id, user_id: session.user.id, asset: trade.asset, direction: trade.dir, entry: trade.entry, sl: trade.sl, tp1: trade.tp1, tp2: trade.tp2, tf: trade.tf, status: trade.status, date: trade.date, tp1_hit: trade.tp1Hit
+        });
+    }
+
+    async function deleteActiveTradeFromCloud(trade) {
+        if (!supabaseClient) return;
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (!session) return;
+        await supabaseClient.from('active_trades').delete().eq('user_id', session.user.id).eq('asset', trade.asset).eq('tf', trade.tf);
+    }
+
+    async function saveHistoryToCloud(trade) {
+        if (!supabaseClient) return;
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (!session) return;
+
+        await supabaseClient.from('trade_history').insert({
+            user_id: session.user.id, asset: trade.asset, direction: trade.dir, entry: trade.entry, sl: trade.sl, tp1: trade.tp1, tp2: trade.tp2, tf: trade.tf, result: trade.result, exit_price: trade.exitPrice, date: trade.date, journal: trade.journal || ""
+        });
+    }
+
+    // --- UI & LOGIC ---
     function toggleFilters() {
       document.getElementById('filterPanel').classList.toggle('active');
     }
@@ -515,15 +528,57 @@
       localStorage.setItem('enabledSessions', JSON.stringify(enabledSessions));
     }
 
+    async function updateGeneralTrend() {
+        const tfs = ['15min', '30min', '1h', '4h', '1day'];
+        const ids = ['t-m15', 't-m30', 't-h1', 't-h4', 't-d1'];
+        let bullCount = 0;
+        let bearCount = 0;
+
+        for (let i = 0; i < tfs.length; i++) {
+            const data = await fetch(`https://api.twelvedata.com/time_series?symbol=${currentAsset}&interval=${tfs[i]}&outputsize=200&apikey=${TWELVEDATA_API_KEY}`);
+            const json = await data.json();
+            if (json.status === 'error') continue;
+
+            const closes = json.values.map(v => parseFloat(v.close)).reverse();
+            const ema50 = closes.slice(-50).reduce((a, b) => a + b, 0) / 50;
+            const ema200 = closes.slice(-200).reduce((a, b) => a + b, 0) / 200;
+            const currentPrice = closes[closes.length - 1];
+
+            const el = document.getElementById(ids[i]);
+            if (currentPrice > ema50 && ema50 > ema200) {
+                el.className = "trend-box bull";
+                bullCount++;
+            } else if (currentPrice < ema50 && ema50 < ema200) {
+                el.className = "trend-box bear";
+                bearCount++;
+            } else {
+                el.className = "trend-box";
+            }
+        }
+
+        const trendBar = document.getElementById('generalTrendBar');
+        if (bullCount >= 3) {
+            generalTrend = "BULLISH";
+            trendBar.className = "general-trend-bar bull";
+            trendBar.innerText = `GENERAL TREND: BULLISH (${bullCount}/5)`;
+        } else if (bearCount >= 3) {
+            generalTrend = "BEARISH";
+            trendBar.className = "general-trend-bar bear";
+            trendBar.innerText = `GENERAL TREND: BEARISH (${bearCount}/5)`;
+        } else {
+            generalTrend = "NEUTRAL";
+            trendBar.className = "general-trend-bar";
+            trendBar.innerText = `GENERAL TREND: NEUTRAL / RANGING`;
+        }
+    }
+
     function getActiveSessions() {
       const now = new Date();
       const utcHour = now.getUTCHours();
-      
       const isSydney = utcHour >= 21 || utcHour < 6;
       const isTokyo = utcHour >= 0 && utcHour < 9;
       const isLondon = utcHour >= 7 && utcHour < 16;
       const isNY = utcHour >= 12 && utcHour < 21;
-
       return { sydney: isSydney, tokyo: isTokyo, london: isLondon, ny: isNY };
     }
 
@@ -533,38 +588,6 @@
       document.getElementById('sess-tokyo').classList.toggle('open', active.tokyo);
       document.getElementById('sess-london').classList.toggle('open', active.london);
       document.getElementById('sess-ny').classList.toggle('open', active.ny);
-    }
-
-    const dict = {
-      en: { analyze: "⚡ ANALYZE MARKET", loading: "Press Analyze to scan, or wait for Auto.", scanning: "Scanning FVG & OB...", buy: "BUY LIMIT", sell: "SELL LIMIT", activeBuy: "ACTIVE BUY", activeSell: "ACTIVE SELL", tp1hit: "TP1 HIT", pending: "PENDING (WAIT)", entry: "SNIPER ENTRY", sl: "STOP LOSS", tp1: "TAKE PROFIT 1", tp2: "TAKE PROFIT 2", live: "Live", account: "Account", history: "History", auto: "Auto", noHistory: "No previous trades yet.", waitBuy: "WAITING FOR BUY AT", waitSell: "WAITING FOR SELL AT" },
-      ar: { analyze: "⚡ تحليل السوق", loading: "اضغط تحليل، أو انتظر الأوتو.", scanning: "جاري تحليل FVG و OB...", buy: "شراء معلق", sell: "بيع معلق", activeBuy: "شراء نشط", activeSell: "بيع نشط", tp1hit: "تم تحقيق الهدف 1", pending: "معلق (انتظار)", entry: "الدخول", sl: "وقف خسارة", tp1: "هدف 1", tp2: "هدف 2", live: "مباشر", account: "الحساب", history: "السجل", auto: "أوتو", noHistory: "لا يوجد صفقات سابقة.", waitBuy: "في انتظار شراء عند", waitSell: "في انتظار بيع عند" }
-    };
-
-    function applyLanguage() {
-      document.getElementById('langBtn2').innerText = currentLang === 'en' ? 'AR' : 'EN';
-      if (currentLang === 'ar') document.getElementById('mainBody').classList.add('rtl');
-      else document.getElementById('mainBody').classList.remove('rtl');
-      
-      if (!activeTrades[currentTF]) document.getElementById('loadingText').innerText = dict[currentLang].loading;
-      
-      document.querySelectorAll('.nav-text')[0].innerText = dict[currentLang].live;
-      document.querySelectorAll('.nav-text')[1].innerText = dict[currentLang].auto;
-      document.querySelectorAll('.nav-text')[2].innerText = dict[currentLang].history;
-      document.querySelectorAll('.nav-text')[3].innerText = dict[currentLang].account;
-      
-      if (activeTrades[currentTF]) renderTradeCard(activeTrades[currentTF]); 
-      renderHistoryList();
-    }
-
-    function toggleLanguage() {
-      currentLang = currentLang === 'en' ? 'ar' : 'en';
-      localStorage.setItem('lang', currentLang);
-      applyLanguage();
-    }
-
-    function changeAsset() {
-      currentAsset = document.getElementById('assetSelector').value;
-      loadChartData(currentTF);
     }
 
     function initApp() {
@@ -585,7 +608,8 @@
       
       setTimeout(() => {
         loadChartData(currentTF).then(() => { 
-          if (activeTrades[currentTF]) drawTradeLines(activeTrades[currentTF]); 
+          const key = `${currentAsset}_${currentTF}`;
+          if (activeTrades[key]) drawTradeLines(activeTrades[key]); 
         });
       }, 100);
       
@@ -609,9 +633,10 @@
       btn.classList.add('active');
       loadChartData(tf); 
       
-      if (activeTrades[currentTF]) {
-        renderTradeCard(activeTrades[currentTF]);
-        drawTradeLines(activeTrades[currentTF]);
+      const key = `${currentAsset}_${currentTF}`;
+      if (activeTrades[key]) {
+        renderTradeCard(activeTrades[key]);
+        drawTradeLines(activeTrades[key]);
       } else {
         document.getElementById('signalBox').innerHTML = `<div class="loading">${dict[currentLang].loading}</div>`;
         priceLines.forEach(line => candleSeries.removePriceLine(line));
@@ -641,39 +666,26 @@
       } catch (e) { return null; }
     }
 
-    // --- NEW LOGIC: SMC (FVG + OB + Supply/Demand) ---
+    // SMC Logic
     function findSMCSetup(bars) {
         const lastBar = bars[bars.length - 1];
         let setup = null;
-        
-        // Look back 30 candles to find a setup
         for (let i = bars.length - 3; i >= bars.length - 30; i--) {
-            const c1 = bars[i];     // Oldest
-            const c2 = bars[i+1];   // Middle
-            const c3 = bars[i+2];   // Newest (FVG Candle)
+            const c1 = bars[i];
+            const c2 = bars[i+1];
+            const c3 = bars[i+2];
 
-            // Bullish FVG & Demand Zone (Order Block)
             if (c1.high < c3.low) {
-                // Found Bullish FVG. The OB is usually the last down candle (c1)
-                setup = {
-                    dir: "BUY",
-                    entry: c1.high, // Enter at the top of the OB
-                    sl: c1.low - 0.5, // SL below OB
-                    fvgZone: [c1.high, c3.low]
-                };
-                break; // Take the most recent setup
+                if (generalTrend === "BULLISH" || generalTrend === "NEUTRAL") {
+                    setup = { dir: "BUY", entry: c1.high, sl: c1.low - 0.5 };
+                    break;
+                }
             }
-
-            // Bearish FVG & Supply Zone (Order Block)
             if (c1.low > c3.high) {
-                // Found Bearish FVG. The OB is usually the last up candle (c1)
-                setup = {
-                    dir: "SELL",
-                    entry: c1.low, // Enter at the bottom of the OB
-                    sl: c1.high + 0.5, // SL above OB
-                    fvgZone: [c3.high, c1.low]
-                };
-                break;
+                if (generalTrend === "BEARISH" || generalTrend === "NEUTRAL") {
+                    setup = { dir: "SELL", entry: c1.low, sl: c1.high + 0.5 };
+                    break;
+                }
             }
         }
         return setup;
@@ -682,14 +694,15 @@
     async function startAnalysis() {
       const signalBox = document.getElementById('signalBox');
       const btn = document.getElementById('btnAnalyze');
-      
+      const key = `${currentAsset}_${currentTF}`;
       btn.disabled = true;
       signalBox.innerHTML = `<div class="loading" style="color:#ffd700; font-weight:700;">${dict[currentLang].scanning}</div>`;
       
       await new Promise(r => setTimeout(r, 1000));
 
-      if (activeTrades[currentTF]) {
-        delete activeTrades[currentTF];
+      if (activeTrades[key]) {
+        await deleteActiveTradeFromCloud(activeTrades[key]);
+        delete activeTrades[key];
         localStorage.setItem('activeTrades', JSON.stringify(activeTrades));
       }
       
@@ -706,26 +719,29 @@
       const setup = findSMCSetup(bars);
       
       if (!setup) {
-          signalBox.innerHTML = `<div class="loading text-red">No clear FVG setup found. Wait for next candle.</div>`;
+          signalBox.innerHTML = `<div class="loading text-red">No valid setup found for current trend.</div>`;
           btn.disabled = false;
           return;
       }
 
       let { dir, entry, sl } = setup;
       
-      // Apply strict caps
+      // Pips limits based on asset
+      const multiplier = pipMultiplier[currentAsset];
+      
       if (currentTF === '5min') {
-          if (dir === 'BUY' && (entry - sl) > 5.0) sl = entry - 5.0; 
-          if (dir === 'SELL' && (sl - entry) > 5.0) sl = entry + 5.0; 
+          const maxSlDist = currentAsset === 'XAU/USD' ? 5.0 : (currentAsset === 'EUR/USD' ? 0.0050 : 50.0);
+          if (dir === 'BUY' && (entry - sl) > maxSlDist) sl = entry - maxSlDist; 
+          if (dir === 'SELL' && (sl - entry) > maxSlDist) sl = entry + maxSlDist; 
       } else if (currentTF === '15min') {
-          if (dir === 'BUY' && (entry - sl) > 7.0) sl = entry - 7.0; 
-          if (dir === 'SELL' && (sl - entry) > 7.0) sl = entry + 7.0; 
+          const maxSlDist = currentAsset === 'XAU/USD' ? 7.0 : (currentAsset === 'EUR/USD' ? 0.0070 : 70.0);
+          if (dir === 'BUY' && (entry - sl) > maxSlDist) sl = entry - maxSlDist; 
+          if (dir === 'SELL' && (sl - entry) > maxSlDist) sl = entry + maxSlDist; 
       }
 
-      // Check max SL filter
-      const slPips = Math.abs(entry - sl) * 10;
+      const slPips = Math.abs(entry - sl) * multiplier;
       if (slPips > parseInt(maxSL)) {
-          signalBox.innerHTML = `<div class="loading text-red">Setup SL (${slPips} pips) is bigger than your filter (${maxSL} pips).</div>`;
+          signalBox.innerHTML = `<div class="loading text-red">Setup SL (${slPips.toFixed(1)} pips) is bigger than filter.</div>`;
           btn.disabled = false;
           return;
       }
@@ -734,21 +750,29 @@
       const tp1 = dir === 'BUY' ? entry + (risk * 1.5) : entry - (risk * 1.5);
       const tp2 = dir === 'BUY' ? entry + (risk * 3.5) : entry - (risk * 3.5);
 
-      activeTrades[currentTF] = { id: Date.now(), dir, entry, sl, tp1, tp2, tf: currentTF, status: 'PENDING', date: new Date().toLocaleString(), tp1Hit: false };
+      activeTrades[key] = { id: Date.now(), asset: currentAsset, dir, entry, sl, tp1, tp2, tf: currentTF, status: 'PENDING', date: new Date().toLocaleString(), tp1Hit: false };
       
       addNotification(dir, entry, sl, tp1, tp2, currentTF);
+      await saveActiveTradeToCloud(activeTrades[key]);
       localStorage.setItem('activeTrades', JSON.stringify(activeTrades));
-      renderTradeCard(activeTrades[currentTF]);
-      
+      renderTradeCard(activeTrades[key]);
       btn.disabled = false;
     }
 
-    // --- AUTOPILOT ENGINE ---
+    function manualRefresh() {
+        loadChartData(currentTF);
+        updateGeneralTrend();
+        addAutoLog("Manual Refresh Triggered.");
+        const key = `${currentAsset}_${currentTF}`;
+        if (activeTrades[key]) renderTradeCard(activeTrades[key]);
+    }
+
     function startAutopilot() {
       if (autopilotInterval) clearInterval(autopilotInterval);
       
       autopilotInterval = setInterval(async () => {
-        if (activeTrades[currentTF]) return;
+        const key = `${currentAsset}_${currentTF}`;
+        if (activeTrades[key]) return;
         
         const activeSess = getActiveSessions();
         const canTradeSession = 
@@ -759,7 +783,6 @@
 
         if (!canTradeSession) return;
 
-        const startTime = performance.now();
         const bars = await loadChartData(currentTF);
         if (!bars || bars.length === 0) return;
 
@@ -767,44 +790,44 @@
         if (!setup) return;
 
         let { dir, entry, sl } = setup;
+        const multiplier = pipMultiplier[currentAsset];
 
-        // Deduplication
         let isDuplicate = false;
         const recentHistory = tradeHistory.slice(-5);
         recentHistory.forEach(t => {
-            if (t.tf === currentTF && Math.abs(t.entry - entry) < 1.0) isDuplicate = true;
+            if (t.asset === currentAsset && t.tf === currentTF && Math.abs(t.entry - entry) < 1.0) isDuplicate = true;
         });
         if (isDuplicate) return;
 
-        const slPips = Math.abs(entry - sl) * 10;
+        const slPips = Math.abs(entry - sl) * multiplier;
         if (slPips > parseInt(maxSL)) return;
 
         if (currentTF === '5min') {
-            if (dir === 'BUY' && (entry - sl) > 5.0) sl = entry - 5.0; 
-            if (dir === 'SELL' && (sl - entry) > 5.0) sl = entry + 5.0; 
+            const maxSlDist = currentAsset === 'XAU/USD' ? 5.0 : (currentAsset === 'EUR/USD' ? 0.0050 : 50.0);
+            if (dir === 'BUY' && (entry - sl) > maxSlDist) sl = entry - maxSlDist; 
+            if (dir === 'SELL' && (sl - entry) > maxSlDist) sl = entry + maxSlDist; 
         } else if (currentTF === '15min') {
-            if (dir === 'BUY' && (entry - sl) > 7.0) sl = entry - 7.0; 
-            if (dir === 'SELL' && (sl - entry) > 7.0) sl = entry + 7.0; 
+            const maxSlDist = currentAsset === 'XAU/USD' ? 7.0 : (currentAsset === 'EUR/USD' ? 0.0070 : 70.0);
+            if (dir === 'BUY' && (entry - sl) > maxSlDist) sl = entry - maxSlDist; 
+            if (dir === 'SELL' && (sl - entry) > maxSlDist) sl = entry + maxSlDist; 
         }
 
         const risk = Math.abs(entry - sl);
         const tp1 = dir === 'BUY' ? entry + (risk * 1.5) : entry - (risk * 1.5);
         const tp2 = dir === 'BUY' ? entry + (risk * 3.5) : entry - (risk * 3.5);
 
-        const endTime = performance.now();
-        const timeTaken = Math.round(endTime - startTime);
-
-        activeTrades[currentTF] = { id: Date.now(), dir, entry, sl, tp1, tp2, tf: currentTF, status: 'PENDING', date: new Date().toLocaleString(), tp1Hit: false };
+        activeTrades[key] = { id: Date.now(), asset: currentAsset, dir, entry, sl, tp1, tp2, tf: currentTF, status: 'PENDING', date: new Date().toLocaleString(), tp1Hit: false };
         addNotification(dir, entry, sl, tp1, tp2, currentTF);
+        await saveActiveTradeToCloud(activeTrades[key]);
         localStorage.setItem('activeTrades', JSON.stringify(activeTrades));
         
-        addAutoLog(`Found FVG ${dir} at ${entry.toFixed(2)} | Took ${timeTaken}ms`);
+        addAutoLog(`Found FVG ${dir} at ${entry.toFixed(2)} (Trend: ${generalTrend})`);
         
         if (document.getElementById('page-live').classList.contains('active')) {
-          renderTradeCard(activeTrades[currentTF]);
+          renderTradeCard(activeTrades[key]);
         }
 
-      }, 30000);
+      }, 30000); 
     }
 
     function addAutoLog(text) {
@@ -855,15 +878,16 @@
         statusText = isBuy ? dict[currentLang].activeBuy : dict[currentLang].activeSell;
       }
       
-      const pipsRisk = (Math.abs(trade.entry - trade.sl) * 10).toFixed(0);
-      const pipsReward1 = (Math.abs(trade.tp1 - trade.entry) * 10).toFixed(0);
-      const pipsReward2 = (Math.abs(trade.tp2 - trade.entry) * 10).toFixed(0);
+      const multiplier = pipMultiplier[trade.asset] || 10;
+      const pipsRisk = (Math.abs(trade.entry - trade.sl) * multiplier).toFixed(1);
+      const pipsReward1 = (Math.abs(trade.tp1 - trade.entry) * multiplier).toFixed(1);
+      const pipsReward2 = (Math.abs(trade.tp2 - trade.entry) * multiplier).toFixed(1);
 
       document.getElementById('signalBox').innerHTML = `
         <div class="signal-card ${isBuy ? '' : 'sell'}">
           <div style="display: flex; justify-content: space-between; margin-bottom: 12px; align-items: flex-start;">
             <div>
-              <div style="font-size: 18px; font-weight: 700; margin-bottom: 4px;">${currentAsset} <span class="${isBuy ? 'text-green' : 'text-red'}">${isBuy ? dict[currentLang].buy : dict[currentLang].sell}</span></div>
+              <div style="font-size: 18px; font-weight: 700; margin-bottom: 4px;">${trade.asset} <span class="${isBuy ? 'text-green' : 'text-red'}">${isBuy ? dict[currentLang].buy : dict[currentLang].sell}</span></div>
               <div class="status-badge ${statusClass}">${statusText}</div>
             </div>
             <div style="font-size: 12px; color: #888; font-weight: 600; text-align: ${currentLang === 'ar' ? 'left' : 'right'};">${trade.tf.toUpperCase()} <br> CHART</div>
@@ -874,12 +898,20 @@
             <div class="price-box tp1"><div class="price-label">${dict[currentLang].tp1}</div><div class="price-val text-green">${trade.tp1.toFixed(2)}</div><div class="pips-sub text-green">+${pipsReward1} pips</div></div>
             <div class="price-box tp2"><div class="price-label">${dict[currentLang].tp2}</div><div class="price-val text-green">${trade.tp2.toFixed(2)}</div><div class="pips-sub text-green">+${pipsReward2} pips</div></div>
           </div>
+          <button class="btn-copy-signal" onclick="copySignal(${trade.entry}, ${trade.sl}, ${trade.tp1}, ${trade.tp2}, '${trade.dir}', '${trade.asset}')">📋 Copy Trade Plan</button>
         </div>
       `;
       drawTradeLines(trade);
     }
 
-    // NOTIFICATIONS
+    function copySignal(entry, sl, tp1, tp2, dir, asset) {
+        const text = `${asset} ${dir} LIMIT\nEntry: ${entry.toFixed(2)}\nSL: ${sl.toFixed(2)}\nTP1: ${tp1.toFixed(2)}\nTP2: ${tp2.toFixed(2)}`;
+        navigator.clipboard.writeText(text).then(() => {
+            alert("Trade Plan Copied!");
+        }).catch(err => alert("Failed to copy."));
+    }
+
+    // Notifications
     function addNotification(dir, entry, sl, tp1, tp2, tf) {
       const newNotif = { id: Date.now(), dir, entry, sl, tp1, tp2, tf, date: new Date().toLocaleString() };
       notifications.unshift(newNotif);
@@ -935,7 +967,7 @@
       renderNotifList();
     }
 
-    // HISTORY
+    // History & Journal
     function setFilter(filter, element) {
       currentFilter = filter;
       document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
@@ -943,8 +975,12 @@
       renderHistoryList();
     }
 
-    function clearHistory() {
+    async function clearHistory() {
       if (confirm("Are you sure you want to clear all trade history? This cannot be undone.")) {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (session) {
+            await supabaseClient.from('trade_history').delete().eq('user_id', session.user.id);
+        }
         tradeHistory = [];
         localStorage.removeItem('tradeHistory');
         renderHistoryList();
@@ -970,7 +1006,8 @@
       const totalTrades = filteredHistory.length;
 
       filteredHistory.forEach(t => {
-        const pips = Math.abs(t.exitPrice - t.entry) * 10;
+        const mult = pipMultiplier[t.asset] || 10;
+        const pips = Math.abs(t.exitPrice - t.entry) * mult;
         if (t.result === 'WIN') {
           wins++;
           totalPips += pips;
@@ -1000,12 +1037,13 @@
         const isWin = t.result === 'WIN';
         const color = isWin ? 'text-green' : 'text-red';
         const sign = isWin ? '+' : '-';
-        const pips = (Math.abs(t.exitPrice - t.entry) * 10).toFixed(0);
+        const mult = pipMultiplier[t.asset] || 10;
+        const pips = (Math.abs(t.exitPrice - t.entry) * mult).toFixed(1);
 
         html += `
-          <div class="history-item">
+          <div class="history-item" onclick="openJournal('${t.id}')">
             <div>
-              <div class="history-title">${currentAsset} <span class="${isBuy ? 'text-green' : 'text-red'}">${isBuy ? dict[currentLang].buy : dict[currentLang].sell}</span></div>
+              <div class="history-title">${t.asset} <span class="${isBuy ? 'text-green' : 'text-red'}">${isBuy ? dict[currentLang].buy : dict[currentLang].sell}</span></div>
               <div class="history-date">${t.date} | ${t.tf.toUpperCase()}</div>
             </div>
             <div>
@@ -1016,6 +1054,38 @@
         `;
       });
       list.innerHTML = html;
+    }
+
+    // Journal
+    function openJournal(id) {
+        journalEntryId = id;
+        const trade = tradeHistory.find(t => t.id == id);
+        if (trade) {
+            document.getElementById('journalInput').value = trade.journal || "";
+            document.getElementById('journalModal').style.display = 'flex';
+        }
+    }
+
+    function closeJournal(event) {
+      if (event && event.target.id !== 'journalModal' && !event.target.classList.contains('journal-box') && event.target.tagName !== 'BUTTON') return;
+      document.getElementById('journalModal').style.display = 'none';
+    }
+
+    async function saveJournal() {
+        const text = document.getElementById('journalInput').value;
+        const tradeIndex = tradeHistory.findIndex(t => t.id == journalEntryId);
+        if (tradeIndex > -1) {
+            tradeHistory[tradeIndex].journal = text;
+            localStorage.setItem('tradeHistory', JSON.stringify(tradeHistory));
+            
+            // Save to Cloud
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session) {
+                await supabaseClient.from('trade_history').update({ journal: text }).eq('id', journalEntryId);
+            }
+            alert('Journal saved!');
+        }
+        document.getElementById('journalModal').style.display = 'none';
     }
 
     function startLiveTracking() {
@@ -1033,32 +1103,29 @@
           
           const livePrice = parseFloat(data.price);
           
-          activeKeys.forEach(tf => {
-            let trade = activeTrades[tf];
+          for (let key of activeKeys) {
+            let trade = activeTrades[key];
             let result = null;
             let exitPrice = 0;
             
-            // Check if price touched entry (make active)
             if (trade.status === 'PENDING') {
               if (trade.dir === 'BUY' && livePrice <= trade.entry) trade.status = 'ACTIVE';
               if (trade.dir === 'SELL' && livePrice >= trade.entry) trade.status = 'ACTIVE';
-              localStorage.setItem('activeTrades', JSON.stringify(activeTrades));
-              if (tf === currentTF && document.getElementById('page-live').classList.contains('active')) {
+              await saveActiveTradeToCloud(trade);
+              if (key === `${currentAsset}_${currentTF}` && document.getElementById('page-live').classList.contains('active')) {
                 renderTradeCard(trade);
               }
             }
 
-            // Check for TP1
             if (trade.status === 'ACTIVE' && !trade.tp1Hit) {
               if (trade.dir === 'BUY' && livePrice >= trade.tp1) { trade.tp1Hit = true; }
               if (trade.dir === 'SELL' && livePrice <= trade.tp1) { trade.tp1Hit = true; }
-              localStorage.setItem('activeTrades', JSON.stringify(activeTrades));
-              if (tf === currentTF && document.getElementById('page-live').classList.contains('active')) {
+              await saveActiveTradeToCloud(trade);
+              if (key === `${currentAsset}_${currentTF}` && document.getElementById('page-live').classList.contains('active')) {
                 renderTradeCard(trade);
               }
             }
 
-            // Check final SL / TP2
             if (trade.dir === 'BUY') {
               if (livePrice <= trade.sl) { result = 'LOSS'; exitPrice = trade.sl; }
               if (livePrice >= trade.tp2) { result = 'WIN'; exitPrice = trade.tp2; }
@@ -1071,23 +1138,25 @@
               const finishedTrade = { ...trade, result: result, exitPrice: exitPrice };
               tradeHistory.push(finishedTrade);
               localStorage.setItem('tradeHistory', JSON.stringify(tradeHistory));
+              await saveHistoryToCloud(finishedTrade);
               
-              delete activeTrades[tf];
+              delete activeTrades[key];
+              await deleteActiveTradeFromCloud(trade);
               localStorage.setItem('activeTrades', JSON.stringify(activeTrades));
               
               if (result === 'WIN') {
                 confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
               }
               
-              if (tf === currentTF) {
+              if (key === `${currentAsset}_${currentTF}`) {
                 window.history.replaceState({}, document.title, window.location.pathname);
                 alert(`TRADE HIT ${result === 'WIN' ? 'TAKE PROFIT 2' : 'STOP LOSS'}!`);
                 location.reload();
               }
             }
-          });
+          }
         } catch (e) { }
-      }, 5000);
+      }, 15000); 
     }
   </script>
 </body>
