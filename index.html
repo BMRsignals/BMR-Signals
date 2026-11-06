@@ -470,7 +470,6 @@
     // --- NEW: ECONOMIC CALENDAR ---
     async function loadEconomicCalendar() {
         try {
-            // Fetch today's events
             const today = new Date().toISOString().split('T')[0];
             const url = `https://biquote.io/api/calendar?importance=high&from=${today}T00:00:00Z&to=${today}T23:59:59Z`;
             
@@ -479,7 +478,6 @@
             
             const data = await res.json();
             
-            // Filter for USD or Gold related events
             const relevantEvents = data.filter(e => 
                 e.currency === 'USD' || (e.name && e.name.toLowerCase().includes('gold'))
             );
@@ -496,7 +494,6 @@
             }
         } catch (e) {
             console.warn("Economic calendar error:", e);
-            // If API fails, just hide the bar to avoid clutter
             document.getElementById('newsBar').style.display = 'none';
         }
     }
@@ -648,21 +645,23 @@
     // --- BIQUOTE DATA INTEGRATION (FIXED) ---
     async function loadChartData(tf) {
       try {
-        // Correct usage: no need for new Biquote(), call directly
+        // FIX: Correct biquote call, no new keyword.
         const response = await Biquote.ohlc(currentAsset, { interval: tf, limit: 300 });
         
         // biquote returns { symbol, interval, bars: [...] }
         const bars = response.bars;
         if (!bars || bars.length === 0) return null;
 
-        // Key fix: convert ISO string to Unix timestamp (seconds)
-        const formatted = bars.map(b => ({
-          time: Math.floor(new Date(b.openTime).getTime() / 1000), // Fix: use openTime
-          open: b.open,
-          high: b.high,
-          low: b.low,
-          close: b.close
-        }));
+        // FIX: Use b.openTime and convert to unix timestamp (seconds)
+        const formatted = bars
+          .filter(b => !b.isOpen) // Only closed candles
+          .map(b => ({
+            time: Math.floor(new Date(b.openTime).getTime() / 1000),
+            open: b.open,
+            high: b.high,
+            low: b.low,
+            close: b.close
+          }));
 
         // Ensure data is sorted by time ascending
         const closedBars = formatted.filter(b => !isNaN(b.time));
@@ -1056,7 +1055,6 @@
             tradeHistory[tradeIndex].journal = text;
             localStorage.setItem('tradeHistory', JSON.stringify(tradeHistory));
             
-            // Save to Cloud
             const { data: { session } } = await supabaseClient.auth.getSession();
             if (session) {
                 await supabaseClient.from('trade_history').update({ journal: text }).eq('id', journalEntryId);
@@ -1074,8 +1072,6 @@
         if (activeKeys.length === 0) return;
         
         try {
-          // Note: Using Biquote's tick endpoint if available, or falling back to latest candle
-          // Assuming Biquote.tick works similarly
           const tick = await Biquote.tick(currentAsset);
           if (!tick || !tick.mid) return;
           
