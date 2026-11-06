@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>MR.Trader AI - SMC Master</title>
+  <title>MR.Trader AI - SMC Master PRO</title>
   <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -204,7 +204,7 @@
   <!-- Splash Screen -->
   <div id="splashScreen">
     <div class="splash-logo">MR.Trader <span>AI</span></div>
-    <div class="splash-tag">SMC MASTER</div>
+    <div class="splash-tag">SMC MASTER PRO</div>
     <div class="spinner"></div>
   </div>
 
@@ -534,6 +534,22 @@
     function getTradeKey(asset, tf) { return `${asset}__${tf}`; }
     function getPipValue(asset) { return 0.20; }
 
+    // دالة حساب حجم اللوت باستخدام Kelly Criterion
+    function calculateKellyLot(winRate) {
+        // Kelly % = W - [(1 - W) / R]
+        // W = Win Rate, R = Risk/Reward (نستخدم 1.5)
+        let W = winRate / 100;
+        let R = 1.5;
+        let kelly = W - ((1 - W) / R);
+        
+        // الحد الأدنى والأقصى للوت
+        if (kelly < 0.01) return 0.01; // إذا كانت النسبة سلبية، نستخدم أصغر لوت
+        if (kelly > 0.1) return 0.10;  // الحد الأقصى 0.10
+        
+        // تقريب اللوت لأقرب رقمين عشريين
+        return Math.max(0.01, Math.round(kelly * 100) / 100);
+    }
+
     function migrateLocalStorage() {
       try {
         const old = JSON.parse(localStorage.getItem('activeTrades')) || {};
@@ -760,9 +776,7 @@
       }
     }
 
-    // بداية التطبيق
     window.onload = function() {
-      // إخفاء شاشة الترحيب بعد 3 ثواني
       setTimeout(() => {
         const splash = document.getElementById('splashScreen');
         if (splash) {
@@ -935,7 +949,6 @@
       return { sydney: utcHour >= 21 || utcHour < 6, tokyo: utcHour >= 0 && utcHour < 9, london: utcHour >= 7 && utcHour < 16, ny: utcHour >= 12 && utcHour < 21 };
     }
 
-    // ---------- TwelveData Chart Fetch (Through Proxy) ----------
     async function fetchChartDataFromSource(tf) {
         const intervalMap = { '5min': '5min', '15min': '15min', '30min': '30min', '1h': '1h', '4h': '4h', '1day': '1day' };
         const tdTf = intervalMap[tf] || '5min';
@@ -1097,25 +1110,43 @@
       }
     }
 
+    // دالة البحث عن الفجوات السعرية (FVG) مع فلتر الهيكل والسيولة
     function findSMCSetup(bars) {
         let setup = null;
         const currentPrice = bars[bars.length - 1].close; 
+        
+        // البحث في آخر 60 شمعة
         for (let i = bars.length - 3; i >= Math.max(0, bars.length - 60); i--) {
             const c1 = bars[i]; const c3 = bars[i + 2];
             if (!c1 || !c3) continue;
+
+            // فجوة شراء (Bullish FVG)
             if (c1.high < c3.low) {
                 const fvgMid = (c1.high + c3.low) / 2;
                 if (Math.abs(currentPrice - fvgMid) < (getPipSize(currentAsset) * 50)) {
-                    if (generalTrend === "BULLISH" || generalTrend === "NEUTRAL") { 
+                    // فلتر الهيكل: لازم يكون في كسر هيكل صاعد قبل الفجوة
+                    let isBos = false;
+                    for (let j = i - 1; j >= Math.max(0, i - 10); j--) {
+                        if (bars[j].close > bars[j-1].high) { isBos = true; break; }
+                    }
+                    
+                    if (isBos && (generalTrend === "BULLISH" || generalTrend === "NEUTRAL")) { 
                         setup = { dir: "BUY", entry: c1.high, sl: c1.low - getPipSize(currentAsset) * 5 }; 
                         break; 
                     }
                 }
             }
+            // فجوة بيع (Bearish FVG)
             if (c1.low > c3.high) {
                 const fvgMid = (c1.low + c3.high) / 2;
                 if (Math.abs(currentPrice - fvgMid) < (getPipSize(currentAsset) * 50)) {
-                    if (generalTrend === "BEARISH" || generalTrend === "NEUTRAL") { 
+                    // فلتر الهيكل: لازم يكون في كسر هيكل هابط قبل الفجوة
+                    let isBos = false;
+                    for (let j = i - 1; j >= Math.max(0, i - 10); j--) {
+                        if (bars[j].close < bars[j-1].low) { isBos = true; break; }
+                    }
+                    
+                    if (isBos && (generalTrend === "BEARISH" || generalTrend === "NEUTRAL")) { 
                         setup = { dir: "SELL", entry: c1.low, sl: c1.high + getPipSize(currentAsset) * 5 }; 
                         break; 
                     }
@@ -1139,7 +1170,21 @@
       const bars = await loadChartData(currentTF);
       if (!bars || bars.length === 0) { signalBox.innerHTML = `<div class="loading text-red">Failed to load chart.</div>`; btn.disabled = false; return; }
       const setup = findSMCSetup(bars);
-      if (!setup) { signalBox.innerHTML = `<div class="loading text-red">No valid setup found for current trend.</div>`; btn.disabled = false; return; }
+      
+      // رسائل الانتظار التفاعلية
+      if (!setup) { 
+          const currentPrice = bars[bars.length - 1].close;
+          signalBox.innerHTML = `
+            <div class="signal-card sell" style="background: rgba(0,0,0,0.5); border-color: #333;">
+              <div style="text-align:center; padding: 20px 0;">
+                <i class="fa-solid fa-hourglass-half" style="font-size: 30px; color: #ffd700; margin-bottom: 10px;"></i>
+                <div style="font-size: 16px; font-weight: 700; margin-bottom: 8px;">Waiting for Setup</div>
+                <div style="font-size: 12px; color: #888;">No valid FVG found. Waiting for liquidity at price <strong style="color: #fff;">${currentPrice.toFixed(2)}</strong></div>
+              </div>
+            </div>`;
+          btn.disabled = false; return; 
+      }
+      
       let { dir, entry, sl } = setup;
       const pipSize = getPipSize(currentAsset); const maxSLPips = parseInt(maxSL); const maxSLPrice = maxSLPips * pipSize;
       if (Math.abs(entry - sl) > maxSLPrice) { sl = dir === 'BUY' ? entry - maxSLPrice : entry + maxSLPrice; }
@@ -1225,6 +1270,13 @@
       else if (trade.status === 'ACTIVE') { statusClass = isBuy ? "status-active-buy" : "status-active-sell"; statusText = isBuy ? dict[currentLang].activeBuy : dict[currentLang].activeSell; }
       const pipsRisk = Math.round(Math.abs(trade.entry - trade.sl) / pipSize); const pipsTP1 = Math.round(Math.abs(trade.tp1 - trade.entry) / pipSize); const pipsTP2 = Math.round(Math.abs(trade.tp2 - trade.entry) / pipSize);
       const dollarLoss = (pipsRisk * pipVal).toFixed(2); const dollarTP1 = (pipsTP1 * pipVal).toFixed(2); const dollarTP2 = (pipsTP2 * pipVal).toFixed(2);
+      
+      // حساب كيلي
+      let totalTrades = tradeHistory.length;
+      let wins = tradeHistory.filter(t => t.result === 'WIN').length;
+      let winRate = totalTrades > 0 ? (wins / totalTrades) * 100 : 0;
+      let kellyLot = calculateKellyLot(winRate);
+
       document.getElementById('signalBox').innerHTML = `
         <div class="signal-card ${isBuy ? '' : 'sell'}">
           <div style="display: flex; justify-content: space-between; margin-bottom: 12px; align-items: flex-start;">
@@ -1237,6 +1289,12 @@
             <div class="price-box tp1"><div class="price-label">${dict[currentLang].tp1}</div><div class="price-val text-green">${trade.tp1.toFixed(dp)}</div><div class="pips-sub text-green">+${pipsTP1} pips</div></div>
             <div class="price-box tp2"><div class="price-label">${dict[currentLang].tp2}</div><div class="price-val text-green">${trade.tp2.toFixed(dp)}</div><div class="pips-sub text-green">+${pipsTP2} pips</div></div>
           </div>
+          
+          <div class="calc-box">
+            <div class="calc-title">Suggested Lot (Kelly Criterion)</div>
+            <div class="calc-row"><span>Win Rate: ${winRate.toFixed(1)}%</span> <span class="calc-val-green">Lot: ${kellyLot}</span></div>
+          </div>
+
           <div class="calc-box"><div class="calc-title">Profit / Loss ($) @ 0.02 Lots</div><div class="calc-row"><span>Stop Loss:</span> <span class="calc-val-red">-$${dollarLoss}</span></div><div class="calc-row"><span>Take Profit 1:</span> <span class="calc-val-green">+$${dollarTP1}</span></div><div class="calc-row"><span>Take Profit 2:</span> <span class="calc-val-green">+$${dollarTP2}</span></div></div>
           <button class="btn-copy-signal" onclick="copySignal(${trade.entry}, ${trade.sl}, ${trade.tp1}, ${trade.tp2}, '${trade.dir}', '${asset}')">📋 Copy Signal</button>
         </div>`;
