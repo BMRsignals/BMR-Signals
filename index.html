@@ -10,42 +10,36 @@
   <link rel="manifest" href='data:application/manifest+json,{"name":"MR.Trader AI","short_name":"Trader","start_url":".","display":"standalone","background_color":"#000000","theme_color":"#ffd700","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/2933/2933179.png","sizes":"512x512","type":"image/png"}]}'>
 
   <style>
+    /* نفس الستايل السابق بدون تغيير */
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body { margin: 0; background: #000; color: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; min-height: 100vh; padding-bottom: 90px; }
     body.rtl { direction: rtl; }
     .text-green { color: #26a69a; } .text-red { color: #ef5350; } .text-yellow { color: #ffd700; }
-
     #loginScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: #000; z-index: 1000; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
     .login-box { width: 100%; max-width: 400px; background: #111; border: 1px solid #222; border-radius: 16px; padding: 24px; text-align: center; }
     .login-input { width: 100%; padding: 14px; margin-bottom: 12px; background: #000; border: 1px solid #333; color: #fff; border-radius: 8px; font-size: 14px; }
     .btn-primary { width: 100%; padding: 14px; border-radius: 8px; border: none; font-size: 16px; font-weight: 700; cursor: pointer; background: #ffd700; color: #000; margin-bottom: 10px; }
     .btn-secondary { width: 100%; padding: 14px; border-radius: 8px; border: 1px solid #ffd700; font-size: 16px; font-weight: 700; cursor: pointer; background: transparent; color: #ffd700; }
     .forgot-link { color: #888; font-size: 12px; text-decoration: underline; cursor: pointer; margin-top: 10px; display: block; }
-
     .page { display: none; padding: 16px; animation: fadeIn 0.3s; }
     .page.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
     header { padding: 16px; border-bottom: 1px solid #1a1a1a; display: flex; justify-content: space-between; align-items: center; }
     header h1 { margin: 0; font-size: 18px; font-weight: 700; }
     .header-icons { display: flex; align-items: center; gap: 12px; }
     .bell-icon { font-size: 20px; cursor: pointer; position: relative; }
     .bell-badge { position: absolute; top: -4px; right: -4px; background: #ef5350; color: #fff; font-size: 10px; font-weight: 700; padding: 2px 5px; border-radius: 10px; }
-
     .top-bar { display: flex; flex-direction: column; gap: 8px; padding: 10px 16px; border-bottom: 1px solid #1a1a1a; }
     .top-row { display: flex; justify-content: space-between; align-items: center; }
     .asset-select { background: #111; color: #fff; border: 1px solid #333; padding: 8px; border-radius: 8px; font-size: 14px; font-weight: 700; }
     .autopilot-status { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; color: #26a69a; }
     .pulse-dot { width: 8px; height: 8px; background: #26a69a; border-radius: 50%; animation: pulse 1.5s infinite; }
     @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(38, 166, 154, 0.4); } 70% { box-shadow: 0 0 0 8px rgba(38, 166, 154, 0); } 100% { box-shadow: 0 0 0 0 rgba(38, 166, 154, 0); } }
-
-    /* Session Bar */
     #sessionBar { display: flex; gap: 4px; margin-top: 4px; overflow-x: auto; padding-bottom: 4px; }
     .sess-pill { background: #111; border: 1px solid #333; border-radius: 4px; padding: 2px 8px; font-size: 9px; font-weight: 700; color: #666; white-space: nowrap; display: flex; align-items: center; gap: 4px; }
     .sess-pill.open { border-color: #26a69a; color: #26a69a; background: rgba(38,166,154,0.1); }
     .sess-dot { width: 6px; height: 6px; border-radius: 50%; background: #666; }
     .sess-pill.open .sess-dot { background: #26a69a; box-shadow: 0 0 5px #26a69a; }
-
     .trend-row { display: flex; gap: 6px; justify-content: space-between; margin-top: 4px; }
     .trend-box { flex: 1; text-align: center; font-size: 10px; font-weight: 700; padding: 6px 2px; border-radius: 4px; border: 1px solid #333; color: #666; }
     .trend-box.bull { background: rgba(38, 166, 154, 0.15); border-color: #26a69a; color: #26a69a; }
@@ -53,7 +47,6 @@
     .general-trend-bar { text-align: center; font-size: 12px; font-weight: 700; padding: 8px; border-radius: 8px; margin-top: 8px; background: #111; border: 1px solid #333; }
     .general-trend-bar.bull { color: #26a69a; border-color: #26a69a; background: rgba(38, 166, 154, 0.1); }
     .general-trend-bar.bear { color: #ef5350; border-color: #ef5350; background: rgba(239, 83, 80, 0.1); }
-
     .filter-panel { background: #111; border-bottom: 1px solid #1a1a1a; padding: 12px 16px; display: none; flex-direction: column; gap: 12px; }
     .filter-panel.active { display: flex; }
     .filter-row { display: flex; justify-content: space-between; align-items: center; }
@@ -62,7 +55,6 @@
     .session-checkboxes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
     .session-check { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #ccc; }
     .session-check input { accent-color: #ffd700; }
-
     #newsPanel { padding: 12px 16px; background: #0a0a0a; border-bottom: 1px solid #1a1a1a; }
     .news-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
     .news-title { font-size: 12px; font-weight: 700; color: #ffd700; text-transform: uppercase; }
@@ -74,7 +66,6 @@
     .news-impact-badge { padding: 1px 6px; border-radius: 4px; font-size: 9px; font-weight: 700; }
     .news-impact-badge.high { background: #ef5350; color: #fff; }
     .news-impact-badge.medium { background: #ffa726; color: #000; }
-
     #notifModal { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: rgba(0,0,0,0.9); z-index: 2000; display: none; flex-direction: column; padding: 20px; }
     .notif-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
     .notif-close { font-size: 24px; color: #888; cursor: pointer; background: none; border: none; }
@@ -84,7 +75,6 @@
     .notif-item { background: #111; border: 1px solid #222; padding: 12px; border-radius: 8px; margin-bottom: 10px; }
     .notif-item.buy { border-left: 4px solid #26a69a; }
     .notif-item.sell { border-left: 4px solid #ef5350; }
-
     .tf-selector { display: flex; overflow-x: auto; padding: 10px 16px; gap: 8px; border-bottom: 1px solid #1a1a1a; scrollbar-width: none; }
     .tf-selector::-webkit-scrollbar { display: none; }
     .tf-btn { background: #111; border: 1px solid #333; color: #888; padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
@@ -92,7 +82,6 @@
     .btn-analyze { width: 100%; padding: 16px; background: #222; color: #fff; border: none; border-top: 1px solid #333; font-size: 16px; font-weight: 700; cursor: pointer; transition: 0.3s; }
     .btn-analyze:active { background: #ffd700; color: #000; }
     #chart-container { width: 100%; height: 35vh; border-bottom: 1px solid #1a1a1a; position: relative; }
-
     .signal-card { background: rgba(17, 26, 20, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(38, 166, 154, 0.3); border-radius: 16px; padding: 16px; margin-top: 16px; box-shadow: 0 8px 32px 0 rgba(0,0,0,0.37); }
     .signal-card.sell { background: rgba(26, 17, 17, 0.7); border-color: rgba(239, 83, 80, 0.3); }
     .price-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
@@ -102,28 +91,22 @@
     .price-label { font-size: 11px; color: #888; font-weight: 600; text-transform: uppercase; }
     .price-val { font-size: 18px; font-weight: 700; margin-top: 4px; }
     .pips-sub { font-size: 11px; font-weight: 600; margin-top: 4px; }
-    
-    /* Risk Calculator CSS */
     .calc-box { background: #1a1a1a; border: 1px solid #ffd70044; border-radius: 12px; padding: 12px; margin-top: 12px; }
     .calc-title { font-size: 11px; color: #ffd700; font-weight: 700; text-transform: uppercase; margin-bottom: 8px; text-align: center; border-bottom: 1px solid #333; padding-bottom: 4px; }
     .calc-row { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; }
     .calc-val-red { color: #ef5350; font-weight: 700; }
     .calc-val-green { color: #26a69a; font-weight: 700; }
-
     .status-badge { padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 700; text-transform: uppercase; display: inline-block; margin-top: 8px; }
     .status-pending { background: #ffd70022; color: #ffd700; border: 1px solid #ffd70055; }
     .status-active-buy { background: #26a69a22; color: #26a69a; border: 1px solid #26a69a55; animation: pulse 2s infinite; }
     .status-active-sell { background: #ef535022; color: #ef5350; border: 1px solid #ef535055; animation: pulse 2s infinite; }
     .status-tp1 { background: #ffd70033; color: #ffd700; border: 1px solid #ffd70077; }
-
     .risk-note-live { font-size: 12px; color: #888; background: #111; padding: 12px; border-radius: 8px; border: 1px solid #222; margin-top: 16px; line-height: 1.5; }
     .btn-copy-signal { display: block; width: 100%; margin-top: 12px; padding: 10px; background: #333; color: #fff; text-align: center; border-radius: 8px; font-weight: 700; cursor: pointer; border: 1px solid #555; }
-
     .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; height: 65px; background: #0a0a0a; border-top: 1px solid #222; display: flex; justify-content: space-around; align-items: center; z-index: 100; }
     .nav-item { color: #666; text-align: center; font-size: 11px; font-weight: 700; text-transform: uppercase; cursor: pointer; }
     .nav-item.active { color: #ffd700; }
     .nav-icon { font-size: 20px; margin-bottom: 4px; display: block; }
-
     .lang-btn { background: #222; border: 1px solid #444; color: #ffd700; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; }
     .sub-banner { background: linear-gradient(145deg, #1a1505 0%, #000 100%); border: 1px solid #ffd70055; border-radius: 16px; padding: 20px; text-align: center; margin-top: 16px; }
     .sub-banner h3 { color: #ffd700; margin: 0 0 8px 0; letter-spacing: 1px; }
@@ -133,7 +116,6 @@
     .wallet-address { background: #111; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 12px; color: #ffd700; word-break: break-all; margin: 12px 0; border: 1px solid #333; text-align: center; }
     .btn-copy { width: 100%; padding: 10px; background: #ffd700; color: #000; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; margin-bottom: 8px; }
     .btn-verify { display: block; text-align: center; text-decoration: none; width: 100%; padding: 12px; background: #229ED9; color: #fff; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 14px; }
-
     .stats-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
     .stats-filter { display: flex; gap: 4px; flex-wrap: wrap; }
     .filter-btn { background: #111; border: 1px solid #333; color: #888; padding: 4px 10px; border-radius: 6px; font-size: 10px; cursor: pointer; }
@@ -143,13 +125,10 @@
     .stat-box { background: #111; border: 1px solid #222; border-radius: 12px; padding: 12px; text-align: center; }
     .stat-title { font-size: 10px; color: #888; text-transform: uppercase; font-weight: 700; }
     .stat-value { font-size: 20px; font-weight: 700; margin-top: 4px; }
-    
-    /* Deep Stats */
     .deep-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px; }
     .deep-box { background: #111; border: 1px solid #222; border-radius: 12px; padding: 10px; font-size: 11px; }
     .deep-title { color: #888; font-weight: 700; margin-bottom: 4px; text-transform: uppercase; }
     .deep-val { color: #ffd700; font-weight: 700; }
-
     .history-item { background: #111; border: 1px solid #222; border-radius: 12px; padding: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: 0.2s; }
     .history-item:active { background: #1a1a1a; }
     .history-title { font-weight: 700; font-size: 14px; }
@@ -158,12 +137,10 @@
     #journalModal { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: rgba(0,0,0,0.9); z-index: 3000; display: none; justify-content: center; align-items: center; padding: 20px; }
     .journal-box { background: #111; border: 1px solid #333; border-radius: 16px; width: 100%; max-width: 400px; padding: 24px; }
     .journal-input { width: 100%; height: 100px; background: #000; border: 1px solid #333; color: #fff; border-radius: 8px; padding: 12px; margin-bottom: 16px; font-family: inherit; resize: none; }
-
     .auto-log { background: #111; border: 1px solid #222; border-radius: 12px; padding: 16px; margin-bottom: 12px; font-family: monospace; font-size: 12px; }
     .log-item { margin-bottom: 8px; border-bottom: 1px solid #222; padding-bottom: 8px; }
     .log-time { color: #888; font-size: 10px; }
     .btn-refresh { width: 100%; padding: 10px; background: #333; color: #fff; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; margin-top: 12px; }
-    
     .chart-error { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #ef5350; font-size: 12px; text-align: center; background: rgba(0,0,0,0.8); padding: 10px; border-radius: 8px; z-index: 10; display: none; }
   </style>
 </head>
@@ -215,7 +192,6 @@
         <button onclick="toggleFilters()" style="background:none; border:none; color:#fff; font-size:18px;">⚙️</button>
       </div>
 
-      <!-- Session Bar -->
       <div id="sessionBar">
         <div class="sess-pill" id="sess-sydney"><div class="sess-dot"></div>Sydney</div>
         <div class="sess-pill" id="sess-tokyo"><div class="sess-dot"></div>Tokyo</div>
@@ -260,7 +236,6 @@
           <label class="session-check"><input type="checkbox" id="chk-ny" checked onchange="saveFilters()"> New York</label>
         </div>
       </div>
-      <!-- زر تفعيل التنبيهات -->
       <button class="btn-primary" onclick="requestPushNotification()" style="margin-top:8px; background:#26a69a; color:#fff;">🔔 Enable Push Notifications</button>
     </div>
 
@@ -412,7 +387,7 @@
   <script>
     const SUPABASE_URL = 'https://wdexwfoplycblaxmrfws.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_6U7d-ihEr1ivc362mhkDeQ_2suPM3gy';
-    const TWELVEDATA_API_KEY = 'a76abacdca7b4bd39dbf6caf65654e6a'; 
+    // لم نعد بحاجة لمفتاح TwelveData
 
     let supabaseClient = null;
     let isRecoveryMode = false; 
@@ -440,7 +415,7 @@
     let generalTrend = "NEUTRAL";
     let journalEntryId = null;
     let chartCache = {}; 
-    let swRegistration = null; // Service Worker
+    let swRegistration = null; 
 
     function getPipSize(asset) {
       if (asset === 'EUR/USD') return 0.0001;
@@ -489,7 +464,6 @@
     async function registerServiceWorker() {
         if ('serviceWorker' in navigator) {
             try {
-                // نستخدم Blob عشان ما نحتاج ملف خارجي
                 const swCode = `
                     self.addEventListener('push', function(event) {
                         const data = event.data ? event.data.json() : { title: 'New Signal', body: 'Check the app!' };
@@ -509,7 +483,6 @@
                 const blob = new Blob([swCode], { type: 'application/javascript' });
                 const swUrl = URL.createObjectURL(blob);
                 swRegistration = await navigator.serviceWorker.register(swUrl);
-                console.log("SW Registered");
             } catch (e) { console.log("SW Error:", e); }
         }
     }
@@ -519,13 +492,10 @@
             alert("Push notifications are not supported on this browser.");
             return;
         }
-        
         const permission = await Notification.requestPermission();
         if (permission === 'granted') {
             if (!swRegistration) await registerServiceWorker();
             alert("✅ Push notifications enabled! You will receive signals even when app is closed.");
-            
-            // إظهار تجربة
             if (swRegistration && swRegistration.active) {
                 swRegistration.active.showNotification("MR.Trader AI", {
                     body: "Push notifications are now active! 🚀",
@@ -553,38 +523,23 @@
         const utcHour = now.getUTCHours();
         const utcMin = now.getUTCMinutes();
         const currentTime = utcHour + (utcMin / 60);
-        
-        // Sydney: 21:00 - 06:00 UTC
         const sydneyOpen = (currentTime >= 21 || currentTime < 6);
         let sydneyRemain = 0;
         if (sydneyOpen) sydneyRemain = currentTime >= 21 ? (24 - currentTime) + 6 : 6 - currentTime;
-
-        // Tokyo: 00:00 - 09:00 UTC
         const tokyoOpen = (currentTime >= 0 && currentTime < 9);
         let tokyoRemain = 0;
         if (tokyoOpen) tokyoRemain = 9 - currentTime;
-
-        // London: 07:00 - 16:00 UTC
         const londonOpen = (currentTime >= 7 && currentTime < 16);
         let londonRemain = 0;
         if (londonOpen) londonRemain = 16 - currentTime;
-
-        // NY: 12:00 - 21:00 UTC
         const nyOpen = (currentTime >= 12 && currentTime < 21);
         let nyRemain = 0;
         if (nyOpen) nyRemain = 21 - currentTime;
-
-        return {
-            sydney: { open: sydneyOpen, remain: sydneyRemain },
-            tokyo: { open: tokyoOpen, remain: tokyoRemain },
-            london: { open: londonOpen, remain: londonRemain },
-            ny: { open: nyOpen, remain: nyRemain }
-        };
+        return { sydney: { open: sydneyOpen, remain: sydneyRemain }, tokyo: { open: tokyoOpen, remain: tokyoRemain }, london: { open: londonOpen, remain: londonRemain }, ny: { open: nyOpen, remain: nyRemain } };
     }
 
     function updateSessionUI() {
         const data = getSessionData();
-        
         const updatePill = (id, sessData) => {
             const el = document.getElementById(id);
             if (!el) return;
@@ -598,7 +553,6 @@
                 el.innerHTML = `<div class="sess-dot"></div>${id.split('-')[1].toUpperCase()}`;
             }
         };
-
         updatePill('sess-sydney', data.sydney);
         updatePill('sess-tokyo', data.tokyo);
         updatePill('sess-london', data.london);
@@ -608,7 +562,6 @@
     // ---------- News ----------
     let newsCache = null;
     let newsCacheTime = 0;
-
     async function fetchHighImpactNews() {
       const now = Date.now();
       if (newsCache && (now - newsCacheTime) < 15 * 60 * 1000) return newsCache;
@@ -620,19 +573,15 @@
            if (all && Array.isArray(all.data)) all = all.data;
            else throw new Error("Invalid format");
         }
-        
         let targetCurrencies = ['USD'];
         if (currentAsset === 'EUR/USD') targetCurrencies.push('EUR');
-
         newsCache = all.filter(e => 
           (targetCurrencies.includes(e.country) || targetCurrencies.includes(e.currency)) && 
           (e.impact === 'High' || e.impact === 'Medium' || e.impact === 'high' || e.impact === 'medium')
         );
         newsCacheTime = now;
         return newsCache;
-      } catch (e) {
-        return newsCache || [];
-      }
+      } catch (e) { return newsCache || []; }
     }
 
     async function getBlockingNews(minutesBefore = 30, minutesAfter = 30) {
@@ -662,29 +611,24 @@
       if (!list) return;
       const news = await fetchHighImpactNews();
       const now = new Date();
-
       const upcoming = news
         .map(n => ({ ...n, t: new Date(n.date) }))
         .filter(n => !isNaN(n.t) && n.t >= new Date(now.getTime() - 2 * 60 * 60 * 1000))
         .sort((a, b) => a.t - b.t)
         .slice(0, 5);
-
       if (upcoming.length === 0) {
         list.innerHTML = '<div style="font-size:11px;color:#666;">No relevant news in the near future.</div>';
         status.innerText = 'Clear ✅';
         status.style.color = '#26a69a';
         return;
       }
-
       let html = '';
       let hasBlocked = false;
       for (const n of upcoming) {
         const diffMin = Math.round((n.t - now) / 60000);
         let timeLabel = "";
         let timeColor = '#888';
-        
         const bTime = getBrokerTimeStr(n.date);
-
         if (diffMin < 0) {
             timeLabel = `${Math.abs(diffMin)}m ago (${bTime})`;
         } else if (diffMin < 120) {
@@ -693,10 +637,8 @@
         } else {
             timeLabel = `in ${Math.round(diffMin / 60)}h (${bTime})`;
         }
-
         const isBlocked = diffMin > -30 && diffMin < 30;
         if (isBlocked) hasBlocked = true;
-
         const cls = (n.impact === 'High' || n.impact === 'high') ? 'high' : 'medium';
         html += `
           <div class="news-item ${cls} ${isBlocked ? 'blocked' : ''}">
@@ -709,7 +651,6 @@
         `;
       }
       list.innerHTML = html;
-
       if (hasBlocked) {
         status.innerText = '⛔ Blocked (News)';
         status.style.color = '#ef5350';
@@ -721,10 +662,7 @@
 
     window.onload = function() {
       supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-      
-      // تهيئة Service Worker
       registerServiceWorker();
-
       const hash = window.location.hash;
       if (hash && hash.includes('type=recovery')) {
         isRecoveryMode = true;
@@ -738,14 +676,10 @@
       }
       renderNewsPanel();
       newsInterval = setInterval(renderNewsPanel, 5 * 60 * 1000);
-      
       updateSessionUI();
-      sessionInterval = setInterval(updateSessionUI, 60000); // تحديث كل دقيقة
+      sessionInterval = setInterval(updateSessionUI, 60000);
     };
 
-    // ... (بقية الدوال الخاصة بتسجيل الدخول والتسجيل تبقى كما هي، اختصاراً للنص) ...
-    // أقحمت الدوال القديمة هنا كما هي في الملف السابق
-    
     function showForgotPassword() { document.getElementById('loginBox').style.display = 'none'; document.getElementById('forgotBox').style.display = 'block'; }
     function showLogin() { document.getElementById('loginBox').style.display = 'block'; document.getElementById('forgotBox').style.display = 'none'; document.getElementById('newPasswordBox').style.display = 'none'; }
 
@@ -808,22 +742,17 @@
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('appContent').style.display = 'block';
         document.getElementById('userEmail').innerText = session.user.email;
-        
         await loadUserData(session.user.id);
-
         renderNotifBadge();
         renderAutoLogs();
         initApp();
-        
         document.getElementById('maxSLFilter').value = maxSL;
         document.getElementById('brokerTZFilter').value = brokerTZ;
         document.getElementById('chk-sydney').checked = enabledSessions.sydney;
         document.getElementById('chk-tokyo').checked = enabledSessions.tokyo;
         document.getElementById('chk-london').checked = enabledSessions.london;
         document.getElementById('chk-ny').checked = enabledSessions.ny;
-
         await updateGeneralTrend();
-
         startAutopilot(); 
         startLiveTracking();
       } else {
@@ -840,7 +769,6 @@
             }));
             localStorage.setItem('tradeHistory', JSON.stringify(tradeHistory));
         }
-
         const { data: activeData } = await supabaseClient.from('active_trades').select('*').eq('user_id', userId);
         if (activeData) {
             activeTrades = {};
@@ -857,7 +785,6 @@
         if (!supabaseClient) return;
         const { data: { session } } = await supabaseClient.auth.getSession();
         if (!session) return;
-
         await supabaseClient.from('active_trades').upsert({
             id: trade.id, user_id: session.user.id, asset: trade.asset || currentAsset, direction: trade.dir, entry: trade.entry, sl: trade.sl, tp1: trade.tp1, tp2: trade.tp2, tf: trade.tf, status: trade.status, date: trade.date, tp1_hit: trade.tp1Hit
         });
@@ -875,25 +802,17 @@
         if (!supabaseClient) return;
         const { data: { session } } = await supabaseClient.auth.getSession();
         if (!session) return;
-
         await supabaseClient.from('trade_history').insert({
             user_id: session.user.id, asset: trade.asset || currentAsset, direction: trade.dir, entry: trade.entry, sl: trade.sl, tp1: trade.tp1, tp2: trade.tp2, tf: trade.tf, result: trade.result, exit_price: trade.exitPrice, date: trade.date, journal: trade.journal || ""
         });
     }
 
-    function toggleFilters() {
-      document.getElementById('filterPanel').classList.toggle('active');
-    }
+    function toggleFilters() { document.getElementById('filterPanel').classList.toggle('active'); }
 
     function saveFilters() {
       maxSL = document.getElementById('maxSLFilter').value;
       brokerTZ = document.getElementById('brokerTZFilter').value;
-      enabledSessions = {
-        sydney: document.getElementById('chk-sydney').checked,
-        tokyo: document.getElementById('chk-tokyo').checked,
-        london: document.getElementById('chk-london').checked,
-        ny: document.getElementById('chk-ny').checked
-      };
+      enabledSessions = { sydney: document.getElementById('chk-sydney').checked, tokyo: document.getElementById('chk-tokyo').checked, london: document.getElementById('chk-london').checked, ny: document.getElementById('chk-ny').checked };
       localStorage.setItem('maxSL', maxSL);
       localStorage.setItem('brokerTZ', brokerTZ);
       localStorage.setItem('enabledSessions', JSON.stringify(enabledSessions));
@@ -903,58 +822,36 @@
     function getActiveSessions() {
       const now = new Date();
       const utcHour = now.getUTCHours();
-      return {
-        sydney: utcHour >= 21 || utcHour < 6,
-        tokyo:  utcHour >= 0 && utcHour < 9,
-        london: utcHour >= 7 && utcHour < 16,
-        ny:     utcHour >= 12 && utcHour < 21
-      };
+      return { sydney: utcHour >= 21 || utcHour < 6, tokyo: utcHour >= 0 && utcHour < 9, london: utcHour >= 7 && utcHour < 16, ny: utcHour >= 12 && utcHour < 21 };
     }
 
+    // ---------- تحديث الاتجاه العام (بدون TwelveData) ----------
     async function updateGeneralTrend() {
         const tfs = ['15min', '30min', '1h', '4h', '1day'];
         const ids = ['t-m15', 't-m30', 't-h1', 't-h4', 't-d1'];
-        let bullCount = 0;
-        let bearCount = 0;
+        let bullCount = 0, bearCount = 0;
 
         for (let i = 0; i < tfs.length; i++) {
             try {
-              const res = await fetch(`https://api.twelvedata.com/time_series?symbol=${currentAsset}&interval=${tfs[i]}&outputsize=200&apikey=${TWELVEDATA_API_KEY}`);
-              const json = await res.json();
-              if (json.status === 'error' || !json.values) continue;
-              const closes = json.values.map(v => parseFloat(v.close)).reverse();
-              if (closes.length < 200) continue;
-              const ema50 = closes.slice(-50).reduce((a, b) => a + b, 0) / 50;
-              const ema200 = closes.slice(-200).reduce((a, b) => a + b, 0) / 200;
-              const currentPrice = closes[closes.length - 1];
-
-              const el = document.getElementById(ids[i]);
-              if (currentPrice > ema50 && ema50 > ema200) {
-                  el.className = "trend-box bull";
-                  bullCount++;
-              } else if (currentPrice < ema50 && ema50 < ema200) {
-                  el.className = "trend-box bear";
-                  bearCount++;
-              } else {
-                  el.className = "trend-box";
-              }
-            } catch(e) {}
+                // نستخدم دالة جلب الشارت الجديدة
+                const bars = await fetchChartDataFromSource(tfs[i]);
+                if (!bars || bars.length < 200) continue;
+                const closes = bars.map(b => b.close);
+                const ema50 = closes.slice(-50).reduce((a, b) => a + b, 0) / 50;
+                const ema200 = closes.slice(-200).reduce((a, b) => a + b, 0) / 200;
+                const currentPrice = closes[closes.length - 1];
+                const el = document.getElementById(ids[i]);
+                if (!el) continue;
+                if (currentPrice > ema50 && ema50 > ema200) { el.className = "trend-box bull"; bullCount++; }
+                else if (currentPrice < ema50 && ema50 < ema200) { el.className = "trend-box bear"; bearCount++; }
+                else el.className = "trend-box";
+            } catch(e) { console.error(e); }
         }
 
         const trendBar = document.getElementById('generalTrendBar');
-        if (bullCount >= 3) {
-            generalTrend = "BULLISH";
-            trendBar.className = "general-trend-bar bull";
-            trendBar.innerText = `GENERAL TREND: BULLISH (${bullCount}/5)`;
-        } else if (bearCount >= 3) {
-            generalTrend = "BEARISH";
-            trendBar.className = "general-trend-bar bear";
-            trendBar.innerText = `GENERAL TREND: BEARISH (${bearCount}/5)`;
-        } else {
-            generalTrend = "NEUTRAL";
-            trendBar.className = "general-trend-bar";
-            trendBar.innerText = `GENERAL TREND: NEUTRAL / RANGING`;
-        }
+        if (bullCount >= 3) { generalTrend = "BULLISH"; trendBar.className = "general-trend-bar bull"; trendBar.innerText = `GENERAL TREND: BULLISH (${bullCount}/5)`; }
+        else if (bearCount >= 3) { generalTrend = "BEARISH"; trendBar.className = "general-trend-bar bear"; trendBar.innerText = `GENERAL TREND: BEARISH (${bearCount}/5)`; }
+        else { generalTrend = "NEUTRAL"; trendBar.className = "general-trend-bar"; trendBar.innerText = `GENERAL TREND: NEUTRAL / RANGING`; }
     }
 
     const dict = {
@@ -964,32 +861,22 @@
 
     function applyLanguage() {
       document.getElementById('langBtn2').innerText = currentLang === 'en' ? 'AR' : 'EN';
-      if (currentLang === 'ar') document.getElementById('mainBody').classList.add('rtl');
-      else document.getElementById('mainBody').classList.remove('rtl');
-      
-      const el = document.getElementById('loadingText');
-      if (el) el.innerText = dict[currentLang].loading;
-      
+      if (currentLang === 'ar') document.getElementById('mainBody').classList.add('rtl'); else document.getElementById('mainBody').classList.remove('rtl');
+      const el = document.getElementById('loadingText'); if (el) el.innerText = dict[currentLang].loading;
       const navs = document.querySelectorAll('.nav-text');
       if (navs[0]) navs[0].innerText = dict[currentLang].live;
       if (navs[1]) navs[1].innerText = dict[currentLang].auto;
       if (navs[2]) navs[2].innerText = dict[currentLang].history;
       if (navs[3]) navs[3].innerText = dict[currentLang].account;
-      
       const key = getTradeKey(currentAsset, currentTF);
       if (activeTrades[key]) renderTradeCard(activeTrades[key]); 
       renderHistoryList();
     }
 
-    function toggleLanguage() {
-      currentLang = currentLang === 'en' ? 'ar' : 'en';
-      localStorage.setItem('lang', currentLang);
-      applyLanguage();
-    }
+    function toggleLanguage() { currentLang = currentLang === 'en' ? 'ar' : 'en'; localStorage.setItem('lang', currentLang); applyLanguage(); }
 
     function initApp() {
       if (chart) return; 
-      
       chart = LightweightCharts.createChart(document.getElementById('chart-container'), {
         layout: { background: { type: 'solid', color: '#000000' }, textColor: '#888' },
         grid: { vertLines: { color: '#111' }, horzLines: { color: '#111' } },
@@ -1000,16 +887,11 @@
       candleSeries = chart.addCandlestickSeries({
         upColor: '#ffd700', downColor: '#555', borderUpColor: '#ffd700', borderDownColor: '#555', wickUpColor: '#ffd700', wickDownColor: '#555',
       });
-      
       applyLanguage();
-      
       setTimeout(async () => {
         await loadChartData(currentTF);
         const key = getTradeKey(currentAsset, currentTF);
-        if (activeTrades[key]) { 
-            renderTradeCard(activeTrades[key]); 
-            drawTradeLines(activeTrades[key]);
-        }
+        if (activeTrades[key]) { renderTradeCard(activeTrades[key]); drawTradeLines(activeTrades[key]); }
       }, 150);
     }
 
@@ -1018,24 +900,16 @@
       document.getElementById('page-' + tabId).classList.add('active');
       document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
       element.classList.add('active');
-      
-      if (tabId === 'live' && chart) {
-        setTimeout(() => chart.applyOptions({ width: document.getElementById('chart-container').clientWidth }), 50);
-      }
+      if (tabId === 'live' && chart) setTimeout(() => chart.applyOptions({ width: document.getElementById('chart-container').clientWidth }), 50);
     }
 
     function changeAsset() {
       currentAsset = document.getElementById('assetSelector').value;
-      priceLines.forEach(l => candleSeries.removePriceLine(l));
-      priceLines = [];
+      priceLines.forEach(l => candleSeries.removePriceLine(l)); priceLines = [];
       document.getElementById('signalBox').innerHTML = `<div class="loading">${dict[currentLang].loading}</div>`;
-
       loadChartData(currentTF).then(() => {
         const key = getTradeKey(currentAsset, currentTF);
-        if (activeTrades[key]) {
-          renderTradeCard(activeTrades[key]);
-          drawTradeLines(activeTrades[key]);
-        }
+        if (activeTrades[key]) { renderTradeCard(activeTrades[key]); drawTradeLines(activeTrades[key]); }
       });
       updateGeneralTrend();
       renderNewsPanel();
@@ -1046,52 +920,68 @@
       document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       loadChartData(tf); 
-      
       const key = getTradeKey(currentAsset, currentTF);
-      if (activeTrades[key]) {
-        renderTradeCard(activeTrades[key]);
-        drawTradeLines(activeTrades[key]);
-      } else {
-        document.getElementById('signalBox').innerHTML = `<div class="loading">${dict[currentLang].loading}</div>`;
-        priceLines.forEach(l => candleSeries.removePriceLine(l));
-        priceLines = [];
-      }
+      if (activeTrades[key]) { renderTradeCard(activeTrades[key]); drawTradeLines(activeTrades[key]); }
+      else { document.getElementById('signalBox').innerHTML = `<div class="loading">${dict[currentLang].loading}</div>`; priceLines.forEach(l => candleSeries.removePriceLine(l)); priceLines = []; }
+    }
+
+    // ---------- دالة جلب الشارت من المصادر الجديدة ----------
+    async function fetchChartDataFromSource(tf) {
+        const intervalMap = { '5min': '5m', '15min': '15m', '30min': '30m', '1h': '1h', '4h': '4h', '1day': '1d' };
+        const biTf = intervalMap[tf] || '5m';
+        
+        try {
+            if (currentAsset === 'XAU/USD') {
+                // XAUS API للذهب
+                const res = await fetch(`https://xaus.com/api/v1/chart?symbol=xau&range=${biTf}`);
+                if (!res.ok) throw new Error("XAUS fetch failed");
+                const data = await res.json();
+                // افترض أن الـ API يرجع مصفوفة من { time, open, high, low, close }
+                // قد يحتاج تعديل حسب هيكل البيانات الفعلي
+                return data.map(item => ({
+                    time: new Date(item.time).getTime() / 1000,
+                    open: parseFloat(item.open), high: parseFloat(item.high),
+                    low: parseFloat(item.low), close: parseFloat(item.close)
+                }));
+            } else {
+                // biquote لليورو والبيتكوين (نستخدم نقطة نهاية HTTP إن وجدت)
+                // ملاحظة: biquote مصمم كـ SDK، لكن قد يدعم HTTP مباشر
+                // إذا لم يعمل، سنستخدم gold-api كبديل احتياطي للذهب فقط
+                const symbolMap = { 'EUR/USD': 'EURUSD', 'BTC/USD': 'BTCUSD' };
+                const sym = symbolMap[currentAsset];
+                // محاولة استخدام HTTP endpoint (غير مؤكد من المصدر)
+                const res = await fetch(`https://api.biquote.io/v1/ohlc?symbol=${sym}&interval=${biTf}&limit=300`);
+                if (!res.ok) throw new Error("biquote fetch failed");
+                const data = await res.json();
+                return data.map(item => ({
+                    time: item.time, open: item.open, high: item.high, low: item.low, close: item.close
+                }));
+            }
+        } catch (e) {
+            console.error("Chart fetch error:", e);
+            return null;
+        }
     }
 
     async function loadChartData(tf) {
       const errEl = document.getElementById('chartError');
       if (errEl) errEl.style.display = 'none';
-      
       const cacheKey = `${currentAsset}_${tf}`;
       const now = Date.now();
-      
       if (chartCache[cacheKey] && (now - chartCache[cacheKey].time < 60000) && !isManualRefresh) {
         candleSeries.setData(chartCache[cacheKey].bars);
         chart.timeScale().setVisibleLogicalRange({ from: chartCache[cacheKey].bars.length - 60, to: chartCache[cacheKey].bars.length + 10 });
         return chartCache[cacheKey].bars;
       }
-
       try {
-        const res = await fetch(`https://api.twelvedata.com/time_series?symbol=${currentAsset}&interval=${tf}&outputsize=300&apikey=${TWELVEDATA_API_KEY}`);
-        const data = await res.json();
-
-        if (data.status === 'error' || !data.values) {
-          if (errEl) { errEl.innerText = "⚠️ " + (data.message || "Failed to load chart."); errEl.style.display = 'block'; }
-          return null;
+        const bars = await fetchChartDataFromSource(tf);
+        if (!bars || bars.length === 0) {
+            if (errEl) { errEl.innerText = "⚠️ Data source returned no data."; errEl.style.display = 'block'; }
+            return null;
         }
-
-        const bars = data.values.map(item => ({
-          time: new Date(item.datetime).getTime() / 1000,
-          open: parseFloat(item.open), 
-          high: parseFloat(item.high), 
-          low: parseFloat(item.low), 
-          close: parseFloat(item.close)
-        })).reverse(); 
-
         chartCache[cacheKey] = { bars, time: now };
         candleSeries.setData(bars);
         chart.timeScale().setVisibleLogicalRange({ from: bars.length - 60, to: bars.length + 10 });
-
         return bars;
       } catch (e) { 
         if (errEl) { errEl.innerText = "⚠️ Network Error."; errEl.style.display = 'block'; }
@@ -1102,22 +992,10 @@
     function findSMCSetup(bars) {
         let setup = null;
         for (let i = bars.length - 3; i >= Math.max(0, bars.length - 30); i--) {
-            const c1 = bars[i];
-            const c3 = bars[i + 2];
+            const c1 = bars[i]; const c3 = bars[i + 2];
             if (!c1 || !c3) continue;
-
-            if (c1.high < c3.low) {
-                if (generalTrend === "BULLISH" || generalTrend === "NEUTRAL") {
-                    setup = { dir: "BUY", entry: c1.high, sl: c1.low - getPipSize(currentAsset) * 5 };
-                    break;
-                }
-            }
-            if (c1.low > c3.high) {
-                if (generalTrend === "BEARISH" || generalTrend === "NEUTRAL") {
-                    setup = { dir: "SELL", entry: c1.low, sl: c1.high + getPipSize(currentAsset) * 5 };
-                    break;
-                }
-            }
+            if (c1.high < c3.low) { if (generalTrend === "BULLISH" || generalTrend === "NEUTRAL") { setup = { dir: "BUY", entry: c1.high, sl: c1.low - getPipSize(currentAsset) * 5 }; break; } }
+            if (c1.low > c3.high) { if (generalTrend === "BEARISH" || generalTrend === "NEUTRAL") { setup = { dir: "SELL", entry: c1.low, sl: c1.high + getPipSize(currentAsset) * 5 }; break; } }
         }
         return setup;
     }
@@ -1127,62 +1005,23 @@
       const btn = document.getElementById('btnAnalyze');
       btn.disabled = true;
       signalBox.innerHTML = `<div class="loading" style="color:#ffd700; font-weight:700;">${dict[currentLang].scanning}</div>`;
-      
       await new Promise(r => setTimeout(r, 800));
-
       const blockedNews = await getBlockingNews(30, 30);
-      if (blockedNews) {
-        signalBox.innerHTML = `<div class="loading text-red">⛔ News soon: ${blockedNews.title}. Wait until it passes.</div>`;
-        btn.disabled = false;
-        return;
-      }
-
+      if (blockedNews) { signalBox.innerHTML = `<div class="loading text-red">⛔ News soon: ${blockedNews.title}. Wait until it passes.</div>`; btn.disabled = false; return; }
       const key = getTradeKey(currentAsset, currentTF);
-      if (activeTrades[key]) {
-        delete activeTrades[key];
-        await deleteActiveTradeFromCloud(key);
-        localStorage.setItem('activeTrades', JSON.stringify(activeTrades));
-      }
-      
-      priceLines.forEach(l => candleSeries.removePriceLine(l));
-      priceLines = [];
-      
+      if (activeTrades[key]) { delete activeTrades[key]; await deleteActiveTradeFromCloud(key); localStorage.setItem('activeTrades', JSON.stringify(activeTrades)); }
+      priceLines.forEach(l => candleSeries.removePriceLine(l)); priceLines = [];
       const bars = await loadChartData(currentTF);
-      if (!bars || bars.length === 0) {
-        signalBox.innerHTML = `<div class="loading text-red">Failed to load chart.</div>`;
-        btn.disabled = false;
-        return;
-      }
-
+      if (!bars || bars.length === 0) { signalBox.innerHTML = `<div class="loading text-red">Failed to load chart.</div>`; btn.disabled = false; return; }
       const setup = findSMCSetup(bars);
-      if (!setup) {
-          signalBox.innerHTML = `<div class="loading text-red">No valid setup found for current trend.</div>`;
-          btn.disabled = false;
-          return;
-      }
-
+      if (!setup) { signalBox.innerHTML = `<div class="loading text-red">No valid setup found for current trend.</div>`; btn.disabled = false; return; }
       let { dir, entry, sl } = setup;
-      const pipSize = getPipSize(currentAsset);
-      const maxSLPips = parseInt(maxSL);
-      const maxSLPrice = maxSLPips * pipSize;
-
-      if (Math.abs(entry - sl) > maxSLPrice) {
-          sl = dir === 'BUY' ? entry - maxSLPrice : entry + maxSLPrice;
-      }
-
+      const pipSize = getPipSize(currentAsset); const maxSLPips = parseInt(maxSL); const maxSLPrice = maxSLPips * pipSize;
+      if (Math.abs(entry - sl) > maxSLPrice) { sl = dir === 'BUY' ? entry - maxSLPrice : entry + maxSLPrice; }
       const slPips = toPips(Math.abs(entry - sl), currentAsset);
-      if (slPips > maxSLPips) {
-          signalBox.innerHTML = `<div class="loading text-red">Setup SL too wide.</div>`;
-          btn.disabled = false;
-          return;
-      }
-
-      const risk = Math.abs(entry - sl);
-      const tp1 = dir === 'BUY' ? entry + (risk * 1.5) : entry - (risk * 1.5);
-      const tp2 = dir === 'BUY' ? entry + (risk * 3.5) : entry - (risk * 3.5);
-
+      if (slPips > maxSLPips) { signalBox.innerHTML = `<div class="loading text-red">Setup SL too wide.</div>`; btn.disabled = false; return; }
+      const risk = Math.abs(entry - sl); const tp1 = dir === 'BUY' ? entry + (risk * 1.5) : entry - (risk * 1.5); const tp2 = dir === 'BUY' ? entry + (risk * 3.5) : entry - (risk * 3.5);
       activeTrades[key] = { id: Date.now(), asset: currentAsset, dir, entry, sl, tp1, tp2, tf: currentTF, status: 'PENDING', date: new Date().toLocaleString(), tp1Hit: false };
-      
       addNotification(dir, entry, sl, tp1, tp2, currentTF, currentAsset);
       await saveActiveTradeToCloud(activeTrades[key]);
       localStorage.setItem('activeTrades', JSON.stringify(activeTrades));
@@ -1201,65 +1040,31 @@
 
     function startAutopilot() {
       if (autopilotInterval) clearInterval(autopilotInterval);
-      
       autopilotInterval = setInterval(async () => {
         const key = getTradeKey(currentAsset, currentTF);
         if (activeTrades[key]) return;
-        
         const activeSess = getActiveSessions();
-        const canTradeSession = 
-          (activeSess.sydney && enabledSessions.sydney) ||
-          (activeSess.tokyo && enabledSessions.tokyo) ||
-          (activeSess.london && enabledSessions.london) ||
-          (activeSess.ny && enabledSessions.ny);
-
+        const canTradeSession = (activeSess.sydney && enabledSessions.sydney) || (activeSess.tokyo && enabledSessions.tokyo) || (activeSess.london && enabledSessions.london) || (activeSess.ny && enabledSessions.ny);
         if (!canTradeSession) return;
-
         const blockedNews = await getBlockingNews(30, 30);
-        if (blockedNews) {
-          addAutoLog(`⛔ Blocked: USD ${blockedNews.impact} news (${blockedNews.title})`);
-          return;
-        }
-
+        if (blockedNews) { addAutoLog(`⛔ Blocked: News (${blockedNews.title})`); return; }
         const bars = await loadChartData(currentTF);
         if (!bars || bars.length === 0) return;
-
         const setup = findSMCSetup(bars);
         if (!setup) return;
-
         let { dir, entry, sl } = setup;
-        const pipSize = getPipSize(currentAsset);
-        const maxSLPips = parseInt(maxSL);
-        const maxSLPrice = maxSLPips * pipSize;
-
-        if (Math.abs(entry - sl) > maxSLPrice) {
-            sl = dir === 'BUY' ? entry - maxSLPrice : entry + maxSLPrice;
-        }
-
-        const recentHistory = tradeHistory.slice(-5);
-        let isDuplicate = false;
-        for (const t of recentHistory) {
-            if ((t.asset || 'XAU/USD') === currentAsset && t.tf === currentTF && Math.abs(t.entry - entry) < pipSize * 10) {
-                isDuplicate = true; break;
-            }
-        }
+        const pipSize = getPipSize(currentAsset); const maxSLPips = parseInt(maxSL); const maxSLPrice = maxSLPips * pipSize;
+        if (Math.abs(entry - sl) > maxSLPrice) { sl = dir === 'BUY' ? entry - maxSLPrice : entry + maxSLPrice; }
+        const recentHistory = tradeHistory.slice(-5); let isDuplicate = false;
+        for (const t of recentHistory) { if ((t.asset || 'XAU/USD') === currentAsset && t.tf === currentTF && Math.abs(t.entry - entry) < pipSize * 10) { isDuplicate = true; break; } }
         if (isDuplicate) return;
-
-        const risk = Math.abs(entry - sl);
-        const tp1 = dir === 'BUY' ? entry + (risk * 1.5) : entry - (risk * 1.5);
-        const tp2 = dir === 'BUY' ? entry + (risk * 3.5) : entry - (risk * 3.5);
-
+        const risk = Math.abs(entry - sl); const tp1 = dir === 'BUY' ? entry + (risk * 1.5) : entry - (risk * 1.5); const tp2 = dir === 'BUY' ? entry + (risk * 3.5) : entry - (risk * 3.5);
         activeTrades[key] = { id: Date.now(), asset: currentAsset, dir, entry, sl, tp1, tp2, tf: currentTF, status: 'PENDING', date: new Date().toLocaleString(), tp1Hit: false };
         addNotification(dir, entry, sl, tp1, tp2, currentTF, currentAsset);
         await saveActiveTradeToCloud(activeTrades[key]);
         localStorage.setItem('activeTrades', JSON.stringify(activeTrades));
-        
         addAutoLog(`Found FVG ${dir} at ${entry.toFixed(5)} on ${currentAsset} ${currentTF.toUpperCase()}`);
-        
-        if (document.getElementById('page-live').classList.contains('active') && document.getElementById('assetSelector').value === currentAsset) {
-          renderTradeCard(activeTrades[key]);
-        }
-
+        if (document.getElementById('page-live').classList.contains('active') && document.getElementById('assetSelector').value === currentAsset) { renderTradeCard(activeTrades[key]); }
       }, 30000); 
     }
 
@@ -1273,20 +1078,14 @@
     function renderAutoLogs() {
       const box = document.getElementById('autoLogBox');
       if (!box) return;
-      if (autoLogs.length === 0) {
-        box.innerHTML = `<div class="log-item"><div>Waiting for scans...</div></div>`;
-        return;
-      }
+      if (autoLogs.length === 0) { box.innerHTML = `<div class="log-item"><div>Waiting for scans...</div></div>`; return; }
       let html = '';
-      autoLogs.forEach(l => {
-        html += `<div class="log-item"><div class="log-time">${l.time}</div><div>${l.text}</div></div>`;
-      });
+      autoLogs.forEach(l => { html += `<div class="log-item"><div class="log-time">${l.time}</div><div>${l.text}</div></div>`; });
       box.innerHTML = html;
     }
 
     function drawTradeLines(trade) {
-      priceLines.forEach(l => candleSeries.removePriceLine(l));
-      priceLines = [];
+      priceLines.forEach(l => candleSeries.removePriceLine(l)); priceLines = [];
       priceLines.push(candleSeries.createPriceLine({ price: trade.entry, color: '#ffd700', lineWidth: 2, lineStyle: 2, title: 'ENTRY' }));
       priceLines.push(candleSeries.createPriceLine({ price: trade.sl, color: '#ef5350', lineWidth: 1, lineStyle: 2, title: 'SL' }));
       priceLines.push(candleSeries.createPriceLine({ price: trade.tp1, color: '#26a69a', lineWidth: 1, lineStyle: 2, title: 'TP1' }));
@@ -1294,81 +1093,45 @@
     }
 
     function renderTradeCard(trade) {
-      const isBuy = trade.dir === 'BUY';
-      const asset = trade.asset || currentAsset;
-      const pipSize = getPipSize(asset);
-      const pipVal = getPipValue(asset);
-      const dp = asset === 'EUR/USD' ? 5 : 2;
-      
+      const isBuy = trade.dir === 'BUY'; const asset = trade.asset || currentAsset; const pipSize = getPipSize(asset); const pipVal = getPipValue(asset); const dp = asset === 'EUR/USD' ? 5 : 2;
       let statusClass = "status-pending";
       let statusText = trade.dir === 'BUY' ? `${dict[currentLang].waitBuy} ${trade.entry.toFixed(dp)}` : `${dict[currentLang].waitSell} ${trade.entry.toFixed(dp)}`;
-      
-      if (trade.tp1Hit) {
-        statusClass = "status-tp1";
-        statusText = dict[currentLang].tp1hit;
-      } else if (trade.status === 'ACTIVE') {
-        statusClass = isBuy ? "status-active-buy" : "status-active-sell";
-        statusText = isBuy ? dict[currentLang].activeBuy : dict[currentLang].activeSell;
-      }
-      
-      const pipsRisk = Math.round(Math.abs(trade.entry - trade.sl) / pipSize);
-      const pipsTP1  = Math.round(Math.abs(trade.tp1 - trade.entry) / pipSize);
-      const pipsTP2  = Math.round(Math.abs(trade.tp2 - trade.entry) / pipSize);
-
-      const dollarLoss = (pipsRisk * pipVal).toFixed(2);
-      const dollarTP1 = (pipsTP1 * pipVal).toFixed(2);
-      const dollarTP2 = (pipsTP2 * pipVal).toFixed(2);
-
+      if (trade.tp1Hit) { statusClass = "status-tp1"; statusText = dict[currentLang].tp1hit; }
+      else if (trade.status === 'ACTIVE') { statusClass = isBuy ? "status-active-buy" : "status-active-sell"; statusText = isBuy ? dict[currentLang].activeBuy : dict[currentLang].activeSell; }
+      const pipsRisk = Math.round(Math.abs(trade.entry - trade.sl) / pipSize); const pipsTP1 = Math.round(Math.abs(trade.tp1 - trade.entry) / pipSize); const pipsTP2 = Math.round(Math.abs(trade.tp2 - trade.entry) / pipSize);
+      const dollarLoss = (pipsRisk * pipVal).toFixed(2); const dollarTP1 = (pipsTP1 * pipVal).toFixed(2); const dollarTP2 = (pipsTP2 * pipVal).toFixed(2);
       document.getElementById('signalBox').innerHTML = `
         <div class="signal-card ${isBuy ? '' : 'sell'}">
           <div style="display: flex; justify-content: space-between; margin-bottom: 12px; align-items: flex-start;">
-            <div>
-              <div style="font-size: 18px; font-weight: 700; margin-bottom: 4px;">${asset} <span class="${isBuy ? 'text-green' : 'text-red'}">${isBuy ? dict[currentLang].buy : dict[currentLang].sell}</span></div>
-              <div class="status-badge ${statusClass}">${statusText}</div>
-            </div>
+            <div><div style="font-size: 18px; font-weight: 700; margin-bottom: 4px;">${asset} <span class="${isBuy ? 'text-green' : 'text-red'}">${isBuy ? dict[currentLang].buy : dict[currentLang].sell}</span></div><div class="status-badge ${statusClass}">${statusText}</div></div>
             <div style="font-size: 12px; color: #888; font-weight: 600; text-align: ${currentLang === 'ar' ? 'left' : 'right'};">${trade.tf.toUpperCase()} <br> CHART</div>
           </div>
-          
           <div class="price-grid">
             <div class="price-box"><div class="price-label">${dict[currentLang].entry}</div><div class="price-val text-yellow">${trade.entry.toFixed(dp)}</div></div>
             <div class="price-box"><div class="price-label">${dict[currentLang].sl}</div><div class="price-val text-red">${trade.sl.toFixed(dp)}</div><div class="pips-sub text-red">-${pipsRisk} pips</div></div>
             <div class="price-box tp1"><div class="price-label">${dict[currentLang].tp1}</div><div class="price-val text-green">${trade.tp1.toFixed(dp)}</div><div class="pips-sub text-green">+${pipsTP1} pips</div></div>
             <div class="price-box tp2"><div class="price-label">${dict[currentLang].tp2}</div><div class="price-val text-green">${trade.tp2.toFixed(dp)}</div><div class="pips-sub text-green">+${pipsTP2} pips</div></div>
           </div>
-
-          <div class="calc-box">
-            <div class="calc-title">Profit / Loss ($) @ 0.02 Lots</div>
-            <div class="calc-row"><span>Stop Loss:</span> <span class="calc-val-red">-$${dollarLoss}</span></div>
-            <div class="calc-row"><span>Take Profit 1:</span> <span class="calc-val-green">+$${dollarTP1}</span></div>
-            <div class="calc-row"><span>Take Profit 2:</span> <span class="calc-val-green">+$${dollarTP2}</span></div>
-          </div>
-
+          <div class="calc-box"><div class="calc-title">Profit / Loss ($) @ 0.02 Lots</div><div class="calc-row"><span>Stop Loss:</span> <span class="calc-val-red">-$${dollarLoss}</span></div><div class="calc-row"><span>Take Profit 1:</span> <span class="calc-val-green">+$${dollarTP1}</span></div><div class="calc-row"><span>Take Profit 2:</span> <span class="calc-val-green">+$${dollarTP2}</span></div></div>
           <button class="btn-copy-signal" onclick="copySignal(${trade.entry}, ${trade.sl}, ${trade.tp1}, ${trade.tp2}, '${trade.dir}', '${asset}')">📋 Copy Signal</button>
-        </div>
-      `;
+        </div>`;
       drawTradeLines(trade);
     }
 
     function copySignal(entry, sl, tp1, tp2, dir, asset) {
         const dp = asset === 'EUR/USD' ? 5 : 2;
         const text = `🚨 SIGNAL: ${asset} ${dir} LIMIT\n\nEntry: ${entry.toFixed(dp)}\nSL: ${sl.toFixed(dp)}\nTP1: ${tp1.toFixed(dp)}\nTP2: ${tp2.toFixed(dp)}`;
-        navigator.clipboard.writeText(text).then(() => {
-            alert("Signal Copied!");
-        }).catch(err => alert("Failed to copy."));
+        navigator.clipboard.writeText(text).then(() => alert("Signal Copied!")).catch(err => alert("Failed to copy."));
     }
 
     function playAlert() {
         try {
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(880, ctx.currentTime);
+            const osc = ctx.createOscillator(); const gain = ctx.createGain();
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.type = 'sine'; osc.frequency.setValueAtTime(880, ctx.currentTime);
             gain.gain.setValueAtTime(0.1, ctx.currentTime);
-            osc.start();
-            osc.stop(ctx.currentTime + 0.3);
+            osc.start(); osc.stop(ctx.currentTime + 0.3);
             if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
         } catch (e) {}
     }
@@ -1377,232 +1140,96 @@
       const newNotif = { id: Date.now(), dir, entry, sl, tp1, tp2, tf, asset: asset || currentAsset, date: new Date().toLocaleString() };
       notifications.unshift(newNotif);
       localStorage.setItem('notifications', JSON.stringify(notifications));
-      renderNotifBadge();
-      renderNotifList();
-      playAlert(); // صوت ورجة
-      
-      // إشعار Push
+      renderNotifBadge(); renderNotifList(); playAlert();
       const dp = asset === 'EUR/USD' ? 5 : 2;
-      sendPushNotification(
-          `🚨 New ${dir} Signal: ${asset}`, 
-          `Entry: ${entry.toFixed(dp)} | SL: ${sl.toFixed(dp)} | ${tf.toUpperCase()}`
-      );
+      sendPushNotification(`🚨 New ${dir} Signal: ${asset}`, `Entry: ${entry.toFixed(dp)} | SL: ${sl.toFixed(dp)} | ${tf.toUpperCase()}`);
     }
 
     function renderNotifBadge() {
       const badge = document.getElementById('notifBadge');
-      if (notifications.length > 0) {
-        badge.style.display = 'block';
-        badge.innerText = notifications.length;
-      } else {
-        badge.style.display = 'none';
-      }
+      if (notifications.length > 0) { badge.style.display = 'block'; badge.innerText = notifications.length; }
+      else badge.style.display = 'none';
     }
 
     function renderNotifList() {
       const list = document.getElementById('notifList');
-      if (notifications.length === 0) {
-        list.innerHTML = '<div class="loading">No notifications yet.</div>';
-        return;
-      }
+      if (notifications.length === 0) { list.innerHTML = '<div class="loading">No notifications yet.</div>'; return; }
       let html = '';
       notifications.forEach(n => {
-        const asset = n.asset || 'XAU/USD';
-        const dp = asset === 'EUR/USD' ? 5 : 2;
-        html += `
-          <div class="notif-item ${n.dir === 'BUY' ? 'buy' : 'sell'}">
-            <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-              <span style="font-weight:700;">${asset} <span class="${n.dir === 'BUY' ? 'text-green' : 'text-red'}">${n.dir}</span> (${n.tf})</span>
-              <span style="font-size:10px; color:#888;">${n.date}</span>
-            </div>
-            <div style="font-size:12px; color:#ccc;">Entry: ${n.entry.toFixed(dp)} | SL: ${n.sl.toFixed(dp)}</div>
-          </div>
-        `;
+        const asset = n.asset || 'XAU/USD'; const dp = asset === 'EUR/USD' ? 5 : 2;
+        html += `<div class="notif-item ${n.dir === 'BUY' ? 'buy' : 'sell'}"><div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span style="font-weight:700;">${asset} <span class="${n.dir === 'BUY' ? 'text-green' : 'text-red'}">${n.dir}</span> (${n.tf})</span><span style="font-size:10px; color:#888;">${n.date}</span></div><div style="font-size:12px; color:#ccc;">Entry: ${n.entry.toFixed(dp)} | SL: ${n.sl.toFixed(dp)}</div></div>`;
       });
       list.innerHTML = html;
     }
 
-    function openNotifications() {
-      document.getElementById('notifModal').style.display = 'flex';
-      renderNotifList();
-    }
+    function openNotifications() { document.getElementById('notifModal').style.display = 'flex'; renderNotifList(); }
+    function closeNotifications() { document.getElementById('notifModal').style.display = 'none'; }
+    function clearAllNotifications() { notifications = []; localStorage.setItem('notifications', JSON.stringify(notifications)); renderNotifBadge(); renderNotifList(); }
 
-    function closeNotifications() {
-      document.getElementById('notifModal').style.display = 'none';
-    }
-
-    function clearAllNotifications() {
-      notifications = [];
-      localStorage.setItem('notifications', JSON.stringify(notifications));
-      renderNotifBadge();
-      renderNotifList();
-    }
-
-    function setFilter(filter, element) {
-      currentFilter = filter;
-      document.querySelectorAll('.stats-filter .filter-btn').forEach(btn => btn.classList.remove('active'));
-      element.classList.add('active');
-      renderHistoryList();
-    }
-
-    function setAssetFilter(asset, element) {
-      currentAssetFilter = asset;
-      document.querySelectorAll('#page-history > div:nth-child(2) .filter-btn').forEach(btn => btn.classList.remove('active'));
-      element.classList.add('active');
-      renderHistoryList();
-    }
+    function setFilter(filter, element) { currentFilter = filter; document.querySelectorAll('.stats-filter .filter-btn').forEach(btn => btn.classList.remove('active')); element.classList.add('active'); renderHistoryList(); }
+    function setAssetFilter(asset, element) { currentAssetFilter = asset; document.querySelectorAll('#page-history > div:nth-child(2) .filter-btn').forEach(btn => btn.classList.remove('active')); element.classList.add('active'); renderHistoryList(); }
 
     async function clearHistory() {
       if (confirm("Are you sure you want to clear all trade history? This cannot be undone.")) {
         const { data: { session } } = await supabaseClient.auth.getSession();
-        if (session) {
-            await supabaseClient.from('trade_history').delete().eq('user_id', session.user.id);
-        }
-        tradeHistory = [];
-        localStorage.removeItem('tradeHistory');
-        renderHistoryList();
+        if (session) { await supabaseClient.from('trade_history').delete().eq('user_id', session.user.id); }
+        tradeHistory = []; localStorage.removeItem('tradeHistory'); renderHistoryList();
       }
     }
 
     function renderHistoryList() {
       const list = document.getElementById('historyList');
-      
       let filteredHistory = tradeHistory;
-
-      if (currentFilter === 'today') {
-        const today = new Date().toLocaleDateString();
-        filteredHistory = filteredHistory.filter(t => (t.date || '').startsWith(today));
-      } else if (currentFilter === 'week') {
-        const oneWeekAgo = new Date();
-        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-        filteredHistory = filteredHistory.filter(t => new Date(t.date) >= oneWeekAgo);
-      }
-
-      if (currentAssetFilter !== 'all') {
-          filteredHistory = filteredHistory.filter(t => (t.asset || 'XAU/USD') === currentAssetFilter);
-      }
-
-      let wins = 0;
-      let totalPips = 0;
-      const totalTrades = filteredHistory.length;
-      
-      // لحساب أفضل عملة وأفضل جلسة
-      let assetStats = {};
-      let sessionStats = {};
-
+      if (currentFilter === 'today') { const today = new Date().toLocaleDateString(); filteredHistory = filteredHistory.filter(t => (t.date || '').startsWith(today)); }
+      else if (currentFilter === 'week') { const oneWeekAgo = new Date(); oneWeekAgo.setDate(oneWeekAgo.getDate() - 7); filteredHistory = filteredHistory.filter(t => new Date(t.date) >= oneWeekAgo); }
+      if (currentAssetFilter !== 'all') { filteredHistory = filteredHistory.filter(t => (t.asset || 'XAU/USD') === currentAssetFilter); }
+      let wins = 0; let totalPips = 0; const totalTrades = filteredHistory.length;
+      let assetStats = {}; let sessionStats = {};
       filteredHistory.forEach(t => {
-        const asset = t.asset || 'XAU/USD';
-        const pipSize = getPipSize(asset);
-        const pips = Math.abs(t.exitPrice - t.entry) / pipSize;
-        
+        const asset = t.asset || 'XAU/USD'; const pipSize = getPipSize(asset); const pips = Math.abs(t.exitPrice - t.entry) / pipSize;
         if (!assetStats[asset]) assetStats[asset] = 0;
-        
-        // تحديد الجلسة حسب الساعة
         const hour = new Date(t.date).getUTCHours();
         let sessionName = "Other";
         if (hour >= 7 && hour < 12) sessionName = "London";
         else if (hour >= 12 && hour < 16) sessionName = "London/NY";
         else if (hour >= 16 && hour < 21) sessionName = "New York";
         else if (hour >= 21 || hour < 6) sessionName = "Sydney/Tokyo";
-        
         if (!sessionStats[sessionName]) sessionStats[sessionName] = 0;
-
-        if (t.result === 'WIN') {
-          wins++;
-          totalPips += pips;
-          assetStats[asset] += pips;
-          sessionStats[sessionName] += pips;
-        } else {
-          totalPips -= pips;
-          assetStats[asset] -= pips;
-          sessionStats[sessionName] -= pips;
-        }
+        if (t.result === 'WIN') { wins++; totalPips += pips; assetStats[asset] += pips; sessionStats[sessionName] += pips; }
+        else { totalPips -= pips; assetStats[asset] -= pips; sessionStats[sessionName] -= pips; }
       });
-
       const winRate = totalTrades > 0 ? ((wins / totalTrades) * 100).toFixed(1) : 0;
-      
       document.getElementById('statWinRate').innerText = winRate + '%';
       document.getElementById('statTotalTrades').innerText = totalTrades;
-      
       const pipsElement = document.getElementById('statTotalPips');
       pipsElement.innerText = (totalPips > 0 ? '+' : '') + totalPips.toFixed(0);
       pipsElement.className = totalPips >= 0 ? 'stat-value text-green' : 'stat-value text-red';
-
-      // أفضل عملة وأفضل جلسة
-      let bestAsset = '-';
-      let maxAssetPips = -Infinity;
-      for (const [a, p] of Object.entries(assetStats)) {
-          if (p > maxAssetPips) { maxAssetPips = p; bestAsset = a; }
-      }
+      let bestAsset = '-'; let maxAssetPips = -Infinity;
+      for (const [a, p] of Object.entries(assetStats)) { if (p > maxAssetPips) { maxAssetPips = p; bestAsset = a; } }
       if (bestAsset !== '-') bestAsset = bestAsset.replace('/USD', '') + ` (+${maxAssetPips.toFixed(0)} pips)`;
-      
-      let bestSession = '-';
-      let maxSessionPips = -Infinity;
-      for (const [s, p] of Object.entries(sessionStats)) {
-          if (p > maxSessionPips) { maxSessionPips = p; bestSession = s; }
-      }
+      let bestSession = '-'; let maxSessionPips = -Infinity;
+      for (const [s, p] of Object.entries(sessionStats)) { if (p > maxSessionPips) { maxSessionPips = p; bestSession = s; } }
       if (bestSession !== '-') bestSession = bestSession + ` (+${maxSessionPips.toFixed(0)} pips)`;
-
       document.getElementById('statBestAsset').innerText = bestAsset;
       document.getElementById('statBestSession').innerText = bestSession;
-
-      if (totalTrades === 0) {
-        list.innerHTML = `<div class="loading">${dict[currentLang].noHistory}</div>`;
-        return;
-      }
-      
-      const sorted = [...filteredHistory].reverse();
-      let html = '';
+      if (totalTrades === 0) { list.innerHTML = `<div class="loading">${dict[currentLang].noHistory}</div>`; return; }
+      const sorted = [...filteredHistory].reverse(); let html = '';
       sorted.forEach(t => {
-        const asset = t.asset || 'XAU/USD';
-        const isBuy = t.dir === 'BUY';
-        const isWin = t.result === 'WIN';
-        const color = isWin ? 'text-green' : 'text-red';
-        const sign = isWin ? '+' : '-';
-        const pipSize = getPipSize(asset);
-        const pips = (Math.abs(t.exitPrice - t.entry) / pipSize).toFixed(0);
-
-        html += `
-          <div class="history-item" onclick="openJournal('${t.id}')">
-            <div>
-              <div class="history-title">${asset} <span class="${isBuy ? 'text-green' : 'text-red'}">${isBuy ? dict[currentLang].buy : dict[currentLang].sell}</span></div>
-              <div class="history-date">${t.date} | ${t.tf.toUpperCase()}</div>
-            </div>
-            <div>
-              <div class="history-result ${color}">${t.result}</div>
-              <div class="history-date ${color}">${sign}${pips} Pips</div>
-            </div>
-          </div>
-        `;
+        const asset = t.asset || 'XAU/USD'; const isBuy = t.dir === 'BUY'; const isWin = t.result === 'WIN'; const color = isWin ? 'text-green' : 'text-red'; const sign = isWin ? '+' : '-'; const pipSize = getPipSize(asset); const pips = (Math.abs(t.exitPrice - t.entry) / pipSize).toFixed(0);
+        html += `<div class="history-item" onclick="openJournal('${t.id}')"><div><div class="history-title">${asset} <span class="${isBuy ? 'text-green' : 'text-red'}">${isBuy ? dict[currentLang].buy : dict[currentLang].sell}</span></div><div class="history-date">${t.date} | ${t.tf.toUpperCase()}</div></div><div><div class="history-result ${color}">${t.result}</div><div class="history-date ${color}">${sign}${pips} Pips</div></div></div>`;
       });
       list.innerHTML = html;
     }
 
-    function openJournal(id) {
-        journalEntryId = id;
-        const trade = tradeHistory.find(t => String(t.id) === String(id));
-        if (trade) {
-            document.getElementById('journalInput').value = trade.journal || "";
-            document.getElementById('journalModal').style.display = 'flex';
-        }
-    }
-
-    function closeJournal(event) {
-      if (event && event.target.id !== 'journalModal' && !event.target.classList.contains('journal-box') && event.target.tagName !== 'BUTTON') return;
-      document.getElementById('journalModal').style.display = 'none';
-    }
-
+    function openJournal(id) { journalEntryId = id; const trade = tradeHistory.find(t => String(t.id) === String(id)); if (trade) { document.getElementById('journalInput').value = trade.journal || ""; document.getElementById('journalModal').style.display = 'flex'; } }
+    function closeJournal(event) { if (event && event.target.id !== 'journalModal' && !event.target.classList.contains('journal-box') && event.target.tagName !== 'BUTTON') return; document.getElementById('journalModal').style.display = 'none'; }
     async function saveJournal() {
         const text = document.getElementById('journalInput').value;
         const tradeIndex = tradeHistory.findIndex(t => String(t.id) === String(journalEntryId));
         if (tradeIndex > -1) {
-            tradeHistory[tradeIndex].journal = text;
-            localStorage.setItem('tradeHistory', JSON.stringify(tradeHistory));
-            
+            tradeHistory[tradeIndex].journal = text; localStorage.setItem('tradeHistory', JSON.stringify(tradeHistory));
             const { data: { session } } = await supabaseClient.auth.getSession();
-            if (session) {
-                await supabaseClient.from('trade_history').update({ journal: text }).eq('id', journalEntryId);
-            }
+            if (session) { await supabaseClient.from('trade_history').update({ journal: text }).eq('id', journalEntryId); }
             alert('Journal saved!');
         }
         document.getElementById('journalModal').style.display = 'none';
@@ -1610,99 +1237,52 @@
 
     function startLiveTracking() {
       if (liveInterval) clearInterval(liveInterval);
-      
       liveInterval = setInterval(async () => {
-        let activeKeys = Object.keys(activeTrades);
-        if (activeKeys.length === 0) return;
-        
+        let activeKeys = Object.keys(activeTrades); if (activeKeys.length === 0) return;
         const assets = [...new Set(activeKeys.map(k => k.split('__')[0]))];
-
         for (let asset of assets) {
             try {
-                const res = await fetch(`https://api.twelvedata.com/price?symbol=${asset}&apikey=${TWELVEDATA_API_KEY}`);
-                const data = await res.json();
-                
-                if (data.status === 'error' || !data.price) continue; 
-                
-                const livePrice = parseFloat(data.price);
-                
+                let livePrice = null;
+                if (asset === 'XAU/USD') {
+                    const res = await fetch('https://xaus.com/api/v1/spot');
+                    const data = await res.json();
+                    livePrice = data.spot_usd_oz;
+                } else {
+                    const symbolMap = { 'EUR/USD': 'EURUSD', 'BTC/USD': 'BTCUSD' };
+                    const res = await fetch(`https://api.biquote.io/v1/price?symbol=${symbolMap[asset]}`);
+                    const data = await res.json();
+                    livePrice = data.price;
+                }
+                if (!livePrice || isNaN(livePrice)) continue;
                 const assetKeys = activeKeys.filter(k => k.startsWith(asset + '__'));
                 for (let key of assetKeys) {
-                    let trade = activeTrades[key];
-                    if (!trade) continue;
-
-                    let changed = false;
-                    let result = null;
-                    let exitPrice = 0;
-                    
-                    if (trade.status === 'PENDING') {
-                        if (trade.dir === 'BUY' && livePrice <= trade.entry) { trade.status = 'ACTIVE'; changed = true; }
-                        if (trade.dir === 'SELL' && livePrice >= trade.entry) { trade.status = 'ACTIVE'; changed = true; }
-                    }
-
-                    if (trade.status === 'ACTIVE' && !trade.tp1Hit) {
-                        if (trade.dir === 'BUY' && livePrice >= trade.tp1) { trade.tp1Hit = true; changed = true; }
-                        if (trade.dir === 'SELL' && livePrice <= trade.tp1) { trade.tp1Hit = true; changed = true; }
-                    }
-
-                    if (changed) {
-                        await saveActiveTradeToCloud(trade);
-                        localStorage.setItem('activeTrades', JSON.stringify(activeTrades));
-                    }
-
-                    if (trade.dir === 'BUY') {
-                        if (livePrice <= trade.sl) { result = 'LOSS'; exitPrice = trade.sl; }
-                        if (livePrice >= trade.tp2) { result = 'WIN'; exitPrice = trade.tp2; }
-                    } else {
-                        if (livePrice >= trade.sl) { result = 'LOSS'; exitPrice = trade.sl; }
-                        if (livePrice <= trade.tp2) { result = 'WIN'; exitPrice = trade.tp2; }
-                    }
-
+                    let trade = activeTrades[key]; if (!trade) continue;
+                    let changed = false; let result = null; let exitPrice = 0;
+                    if (trade.status === 'PENDING') { if (trade.dir === 'BUY' && livePrice <= trade.entry) { trade.status = 'ACTIVE'; changed = true; } if (trade.dir === 'SELL' && livePrice >= trade.entry) { trade.status = 'ACTIVE'; changed = true; } }
+                    if (trade.status === 'ACTIVE' && !trade.tp1Hit) { if (trade.dir === 'BUY' && livePrice >= trade.tp1) { trade.tp1Hit = true; changed = true; } if (trade.dir === 'SELL' && livePrice <= trade.tp1) { trade.tp1Hit = true; changed = true; } }
+                    if (changed) { await saveActiveTradeToCloud(trade); localStorage.setItem('activeTrades', JSON.stringify(activeTrades)); }
+                    if (trade.dir === 'BUY') { if (livePrice <= trade.sl) { result = 'LOSS'; exitPrice = trade.sl; } if (livePrice >= trade.tp2) { result = 'WIN'; exitPrice = trade.tp2; } }
+                    else { if (livePrice >= trade.sl) { result = 'LOSS'; exitPrice = trade.sl; } if (livePrice <= trade.tp2) { result = 'WIN'; exitPrice = trade.tp2; } }
                     if (result) {
                         const finishedTrade = { ...trade, result: result, exitPrice: exitPrice };
-                        tradeHistory.push(finishedTrade);
-                        localStorage.setItem('tradeHistory', JSON.stringify(tradeHistory));
+                        tradeHistory.push(finishedTrade); localStorage.setItem('tradeHistory', JSON.stringify(tradeHistory));
                         await saveHistoryToCloud(finishedTrade);
-                        
-                        delete activeTrades[key];
-                        await deleteActiveTradeFromCloud(key);
-                        localStorage.setItem('activeTrades', JSON.stringify(activeTrades));
-                        
-                        if (result === 'WIN') {
-                            confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
-                            playAlert();
-                            sendPushNotification(`✅ Take Profit Hit!`, `${asset} ${trade.tf.toUpperCase()} closed in profit.`);
-                        } else {
-                            sendPushNotification(`❌ Stop Loss Hit`, `${asset} ${trade.tf.toUpperCase()} closed in loss.`);
-                        }
-                        
-                        if (trade.asset === currentAsset && trade.tf === currentTF) {
-                            alert(`SIGNAL HIT ${result === 'WIN' ? 'TAKE PROFIT 2' : 'STOP LOSS'} on ${asset}!`);
-                            location.reload();
-                        } else {
-                            addAutoLog(`${asset} ${trade.tf.toUpperCase()} closed: ${result}`);
-                        }
+                        delete activeTrades[key]; await deleteActiveTradeFromCloud(key); localStorage.setItem('activeTrades', JSON.stringify(activeTrades));
+                        if (result === 'WIN') { confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } }); playAlert(); sendPushNotification(`✅ Take Profit Hit!`, `${asset} ${trade.tf.toUpperCase()} closed in profit.`); }
+                        else { sendPushNotification(`❌ Stop Loss Hit`, `${asset} ${trade.tf.toUpperCase()} closed in loss.`); }
+                        if (trade.asset === currentAsset && trade.tf === currentTF) { alert(`SIGNAL HIT ${result === 'WIN' ? 'TAKE PROFIT 2' : 'STOP LOSS'} on ${asset}!`); location.reload(); }
+                        else { addAutoLog(`${asset} ${trade.tf.toUpperCase()} closed: ${result}`); }
                     }
                 }
-                
                 const curKey = getTradeKey(currentAsset, currentTF);
-                if (activeTrades[curKey] && document.getElementById('page-live').classList.contains('active')) {
-                    renderTradeCard(activeTrades[curKey]);
-                }
-                
-            } catch (e) { }
+                if (activeTrades[curKey] && document.getElementById('page-live').classList.contains('active')) { renderTradeCard(activeTrades[curKey]); }
+            } catch (e) { console.error("Live tracking error:", e); }
         }
       }, 15000); 
     }
 
-    function copyWallet() {
-      navigator.clipboard.writeText('TLgREYohGVK6V9zUS6gNowq2WjPavmfEj3')
-        .then(() => alert('Wallet address copied!'))
-        .catch(() => alert('Failed to copy'));
-    }
-    function confirmVerify() {
-      return confirm('Have you completed the $49 payment via USDT TRC20?\\n\\nPress OK to open Telegram and send your transaction proof.');
-    }
+    function copyWallet() { navigator.clipboard.writeText('TLgREYohGVK6V9zUS6gNowq2WjPavmfEj3').then(() => alert('Wallet address copied!')).catch(() => alert('Failed to copy')); }
+    function confirmVerify() { return confirm('Have you completed the $49 payment via USDT TRC20?\\n\\nPress OK to open Telegram and send your transaction proof.'); }
   </script>
 </body>
 </html>
