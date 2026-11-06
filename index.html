@@ -422,7 +422,9 @@
     }
     function toPips(diff, asset) { return diff / getPipSize(asset); }
     function getTradeKey(asset, tf) { return `${asset}__${tf}`; }
-    function getPipValue(asset) { return 0.20; }
+    function getPipValue(asset) {
+        return 0.20; 
+    }
 
     function migrateLocalStorage() {
       try {
@@ -815,31 +817,31 @@
       return { sydney: utcHour >= 21 || utcHour < 6, tokyo: utcHour >= 0 && utcHour < 9, london: utcHour >= 7 && utcHour < 16, ny: utcHour >= 12 && utcHour < 21 };
     }
 
-    // ---------- TwelveData Chart Fetch (Through Proxy) ----------
+    // ---------- Biquote Chart Fetch (Direct Worker URL) ----------
     async function fetchChartDataFromSource(tf) {
-        const intervalMap = { '5min': '5min', '15min': '15min', '30min': '30min', '1h': '1h', '4h': '4h', '1day': '1day' };
-        const tdTf = intervalMap[tf] || '5min';
-        const symbolMap = { 'XAU/USD': 'XAU/USD', 'EUR/USD': 'EUR/USD', 'BTC/USD': 'BTC/USD' };
+        const intervalMap = { '5min': '5m', '15min': '15m', '30min': '30m', '1h': '1h', '4h': '4h', '1day': '1d' };
+        const biTf = intervalMap[tf] || '5m';
+        const symbolMap = { 'XAU/USD': 'XAUUSD', 'EUR/USD': 'EURUSD', 'BTC/USD': 'BTCUSD' };
         const symbol = symbolMap[currentAsset];
 
         try {
-            const targetApi = `https://api.twelvedata.com/time_series?symbol=${symbol}&interval=${tdTf}&outputsize=300`;
+            const targetApi = `https://biquote.io/api/${symbol}/ohlc?interval=${biTf}&limit=300`;
             const res = await fetch(`https://throbbing-sky-4f73.bacharrachiini97.workers.dev/?url=${encodeURIComponent(targetApi)}`);
             
             if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
             const data = await res.json();
             
-            if (!data || !data.values || data.values.length === 0) {
-                throw new Error("No data returned");
+            if (!data || !data.bars || data.bars.length === 0) {
+                throw new Error("No bars returned");
             }
 
-            return data.values.map(item => ({
-                time: new Date(item.datetime).getTime() / 1000, 
+            return data.bars.map(item => ({
+                time: new Date(item.openTime).getTime() / 1000, 
                 open: parseFloat(item.open), 
                 high: parseFloat(item.high),
                 low: parseFloat(item.low), 
                 close: parseFloat(item.close)
-            })).reverse(); 
+            }));
 
         } catch (e) {
             console.error("Chart fetch error:", e);
@@ -975,30 +977,11 @@
 
     function findSMCSetup(bars) {
         let setup = null;
-        const currentPrice = bars[bars.length - 1].close; 
-        
-        for (let i = bars.length - 3; i >= Math.max(0, bars.length - 15); i--) {
+        for (let i = bars.length - 3; i >= Math.max(0, bars.length - 30); i--) {
             const c1 = bars[i]; const c3 = bars[i + 2];
             if (!c1 || !c3) continue;
-
-            if (c1.high < c3.low) {
-                const fvgMid = (c1.high + c3.low) / 2;
-                if (Math.abs(currentPrice - fvgMid) < (getPipSize(currentAsset) * 50)) {
-                    if (generalTrend === "BULLISH" || generalTrend === "NEUTRAL") { 
-                        setup = { dir: "BUY", entry: c1.high, sl: c1.low - getPipSize(currentAsset) * 5 }; 
-                        break; 
-                    }
-                }
-            }
-            if (c1.low > c3.high) {
-                const fvgMid = (c1.low + c3.high) / 2;
-                if (Math.abs(currentPrice - fvgMid) < (getPipSize(currentAsset) * 50)) {
-                    if (generalTrend === "BEARISH" || generalTrend === "NEUTRAL") { 
-                        setup = { dir: "SELL", entry: c1.low, sl: c1.high + getPipSize(currentAsset) * 5 }; 
-                        break; 
-                    }
-                }
-            }
+            if (c1.high < c3.low) { if (generalTrend === "BULLISH" || generalTrend === "NEUTRAL") { setup = { dir: "BUY", entry: c1.high, sl: c1.low - getPipSize(currentAsset) * 5 }; break; } }
+            if (c1.low > c3.high) { if (generalTrend === "BEARISH" || generalTrend === "NEUTRAL") { setup = { dir: "SELL", entry: c1.low, sl: c1.high + getPipSize(currentAsset) * 5 }; break; } }
         }
         return setup;
     }
@@ -1246,38 +1229,24 @@
         for (let asset of assets) {
             try {
                 let livePrice = null;
-                const targetApi = `https://api.twelvedata.com/price?symbol=${asset}`;
+                const symbolMap = { 'XAU/USD': 'XAUUSD', 'EUR/USD': 'EURUSD', 'BTC/USD': 'BTCUSD' };
+                const sym = symbolMap[asset];
+                
+                const targetApi = `https://biquote.io/api/${sym}`;
                 const res = await fetch(`https://throbbing-sky-4f73.bacharrachiini97.workers.dev/?url=${encodeURIComponent(targetApi)}`);
                 const data = await res.json();
-                
-                if (data && data.price) {
-                    livePrice = parseFloat(data.price);
-                }
+                livePrice = data.mid; 
 
                 if (!livePrice || isNaN(livePrice)) continue;
                 const assetKeys = activeKeys.filter(k => k.startsWith(asset + '__'));
                 for (let key of assetKeys) {
                     let trade = activeTrades[key]; if (!trade) continue;
                     let changed = false; let result = null; let exitPrice = 0;
-                    
-                    if (trade.status === 'PENDING') { 
-                        if (trade.dir === 'BUY' && livePrice <= trade.entry) { trade.status = 'ACTIVE'; changed = true; } 
-                        if (trade.dir === 'SELL' && livePrice >= trade.entry) { trade.status = 'ACTIVE'; changed = true; } 
-                    }
-                    if (trade.status === 'ACTIVE' && !trade.tp1Hit) { 
-                        if (trade.dir === 'BUY' && livePrice >= trade.tp1) { trade.tp1Hit = true; changed = true; } 
-                        if (trade.dir === 'SELL' && livePrice <= trade.tp1) { trade.tp1Hit = true; changed = true; } 
-                    }
+                    if (trade.status === 'PENDING') { if (trade.dir === 'BUY' && livePrice <= trade.entry) { trade.status = 'ACTIVE'; changed = true; } if (trade.dir === 'SELL' && livePrice >= trade.entry) { trade.status = 'ACTIVE'; changed = true; } }
+                    if (trade.status === 'ACTIVE' && !trade.tp1Hit) { if (trade.dir === 'BUY' && livePrice >= trade.tp1) { trade.tp1Hit = true; changed = true; } if (trade.dir === 'SELL' && livePrice <= trade.tp1) { trade.tp1Hit = true; changed = true; } }
                     if (changed) { await saveActiveTradeToCloud(trade); localStorage.setItem('activeTrades', JSON.stringify(activeTrades)); }
-                    
-                    if (trade.dir === 'BUY') { 
-                        if (livePrice <= trade.sl) { result = 'LOSS'; exitPrice = trade.sl; } 
-                        if (livePrice >= trade.tp2) { result = 'WIN'; exitPrice = trade.tp2; } 
-                    } else { 
-                        if (livePrice >= trade.sl) { result = 'LOSS'; exitPrice = trade.sl; } 
-                        if (livePrice <= trade.tp2) { result = 'WIN'; exitPrice = trade.tp2; } 
-                    }
-                    
+                    if (trade.dir === 'BUY') { if (livePrice <= trade.sl) { result = 'LOSS'; exitPrice = trade.sl; } if (livePrice >= trade.tp2) { result = 'WIN'; exitPrice = trade.tp2; } }
+                    else { if (livePrice >= trade.sl) { result = 'LOSS'; exitPrice = trade.sl; } if (livePrice <= trade.tp2) { result = 'WIN'; exitPrice = trade.tp2; } }
                     if (result) {
                         const finishedTrade = { ...trade, result: result, exitPrice: exitPrice };
                         tradeHistory.push(finishedTrade); localStorage.setItem('tradeHistory', JSON.stringify(tradeHistory));
