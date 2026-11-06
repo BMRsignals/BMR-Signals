@@ -3,10 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>MR.Trader AI - Real Gold</title>
+  <title>MR.Trader AI - Real Data</title>
   <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script src="https://unpkg.com/biquote/dist/biquote.umd.js"></script>
   
   <style>
     /* CSS kello zeto zeto */
@@ -154,9 +155,9 @@
     <div class="top-bar">
       <div class="top-row">
         <select id="assetSelector" class="asset-select" onchange="changeAsset()">
-          <option value="XAU/USD">XAUUSD (Gold)</option>
-          <option value="EUR/USD">EURUSD</option>
-          <option value="BTC/USD">BTCUSD</option>
+          <option value="XAUUSD">XAUUSD (Gold)</option>
+          <option value="EURUSD">EURUSD</option>
+          <option value="BTCUSD">BTCUSD</option>
         </select>
         <div class="autopilot-status">
           <div class="pulse-dot"></div> ACTIVE
@@ -329,7 +330,7 @@
     let priceLines = [];
     let currentLang = localStorage.getItem('lang') || 'en';
     let currentTF = '5m';
-    let currentAsset = 'XAU/USD';
+    let currentAsset = 'XAUUSD';
     let liveInterval;
     let autopilotInterval;
     let currentFilter = 'all';
@@ -345,9 +346,9 @@
     let journalEntryId = null;
 
     const pipMultiplier = {
-        'XAU/USD': 10,    
-        'EUR/USD': 10000, 
-        'BTC/USD': 1      
+        'XAUUSD': 10,    
+        'EURUSD': 10000, 
+        'BTCUSD': 1      
     };
 
     try {
@@ -525,8 +526,7 @@
     }
 
     async function updateGeneralTrend() {
-        // For simplicity, we'll just set a default trend if XAUS doesn't support MTF directly.
-        // In a real scenario, you'd fetch different timeframes.
+        // Simplified trend analysis for demo
         generalTrend = "NEUTRAL";
         const trendBar = document.getElementById('generalTrendBar');
         trendBar.className = "general-trend-bar";
@@ -605,43 +605,36 @@
       }
     }
 
-    // --- XAUS API INTEGRATION ---
+    // --- BIQUOTE DATA INTEGRATION ---
     async function loadChartData(tf) {
       try {
-        // Map TF to XAUS API interval (1m, 5m, 15m, 30m, 1h, 4h, 1d)
-        let interval = tf.replace('min', 'm').replace('day', 'd');
+        const bq = new Biquote();
+        // biquote uses intervals like '1h', '15m', '1d'
+        let interval = tf;
+        if (tf === '5m') interval = '5m';
         
-        // XAUS API uses the /api/v1/chart endpoint
-        const res = await fetch(`https://xaus.com/api/v1/chart?symbol=xau&range=1d&interval=${interval}`);
+        const bars = await bq.ohlc(currentAsset, { interval: interval, limit: 300 });
         
-        if (!res.ok) {
-            console.error("XAUS API Error: " + res.status);
-            return null;
-        }
-        
-        const data = await res.json();
-        
-        // Assuming the response is an array of OHLCV objects
-        // Format: { time: timestamp, open: number, high: number, low: number, close: number }
-        const bars = data.map(item => ({
-            time: item.time / 1000, // Convert ms to seconds
-            open: item.open,
-            high: item.high,
-            low: item.low,
-            close: item.close
+        // biquote returns oldest first, which is what Lightweight Charts needs
+        const formatted = bars.map(b => ({
+          time: b.time / 1000, // ensure time is in seconds
+          open: b.open,
+          high: b.high,
+          low: b.low,
+          close: b.close
         }));
 
-        candleSeries.setData(bars);
-        chart.timeScale().setVisibleLogicalRange({ from: bars.length - 60, to: bars.length + 10 });
+        candleSeries.setData(formatted);
+        chart.timeScale().setVisibleLogicalRange({ from: formatted.length - 60, to: formatted.length + 10 });
 
-        return bars;
+        return formatted;
       } catch (e) { 
-        console.error(e);
+        console.error("Chart Error:", e);
         return null; 
       }
     }
 
-    // SMC Logic (Simplified for demo)
+    // SMC Logic (Simplified)
     function findSMCSetup(bars) {
         const lastBar = bars[bars.length - 1];
         let setup = null;
@@ -697,13 +690,10 @@
 
       let { dir, entry, sl } = setup;
       
-      // Pips limits based on asset
       const multiplier = pipMultiplier[currentAsset];
       const slPips = Math.abs(entry - sl) * multiplier;
-      
-      // For demo, just ensure SL isn't too huge
-      if (slPips > 200) {
-          signalBox.innerHTML = `<div class="loading text-red">Setup SL is too large.</div>`;
+      if (slPips > parseInt(maxSL)) {
+          signalBox.innerHTML = `<div class="loading text-red">Setup SL is bigger than filter.</div>`;
           btn.disabled = false;
           return;
       }
@@ -1036,13 +1026,11 @@
         if (activeKeys.length === 0) return;
         
         try {
-          // For live price, we can use the spot endpoint
-          const res = await fetch(`https://xaus.com/api/v1/spot?compact=1`);
-          const data = await res.json();
+          const bq = new Biquote();
+          const tick = await bq.tick(currentAsset);
+          if (!tick || !tick.mid) return;
           
-          if (data.data_state.status === 'unavailable') return; 
-          
-          const livePrice = data.spot_usd_oz;
+          const livePrice = tick.mid;
           
           for (let key of activeKeys) {
             let trade = activeTrades[key];
