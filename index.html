@@ -83,7 +83,7 @@
     .tf-btn.active { background: #ffd700; border-color: #ffd700; color: #000; }
     .btn-analyze { width: 100%; padding: 16px; background: #222; color: #fff; border: none; border-top: 1px solid #333; font-size: 16px; font-weight: 700; cursor: pointer; transition: 0.3s; }
     .btn-analyze:active { background: #ffd700; color: #000; }
-    #chart-container { width: 100%; height: 35vh; border-bottom: 1px solid #1a1a1a; }
+    #chart-container { width: 100%; height: 35vh; border-bottom: 1px solid #1a1a1a; position: relative; }
 
     .signal-card { background: rgba(17, 26, 20, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(38, 166, 154, 0.3); border-radius: 16px; padding: 16px; margin-top: 16px; box-shadow: 0 8px 32px 0 rgba(0,0,0,0.37); }
     .signal-card.sell { background: rgba(26, 17, 17, 0.7); border-color: rgba(239, 83, 80, 0.3); }
@@ -94,6 +94,14 @@
     .price-label { font-size: 11px; color: #888; font-weight: 600; text-transform: uppercase; }
     .price-val { font-size: 18px; font-weight: 700; margin-top: 4px; }
     .pips-sub { font-size: 11px; font-weight: 600; margin-top: 4px; }
+    
+    /* Risk Calculator CSS */
+    .calc-box { background: #1a1a1a; border: 1px solid #ffd70044; border-radius: 12px; padding: 12px; margin-top: 12px; }
+    .calc-title { font-size: 11px; color: #ffd700; font-weight: 700; text-transform: uppercase; margin-bottom: 8px; text-align: center; border-bottom: 1px solid #333; padding-bottom: 4px; }
+    .calc-row { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; }
+    .calc-val-red { color: #ef5350; font-weight: 700; }
+    .calc-val-green { color: #26a69a; font-weight: 700; }
+
     .status-badge { padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 700; text-transform: uppercase; display: inline-block; margin-top: 8px; }
     .status-pending { background: #ffd70022; color: #ffd700; border: 1px solid #ffd70055; }
     .status-active-buy { background: #26a69a22; color: #26a69a; border: 1px solid #26a69a55; animation: pulse 2s infinite; }
@@ -118,8 +126,8 @@
     .btn-copy { width: 100%; padding: 10px; background: #ffd700; color: #000; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; margin-bottom: 8px; }
     .btn-verify { display: block; text-align: center; text-decoration: none; width: 100%; padding: 12px; background: #229ED9; color: #fff; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 14px; }
 
-    .stats-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-    .stats-filter { display: flex; gap: 4px; }
+    .stats-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
+    .stats-filter { display: flex; gap: 4px; flex-wrap: wrap; }
     .filter-btn { background: #111; border: 1px solid #333; color: #888; padding: 4px 10px; border-radius: 6px; font-size: 10px; cursor: pointer; }
     .filter-btn.active { background: #ffd700; color: #000; border-color: #ffd700; }
     .reset-btn { background: #ef535022; color: #ef5350; border: 1px solid #ef535055; padding: 4px 10px; border-radius: 6px; font-size: 10px; cursor: pointer; }
@@ -140,6 +148,8 @@
     .log-item { margin-bottom: 8px; border-bottom: 1px solid #222; padding-bottom: 8px; }
     .log-time { color: #888; font-size: 10px; }
     .btn-refresh { width: 100%; padding: 10px; background: #333; color: #fff; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; margin-top: 12px; }
+    
+    .chart-error { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #ef5350; font-size: 12px; text-align: center; background: rgba(0,0,0,0.8); padding: 10px; border-radius: 8px; z-index: 10; display: none; }
   </style>
 </head>
 <body id="mainBody">
@@ -210,6 +220,17 @@
           <option value="100">100 Pips</option>
         </select>
       </div>
+      
+      <!-- إضافة توقيت البروكر -->
+      <div class="filter-row">
+        <span class="filter-label">Broker Time Zone</span>
+        <select id="brokerTZFilter" class="filter-select" onchange="saveFilters()">
+          <option value="0">GMT+0 (London)</option>
+          <option value="2">GMT+2 (Common)</option>
+          <option value="3" selected>GMT+3 (Dubai/Moscow)</option>
+        </select>
+      </div>
+
       <div>
         <span class="filter-label">Trading Sessions</span>
         <div class="session-checkboxes">
@@ -223,7 +244,7 @@
 
     <div id="newsPanel">
       <div class="news-header">
-        <span class="news-title">📰 USD News Alerts</span>
+        <span class="news-title">📰 News Alerts</span>
         <span style="font-size:10px; color:#888;" id="newsStatus">Loading...</span>
       </div>
       <div id="newsList"><div style="font-size:11px;color:#666;">Fetching economic calendar...</div></div>
@@ -239,15 +260,15 @@
         <button class="tf-btn" onclick="selectTF('1day', this)">1D</button>
       </div>
       <button class="btn-analyze" id="btnAnalyze" onclick="startAnalysis()">⚡ ANALYZE MARKET</button>
-      <div id="chart-container"></div>
+      <div id="chart-container">
+        <div id="chartError" class="chart-error"></div>
+      </div>
       <div style="padding: 16px;">
         <div id="signalBox"><div class="loading" id="loadingText">Press Analyze to scan, or wait for Auto.</div></div>
 
         <div class="risk-note-live">
-          <strong>Risk Management Rules:</strong><br>
-          • Minimum balance to trade: <strong>$200</strong><br>
-          • Position size: <strong>0.02 lots for every $200</strong><br>
-          • Close <strong>0.01 at TP1</strong> and <strong>0.01 at TP2</strong>.
+          <strong>Signal Only:</strong> This app does not execute trades. It provides technical analysis.<br>
+          <strong>Risk Management:</strong> Minimum balance $200. Lot size 0.02.
         </div>
       </div>
     </div>
@@ -271,6 +292,14 @@
           <button class="filter-btn" onclick="setFilter('week', this)">Week</button>
           <button class="filter-btn" onclick="setFilter('today', this)">Today</button>
         </div>
+      </div>
+      
+      <!-- فلترة السجل حسب العملة -->
+      <div style="display: flex; gap: 4px; margin-bottom: 12px; overflow-x: auto; padding-bottom: 4px;">
+        <button class="filter-btn active" id="btn-asset-all" onclick="setAssetFilter('all', this)">All Assets</button>
+        <button class="filter-btn" id="btn-asset-XAU" onclick="setAssetFilter('XAU/USD', this)">Gold</button>
+        <button class="filter-btn" id="btn-asset-EUR" onclick="setAssetFilter('EUR/USD', this)">EUR</button>
+        <button class="filter-btn" id="btn-asset-BTC" onclick="setAssetFilter('BTC/USD', this)">BTC</button>
       </div>
 
       <div style="display: flex; justify-content: flex-end; margin-bottom: 12px;">
@@ -355,10 +384,10 @@
   <script>
     const SUPABASE_URL = 'https://wdexwfoplycblaxmrfws.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_6U7d-ihEr1ivc362mhkDeQ_2suPM3gy';
-    const TWELVEDATA_API_KEY = 'a76abacdca7b4bd39dbf6caf65654e6a';
+    const TWELVEDATA_API_KEY = 'a76abacdca7b4bd39dbf6caf65654e6a'; 
 
     let supabaseClient = null;
-    let isRecoveryMode = false;
+    let isRecoveryMode = false; 
     let chart, candleSeries;
     let priceLines = [];
     let currentLang = localStorage.getItem('lang') || 'en';
@@ -368,27 +397,36 @@
     let autopilotInterval;
     let newsInterval;
     let currentFilter = 'all';
+    let currentAssetFilter = 'all'; // فلتر العملات للسجل
 
     let maxSL = localStorage.getItem('maxSL') || '50';
+    let brokerTZ = localStorage.getItem('brokerTZ') || '3'; // GMT+3 default
     let enabledSessions = JSON.parse(localStorage.getItem('enabledSessions')) || { sydney: true, tokyo: true, london: true, ny: true };
 
-    let activeTrades = {};
+    let activeTrades = {}; 
     let tradeHistory = [];
     let notifications = [];
     let autoLogs = [];
     let generalTrend = "NEUTRAL";
     let journalEntryId = null;
+    let chartCache = {}; // لحماية الـ API
 
-    // ---------- Pip helpers (FIX #3) ----------
     function getPipSize(asset) {
       if (asset === 'EUR/USD') return 0.0001;
-      if (asset === 'BTC/USD') return 1.0;     // change to 0.1 if your broker uses 0.1
-      return 0.10;                              // XAU/USD
+      if (asset === 'BTC/USD') return 1.0; 
+      return 0.10; 
     }
     function toPips(diff, asset) { return diff / getPipSize(asset); }
     function getTradeKey(asset, tf) { return `${asset}__${tf}`; }
+    
+    // لحساب الربح والخسارة بالدولار (لـ 0.02 لوت)
+    function getPipValue(asset) {
+        if (asset === 'XAU/USD') return 0.20;  // 0.02 lot = $0.20 per pip
+        if (asset === 'EUR/USD') return 0.20;  // 0.02 lot = $0.20 per pip
+        if (asset === 'BTC/USD') return 0.20;  // 0.02 lot = $0.20 per pip (approx)
+        return 0.20;
+    }
 
-    // ---------- Migration: convert old tf-only keys to asset__tf keys ----------
     function migrateLocalStorage() {
       try {
         const old = JSON.parse(localStorage.getItem('activeTrades')) || {};
@@ -418,7 +456,6 @@
     }
     migrateLocalStorage();
 
-    // ---------- News (FIX #2) ----------
     let newsCache = null;
     let newsCacheTime = 0;
 
@@ -426,9 +463,22 @@
       const now = Date.now();
       if (newsCache && (now - newsCacheTime) < 15 * 60 * 1000) return newsCache;
       try {
-        const r = await fetch('https://nfs.faireconomy.media/ff_calendar_thisweek.json');
-        const all = await r.json();
-        newsCache = all.filter(e => e.country === 'USD' && (e.impact === 'High' || e.impact === 'Medium'));
+        const r = await fetch('https://nfs.faireconomy.media/ff_calendar_thisweek.json?t=' + now);
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        let all = await r.json();
+        if (!Array.isArray(all)) {
+           if (all && Array.isArray(all.data)) all = all.data;
+           else throw new Error("Invalid format");
+        }
+        
+        // فلترة الأخبار بناءً على العملة الحالية
+        let targetCurrencies = ['USD'];
+        if (currentAsset === 'EUR/USD') targetCurrencies.push('EUR');
+
+        newsCache = all.filter(e => 
+          (targetCurrencies.includes(e.country) || targetCurrencies.includes(e.currency)) && 
+          (e.impact === 'High' || e.impact === 'Medium' || e.impact === 'high' || e.impact === 'medium')
+        );
         newsCacheTime = now;
         return newsCache;
       } catch (e) {
@@ -441,10 +491,21 @@
       const now = new Date();
       for (const n of news) {
         const t = new Date(n.date);
+        if (isNaN(t.getTime())) continue; 
         const diffMin = (t - now) / 60000;
         if (diffMin > -minutesAfter && diffMin < minutesBefore) return n;
       }
       return null;
+    }
+
+    function getBrokerTimeStr(dateStr) {
+        const d = new Date(dateStr);
+        if (isNaN(d)) return "N/A";
+        // تحويل التوقيت حسب البروكر
+        const utcMs = d.getTime() + d.getTimezoneOffset() * 60000;
+        const brokerMs = utcMs + (parseInt(brokerTZ) * 3600000);
+        const bDate = new Date(brokerMs);
+        return bDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
 
     async function renderNewsPanel() {
@@ -454,15 +515,14 @@
       const news = await fetchHighImpactNews();
       const now = new Date();
 
-      // Upcoming today or tomorrow, capped at 5
       const upcoming = news
         .map(n => ({ ...n, t: new Date(n.date) }))
-        .filter(n => n.t >= new Date(now.getTime() - 60 * 60 * 1000))
+        .filter(n => !isNaN(n.t) && n.t >= new Date(now.getTime() - 2 * 60 * 60 * 1000))
         .sort((a, b) => a.t - b.t)
         .slice(0, 5);
 
       if (upcoming.length === 0) {
-        list.innerHTML = '<div style="font-size:11px;color:#666;">No USD high/medium news in the near future.</div>';
+        list.innerHTML = '<div style="font-size:11px;color:#666;">No relevant news in the near future.</div>';
         status.innerText = 'Clear ✅';
         status.style.color = '#26a69a';
         return;
@@ -472,30 +532,38 @@
       let hasBlocked = false;
       for (const n of upcoming) {
         const diffMin = Math.round((n.t - now) / 60000);
-        let timeLabel;
-        if (diffMin < -60) timeLabel = `${Math.abs(Math.round(diffMin / 60))}h ago`;
-        else if (diffMin < 0) timeLabel = `${Math.abs(diffMin)}m ago`;
-        else if (diffMin < 60) timeLabel = `in ${diffMin}m`;
-        else timeLabel = `in ${Math.round(diffMin / 60)}h`;
+        let timeLabel = "";
+        let timeColor = '#888';
+        
+        const bTime = getBrokerTimeStr(n.date);
 
-        const blocked = diffMin > -30 && diffMin < 30;
-        if (blocked) hasBlocked = true;
+        if (diffMin < 0) {
+            timeLabel = `${Math.abs(diffMin)}m ago (${bTime})`;
+        } else if (diffMin < 120) {
+            timeLabel = `in ${diffMin}m (${bTime})`;
+            timeColor = diffMin < 30 ? '#ef5350' : '#ffd700'; 
+        } else {
+            timeLabel = `in ${Math.round(diffMin / 60)}h (${bTime})`;
+        }
 
-        const cls = n.impact === 'High' ? 'high' : 'medium';
+        const isBlocked = diffMin > -30 && diffMin < 30;
+        if (isBlocked) hasBlocked = true;
+
+        const cls = (n.impact === 'High' || n.impact === 'high') ? 'high' : 'medium';
         html += `
-          <div class="news-item ${cls} ${blocked ? 'blocked' : ''}">
+          <div class="news-item ${cls} ${isBlocked ? 'blocked' : ''}">
             <div>
               <div style="font-weight:700;">${n.title}</div>
-              <div style="font-size:10px; color:#888;">${n.country} · <span class="news-impact-badge ${cls}">${n.impact}</span></div>
+              <div style="font-size:10px; color:#888;">${n.country || n.currency} · <span class="news-impact-badge ${cls}">${n.impact}</span></div>
             </div>
-            <div class="news-time">${timeLabel}</div>
+            <div class="news-time" style="color: ${timeColor};">${timeLabel}</div>
           </div>
         `;
       }
       list.innerHTML = html;
 
       if (hasBlocked) {
-        status.innerText = '⛔ Blocked';
+        status.innerText = '⛔ Blocked (News)';
         status.style.color = '#ef5350';
       } else {
         status.innerText = 'Clear ✅';
@@ -503,7 +571,6 @@
       }
     }
 
-    // ---------- Supabase ----------
     window.onload = function() {
       supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
       const hash = window.location.hash;
@@ -539,8 +606,9 @@
       const email = document.getElementById('emailInput').value;
       const password = document.getElementById('passwordInput').value;
       if (!email || !password) return alert('Please enter email and password.');
-      const { error } = await supabaseClient.auth.signUp({
-        email, password,
+      const { error } = await supabaseClient.auth.signUp({ 
+        email, 
+        password,
         options: { data: { tries_left: 9999, is_pro: true } }
       });
       if (error) alert("Sign Up Error: " + error.message);
@@ -564,8 +632,8 @@
       if (error) alert("Error: " + error.message);
       else {
         alert('Password updated successfully! You are now logged in.');
-        isRecoveryMode = false;
-        window.history.replaceState(null, null, window.location.pathname);
+        isRecoveryMode = false; 
+        window.history.replaceState(null, null, window.location.pathname); 
         checkUser();
       }
     }
@@ -583,14 +651,15 @@
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('appContent').style.display = 'block';
         document.getElementById('userEmail').innerText = session.user.email;
-
+        
         await loadUserData(session.user.id);
 
         renderNotifBadge();
         renderAutoLogs();
         initApp();
-
+        
         document.getElementById('maxSLFilter').value = maxSL;
+        document.getElementById('brokerTZFilter').value = brokerTZ;
         document.getElementById('chk-sydney').checked = enabledSessions.sydney;
         document.getElementById('chk-tokyo').checked = enabledSessions.tokyo;
         document.getElementById('chk-london').checked = enabledSessions.london;
@@ -598,7 +667,7 @@
 
         await updateGeneralTrend();
 
-        startAutopilot();
+        startAutopilot(); 
         startLiveTracking();
       } else {
         document.getElementById('loginScreen').style.display = 'flex';
@@ -606,89 +675,62 @@
       }
     }
 
-    // ---------- Cloud load (FIX #1) ----------
     async function loadUserData(userId) {
-      // History
-      const { data: histData } = await supabaseClient
-        .from('trade_history').select('*').eq('user_id', userId)
-        .order('created_at', { ascending: false });
-      if (histData) {
-        tradeHistory = histData.map(t => ({
-          id: t.id,
-          asset: t.asset || 'XAU/USD',
-          dir: t.direction, entry: t.entry, sl: t.sl,
-          tp1: t.tp1, tp2: t.tp2, tf: t.tf,
-          result: t.result, exitPrice: t.exit_price,
-          date: t.date, journal: t.journal
-        }));
-        localStorage.setItem('tradeHistory', JSON.stringify(tradeHistory));
-      }
+        const { data: histData } = await supabaseClient.from('trade_history').select('*').eq('user_id', userId).order('created_at', { ascending: false });
+        if (histData) {
+            tradeHistory = histData.map(t => ({
+                id: t.id, asset: t.asset || 'XAU/USD', dir: t.direction, entry: t.entry, sl: t.sl, tp1: t.tp1, tp2: t.tp2, tf: t.tf, result: t.result, exitPrice: t.exit_price, date: t.date, journal: t.journal
+            }));
+            localStorage.setItem('tradeHistory', JSON.stringify(tradeHistory));
+        }
 
-      // Active trades — keyed by asset__tf so refresh works and asset switches are isolated
-      const { data: activeData } = await supabaseClient
-        .from('active_trades').select('*').eq('user_id', userId);
-      if (activeData) {
-        activeTrades = {};
-        activeData.forEach(t => {
-          const asset = t.asset || 'XAU/USD';
-          const key = getTradeKey(asset, t.tf);
-          activeTrades[key] = {
-            id: t.id, asset,
-            dir: t.direction, entry: t.entry, sl: t.sl,
-            tp1: t.tp1, tp2: t.tp2, tf: t.tf,
-            status: t.status, date: t.date, tp1Hit: t.tp1_hit
-          };
-        });
-        localStorage.setItem('activeTrades', JSON.stringify(activeTrades));
-      }
+        const { data: activeData } = await supabaseClient.from('active_trades').select('*').eq('user_id', userId);
+        if (activeData) {
+            activeTrades = {};
+            activeData.forEach(t => {
+                const asset = t.asset || 'XAU/USD';
+                const key = getTradeKey(asset, t.tf);
+                activeTrades[key] = { id: t.id, asset, dir: t.direction, entry: t.entry, sl: t.sl, tp1: t.tp1, tp2: t.tp2, tf: t.tf, status: t.status, date: t.date, tp1Hit: t.tp1_hit };
+            });
+            localStorage.setItem('activeTrades', JSON.stringify(activeTrades));
+        }
     }
 
     async function saveActiveTradeToCloud(trade) {
-      if (!supabaseClient) return;
-      const { data: { session } } = await supabaseClient.auth.getSession();
-      if (!session) return;
-      await supabaseClient.from('active_trades').upsert({
-        id: trade.id,
-        user_id: session.user.id,
-        asset: trade.asset || currentAsset,
-        direction: trade.dir,
-        entry: trade.entry, sl: trade.sl, tp1: trade.tp1, tp2: trade.tp2,
-        tf: trade.tf, status: trade.status, date: trade.date, tp1_hit: trade.tp1Hit
-      });
+        if (!supabaseClient) return;
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (!session) return;
+
+        await supabaseClient.from('active_trades').upsert({
+            id: trade.id, user_id: session.user.id, asset: trade.asset || currentAsset, direction: trade.dir, entry: trade.entry, sl: trade.sl, tp1: trade.tp1, tp2: trade.tp2, tf: trade.tf, status: trade.status, date: trade.date, tp1_hit: trade.tp1Hit
+        });
     }
 
     async function deleteActiveTradeFromCloud(key) {
-      if (!supabaseClient) return;
-      const { data: { session } } = await supabaseClient.auth.getSession();
-      if (!session) return;
-      const [asset, tf] = key.split('__');
-      await supabaseClient.from('active_trades')
-        .delete()
-        .eq('user_id', session.user.id)
-        .eq('asset', asset)
-        .eq('tf', tf);
+        if (!supabaseClient) return;
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (!session) return;
+        const [asset, tf] = key.split('__');
+        await supabaseClient.from('active_trades').delete().eq('user_id', session.user.id).eq('asset', asset).eq('tf', tf);
     }
 
     async function saveHistoryToCloud(trade) {
-      if (!supabaseClient) return;
-      const { data: { session } } = await supabaseClient.auth.getSession();
-      if (!session) return;
-      await supabaseClient.from('trade_history').insert({
-        user_id: session.user.id,
-        asset: trade.asset || currentAsset,
-        direction: trade.dir, entry: trade.entry, sl: trade.sl, tp1: trade.tp1, tp2: trade.tp2,
-        tf: trade.tf, result: trade.result, exit_price: trade.exitPrice,
-        date: trade.date, journal: trade.journal || ""
-      });
+        if (!supabaseClient) return;
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (!session) return;
+
+        await supabaseClient.from('trade_history').insert({
+            user_id: session.user.id, asset: trade.asset || currentAsset, direction: trade.dir, entry: trade.entry, sl: trade.sl, tp1: trade.tp1, tp2: trade.tp2, tf: trade.tf, result: trade.result, exit_price: trade.exitPrice, date: trade.date, journal: trade.journal || ""
+        });
     }
 
-    // ---------- Filters / Sessions ----------
     function toggleFilters() {
       document.getElementById('filterPanel').classList.toggle('active');
     }
 
     function saveFilters() {
       maxSL = document.getElementById('maxSLFilter').value;
+      brokerTZ = document.getElementById('brokerTZFilter').value;
       enabledSessions = {
         sydney: document.getElementById('chk-sydney').checked,
         tokyo: document.getElementById('chk-tokyo').checked,
@@ -696,7 +738,9 @@
         ny: document.getElementById('chk-ny').checked
       };
       localStorage.setItem('maxSL', maxSL);
+      localStorage.setItem('brokerTZ', brokerTZ);
       localStorage.setItem('enabledSessions', JSON.stringify(enabledSessions));
+      renderNewsPanel(); // تحديث الأخبار حسب التوقيت الجديد
     }
 
     function getActiveSessions() {
@@ -710,51 +754,52 @@
       };
     }
 
-    function updateSessionUI() {
-      // reserved (kept for compatibility)
-    }
-
-    // ---------- Trends ----------
     async function updateGeneralTrend() {
-      const tfs = ['15min', '30min', '1h', '4h', '1day'];
-      const ids = ['t-m15', 't-m30', 't-h1', 't-h4', 't-d1'];
-      let bullCount = 0, bearCount = 0;
+        const tfs = ['15min', '30min', '1h', '4h', '1day'];
+        const ids = ['t-m15', 't-m30', 't-h1', 't-h4', 't-d1'];
+        let bullCount = 0;
+        let bearCount = 0;
 
-      for (let i = 0; i < tfs.length; i++) {
-        try {
-          const res = await fetch(`https://api.twelvedata.com/time_series?symbol=${currentAsset}&interval=${tfs[i]}&outputsize=200&apikey=${TWELVEDATA_API_KEY}`);
-          const json = await res.json();
-          if (json.status === 'error' || !json.values) continue;
-          const closes = json.values.map(v => parseFloat(v.close)).reverse();
-          if (closes.length < 200) continue;
-          const ema50 = closes.slice(-50).reduce((a, b) => a + b, 0) / 50;
-          const ema200 = closes.slice(-200).reduce((a, b) => a + b, 0) / 200;
-          const price = closes[closes.length - 1];
-          const el = document.getElementById(ids[i]);
-          if (!el) continue;
-          if (price > ema50 && ema50 > ema200) { el.className = "trend-box bull"; bullCount++; }
-          else if (price < ema50 && ema50 < ema200) { el.className = "trend-box bear"; bearCount++; }
-          else el.className = "trend-box";
-        } catch (e) { /* ignore */ }
-      }
+        for (let i = 0; i < tfs.length; i++) {
+            try {
+              const res = await fetch(`https://api.twelvedata.com/time_series?symbol=${currentAsset}&interval=${tfs[i]}&outputsize=200&apikey=${TWELVEDATA_API_KEY}`);
+              const json = await res.json();
+              if (json.status === 'error' || !json.values) continue;
+              const closes = json.values.map(v => parseFloat(v.close)).reverse();
+              if (closes.length < 200) continue;
+              const ema50 = closes.slice(-50).reduce((a, b) => a + b, 0) / 50;
+              const ema200 = closes.slice(-200).reduce((a, b) => a + b, 0) / 200;
+              const currentPrice = closes[closes.length - 1];
 
-      const bar = document.getElementById('generalTrendBar');
-      if (bullCount >= 3) {
-        generalTrend = "BULLISH";
-        bar.className = "general-trend-bar bull";
-        bar.innerText = `GENERAL TREND: BULLISH (${bullCount}/5)`;
-      } else if (bearCount >= 3) {
-        generalTrend = "BEARISH";
-        bar.className = "general-trend-bar bear";
-        bar.innerText = `GENERAL TREND: BEARISH (${bearCount}/5)`;
-      } else {
-        generalTrend = "NEUTRAL";
-        bar.className = "general-trend-bar";
-        bar.innerText = `GENERAL TREND: NEUTRAL / RANGING`;
-      }
+              const el = document.getElementById(ids[i]);
+              if (currentPrice > ema50 && ema50 > ema200) {
+                  el.className = "trend-box bull";
+                  bullCount++;
+              } else if (currentPrice < ema50 && ema50 < ema200) {
+                  el.className = "trend-box bear";
+                  bearCount++;
+              } else {
+                  el.className = "trend-box";
+              }
+            } catch(e) {}
+        }
+
+        const trendBar = document.getElementById('generalTrendBar');
+        if (bullCount >= 3) {
+            generalTrend = "BULLISH";
+            trendBar.className = "general-trend-bar bull";
+            trendBar.innerText = `GENERAL TREND: BULLISH (${bullCount}/5)`;
+        } else if (bearCount >= 3) {
+            generalTrend = "BEARISH";
+            trendBar.className = "general-trend-bar bear";
+            trendBar.innerText = `GENERAL TREND: BEARISH (${bearCount}/5)`;
+        } else {
+            generalTrend = "NEUTRAL";
+            trendBar.className = "general-trend-bar";
+            trendBar.innerText = `GENERAL TREND: NEUTRAL / RANGING`;
+        }
     }
 
-    // ---------- i18n ----------
     const dict = {
       en: { analyze: "⚡ ANALYZE MARKET", loading: "Press Analyze to scan, or wait for Auto.", scanning: "Scanning FVG & OB...", buy: "BUY LIMIT", sell: "SELL LIMIT", activeBuy: "ACTIVE BUY", activeSell: "ACTIVE SELL", tp1hit: "TP1 HIT", pending: "PENDING (WAIT)", entry: "SNIPER ENTRY", sl: "STOP LOSS", tp1: "TAKE PROFIT 1", tp2: "TAKE PROFIT 2", live: "Live", account: "Account", history: "History", auto: "Auto", noHistory: "No previous trades yet.", waitBuy: "WAITING FOR BUY AT", waitSell: "WAITING FOR SELL AT" },
       ar: { analyze: "⚡ تحليل السوق", loading: "اضغط تحليل، أو انتظر الأوتو.", scanning: "جاري تحليل FVG و OB...", buy: "شراء معلق", sell: "بيع معلق", activeBuy: "شراء نشط", activeSell: "بيع نشط", tp1hit: "تم تحقيق الهدف 1", pending: "معلق (انتظار)", entry: "الدخول", sl: "وقف خسارة", tp1: "هدف 1", tp2: "هدف 2", live: "مباشر", account: "الحساب", history: "السجل", auto: "أوتو", noHistory: "لا يوجد صفقات سابقة.", waitBuy: "في انتظار شراء عند", waitSell: "في انتظار بيع عند" }
@@ -764,18 +809,18 @@
       document.getElementById('langBtn2').innerText = currentLang === 'en' ? 'AR' : 'EN';
       if (currentLang === 'ar') document.getElementById('mainBody').classList.add('rtl');
       else document.getElementById('mainBody').classList.remove('rtl');
-
+      
       const el = document.getElementById('loadingText');
       if (el) el.innerText = dict[currentLang].loading;
-
+      
       const navs = document.querySelectorAll('.nav-text');
       if (navs[0]) navs[0].innerText = dict[currentLang].live;
       if (navs[1]) navs[1].innerText = dict[currentLang].auto;
       if (navs[2]) navs[2].innerText = dict[currentLang].history;
       if (navs[3]) navs[3].innerText = dict[currentLang].account;
-
+      
       const key = getTradeKey(currentAsset, currentTF);
-      if (activeTrades[key]) renderTradeCard(activeTrades[key]);
+      if (activeTrades[key]) renderTradeCard(activeTrades[key]); 
       renderHistoryList();
     }
 
@@ -785,10 +830,9 @@
       applyLanguage();
     }
 
-    // ---------- App init ----------
     function initApp() {
-      if (chart) return;
-
+      if (chart) return; 
+      
       chart = LightweightCharts.createChart(document.getElementById('chart-container'), {
         layout: { background: { type: 'solid', color: '#000000' }, textColor: '#888' },
         grid: { vertLines: { color: '#111' }, horzLines: { color: '#111' } },
@@ -797,19 +841,17 @@
         autoSize: true,
       });
       candleSeries = chart.addCandlestickSeries({
-        upColor: '#ffd700', downColor: '#555',
-        borderUpColor: '#ffd700', borderDownColor: '#555',
-        wickUpColor: '#ffd700', wickDownColor: '#555',
+        upColor: '#ffd700', downColor: '#555', borderUpColor: '#ffd700', borderDownColor: '#555', wickUpColor: '#ffd700', wickDownColor: '#555',
       });
-
+      
       applyLanguage();
-
+      
       setTimeout(async () => {
         await loadChartData(currentTF);
         const key = getTradeKey(currentAsset, currentTF);
-        if (activeTrades[key]) {
-          renderTradeCard(activeTrades[key]);
-          drawTradeLines(activeTrades[key]);
+        if (activeTrades[key]) { 
+            renderTradeCard(activeTrades[key]); 
+            drawTradeLines(activeTrades[key]);
         }
       }, 150);
     }
@@ -819,21 +861,17 @@
       document.getElementById('page-' + tabId).classList.add('active');
       document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
       element.classList.add('active');
-
+      
       if (tabId === 'live' && chart) {
         setTimeout(() => chart.applyOptions({ width: document.getElementById('chart-container').clientWidth }), 50);
       }
     }
 
-    // ---------- Asset switch (FIX #4) ----------
     function changeAsset() {
       currentAsset = document.getElementById('assetSelector').value;
-
-      // clear old lines from previous asset's chart
       priceLines.forEach(l => candleSeries.removePriceLine(l));
       priceLines = [];
-      document.getElementById('signalBox').innerHTML =
-        `<div class="loading">${dict[currentLang].loading}</div>`;
+      document.getElementById('signalBox').innerHTML = `<div class="loading">${dict[currentLang].loading}</div>`;
 
       loadChartData(currentTF).then(() => {
         const key = getTradeKey(currentAsset, currentTF);
@@ -843,83 +881,102 @@
         }
       });
       updateGeneralTrend();
+      renderNewsPanel(); // تحديث الأخبار للعملة الجديدة
     }
 
-    // ---------- TF switch (key-aware) ----------
     function selectTF(tf, btn) {
       currentTF = tf;
       document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      loadChartData(tf);
-
+      loadChartData(tf); 
+      
       const key = getTradeKey(currentAsset, currentTF);
       if (activeTrades[key]) {
         renderTradeCard(activeTrades[key]);
         drawTradeLines(activeTrades[key]);
       } else {
-        document.getElementById('signalBox').innerHTML =
-          `<div class="loading">${dict[currentLang].loading}</div>`;
+        document.getElementById('signalBox').innerHTML = `<div class="loading">${dict[currentLang].loading}</div>`;
         priceLines.forEach(l => candleSeries.removePriceLine(l));
         priceLines = [];
       }
     }
 
     async function loadChartData(tf) {
+      const errEl = document.getElementById('chartError');
+      if (errEl) errEl.style.display = 'none';
+      
+      const cacheKey = `${currentAsset}_${tf}`;
+      const now = Date.now();
+      
+      // استخدام الكاش لمدة 60 ثانية لتخفيف الضغط
+      if (chartCache[cacheKey] && (now - chartCache[cacheKey].time < 60000) && !isManualRefresh) {
+        candleSeries.setData(chartCache[cacheKey].bars);
+        chart.timeScale().setVisibleLogicalRange({ from: chartCache[cacheKey].bars.length - 60, to: chartCache[cacheKey].bars.length + 10 });
+        return chartCache[cacheKey].bars;
+      }
+
       try {
         const res = await fetch(`https://api.twelvedata.com/time_series?symbol=${currentAsset}&interval=${tf}&outputsize=300&apikey=${TWELVEDATA_API_KEY}`);
         const data = await res.json();
-        if (data.status === 'error' || !data.values) return null;
+
+        if (data.status === 'error' || !data.values) {
+          if (errEl) { errEl.innerText = "⚠️ " + (data.message || "Failed to load chart."); errEl.style.display = 'block'; }
+          return null;
+        }
 
         const bars = data.values.map(item => ({
           time: new Date(item.datetime).getTime() / 1000,
-          open: parseFloat(item.open),
-          high: parseFloat(item.high),
-          low: parseFloat(item.low),
+          open: parseFloat(item.open), 
+          high: parseFloat(item.high), 
+          low: parseFloat(item.low), 
           close: parseFloat(item.close)
-        })).reverse();
+        })).reverse(); 
 
+        chartCache[cacheKey] = { bars, time: now };
         candleSeries.setData(bars);
         chart.timeScale().setVisibleLogicalRange({ from: bars.length - 60, to: bars.length + 10 });
+
         return bars;
-      } catch (e) { return null; }
-    }
-
-    // ---------- SMC ----------
-    function findSMCSetup(bars) {
-      let setup = null;
-      for (let i = bars.length - 3; i >= Math.max(0, bars.length - 30); i--) {
-        const c1 = bars[i], c3 = bars[i + 2];
-        if (!c1 || !c3) continue;
-
-        if (c1.high < c3.low) {
-          if (generalTrend === "BULLISH" || generalTrend === "NEUTRAL") {
-            setup = { dir: "BUY", entry: c1.high, sl: c1.low - getPipSize(currentAsset) * 5 };
-            break;
-          }
-        }
-        if (c1.low > c3.high) {
-          if (generalTrend === "BEARISH" || generalTrend === "NEUTRAL") {
-            setup = { dir: "SELL", entry: c1.low, sl: c1.high + getPipSize(currentAsset) * 5 };
-            break;
-          }
-        }
+      } catch (e) { 
+        if (errEl) { errEl.innerText = "⚠️ Network Error."; errEl.style.display = 'block'; }
+        return null; 
       }
-      return setup;
     }
 
-    // ---------- Analyze (FIX #2, #3, #4) ----------
+    function findSMCSetup(bars) {
+        let setup = null;
+        for (let i = bars.length - 3; i >= Math.max(0, bars.length - 30); i--) {
+            const c1 = bars[i];
+            const c3 = bars[i + 2];
+            if (!c1 || !c3) continue;
+
+            if (c1.high < c3.low) {
+                if (generalTrend === "BULLISH" || generalTrend === "NEUTRAL") {
+                    setup = { dir: "BUY", entry: c1.high, sl: c1.low - getPipSize(currentAsset) * 5 };
+                    break;
+                }
+            }
+            if (c1.low > c3.high) {
+                if (generalTrend === "BEARISH" || generalTrend === "NEUTRAL") {
+                    setup = { dir: "SELL", entry: c1.low, sl: c1.high + getPipSize(currentAsset) * 5 };
+                    break;
+                }
+            }
+        }
+        return setup;
+    }
+
     async function startAnalysis() {
       const signalBox = document.getElementById('signalBox');
       const btn = document.getElementById('btnAnalyze');
       btn.disabled = true;
       signalBox.innerHTML = `<div class="loading" style="color:#ffd700; font-weight:700;">${dict[currentLang].scanning}</div>`;
-
+      
       await new Promise(r => setTimeout(r, 800));
 
-      // News gate
       const blockedNews = await getBlockingNews(30, 30);
       if (blockedNews) {
-        signalBox.innerHTML = `<div class="loading text-red">⛔ USD ${blockedNews.impact} news soon: ${blockedNews.title}. Wait until it passes.</div>`;
+        signalBox.innerHTML = `<div class="loading text-red">⛔ News soon: ${blockedNews.title}. Wait until it passes.</div>`;
         btn.disabled = false;
         return;
       }
@@ -930,10 +987,10 @@
         await deleteActiveTradeFromCloud(key);
         localStorage.setItem('activeTrades', JSON.stringify(activeTrades));
       }
-
+      
       priceLines.forEach(l => candleSeries.removePriceLine(l));
       priceLines = [];
-
+      
       const bars = await loadChartData(currentTF);
       if (!bars || bars.length === 0) {
         signalBox.innerHTML = `<div class="loading text-red">Failed to load chart.</div>`;
@@ -943,9 +1000,9 @@
 
       const setup = findSMCSetup(bars);
       if (!setup) {
-        signalBox.innerHTML = `<div class="loading text-red">No valid setup found for current trend.</div>`;
-        btn.disabled = false;
-        return;
+          signalBox.innerHTML = `<div class="loading text-red">No valid setup found for current trend.</div>`;
+          btn.disabled = false;
+          return;
       }
 
       let { dir, entry, sl } = setup;
@@ -954,30 +1011,22 @@
       const maxSLPrice = maxSLPips * pipSize;
 
       if (Math.abs(entry - sl) > maxSLPrice) {
-        sl = dir === 'BUY' ? entry - maxSLPrice : entry + maxSLPrice;
+          sl = dir === 'BUY' ? entry - maxSLPrice : entry + maxSLPrice;
       }
 
       const slPips = toPips(Math.abs(entry - sl), currentAsset);
       if (slPips > maxSLPips) {
-        signalBox.innerHTML = `<div class="loading text-red">Setup SL (${slPips.toFixed(0)} pips) is bigger than filter.</div>`;
-        btn.disabled = false;
-        return;
+          signalBox.innerHTML = `<div class="loading text-red">Setup SL too wide.</div>`;
+          btn.disabled = false;
+          return;
       }
 
       const risk = Math.abs(entry - sl);
-      const tp1 = dir === 'BUY' ? entry + risk * 1.5 : entry - risk * 1.5;
-      const tp2 = dir === 'BUY' ? entry + risk * 3.5 : entry - risk * 3.5;
+      const tp1 = dir === 'BUY' ? entry + (risk * 1.5) : entry - (risk * 1.5);
+      const tp2 = dir === 'BUY' ? entry + (risk * 3.5) : entry - (risk * 3.5);
 
-      activeTrades[key] = {
-        id: Date.now(),
-        asset: currentAsset,
-        dir, entry, sl, tp1, tp2,
-        tf: currentTF,
-        status: 'PENDING',
-        date: new Date().toLocaleString(),
-        tp1Hit: false
-      };
-
+      activeTrades[key] = { id: Date.now(), asset: currentAsset, dir, entry, sl, tp1, tp2, tf: currentTF, status: 'PENDING', date: new Date().toLocaleString(), tp1Hit: false };
+      
       addNotification(dir, entry, sl, tp1, tp2, currentTF, currentAsset);
       await saveActiveTradeToCloud(activeTrades[key]);
       localStorage.setItem('activeTrades', JSON.stringify(activeTrades));
@@ -985,28 +1034,30 @@
       btn.disabled = false;
     }
 
+    let isManualRefresh = false;
     function manualRefresh() {
-      loadChartData(currentTF);
+      isManualRefresh = true;
+      loadChartData(currentTF).then(() => isManualRefresh = false);
       updateGeneralTrend();
       addAutoLog("Manual Refresh Triggered.");
       const key = getTradeKey(currentAsset, currentTF);
       if (activeTrades[key]) renderTradeCard(activeTrades[key]);
     }
 
-    // ---------- Autopilot (FIX #1, #2, #3, #4) ----------
     function startAutopilot() {
       if (autopilotInterval) clearInterval(autopilotInterval);
-
+      
       autopilotInterval = setInterval(async () => {
         const key = getTradeKey(currentAsset, currentTF);
         if (activeTrades[key]) return;
-
+        
         const activeSess = getActiveSessions();
-        const canTradeSession =
+        const canTradeSession = 
           (activeSess.sydney && enabledSessions.sydney) ||
           (activeSess.tokyo && enabledSessions.tokyo) ||
           (activeSess.london && enabledSessions.london) ||
           (activeSess.ny && enabledSessions.ny);
+
         if (!canTradeSession) return;
 
         const blockedNews = await getBlockingNews(30, 30);
@@ -1027,45 +1078,36 @@
         const maxSLPrice = maxSLPips * pipSize;
 
         if (Math.abs(entry - sl) > maxSLPrice) {
-          sl = dir === 'BUY' ? entry - maxSLPrice : entry + maxSLPrice;
+            sl = dir === 'BUY' ? entry - maxSLPrice : entry + maxSLPrice;
         }
 
-        // duplicate filter: recent 5 history entries for THIS asset+tf
         const recentHistory = tradeHistory.slice(-5);
         let isDuplicate = false;
         for (const t of recentHistory) {
-          if ((t.asset || 'XAU/USD') === currentAsset && t.tf === currentTF && Math.abs(t.entry - entry) < pipSize * 10) {
-            isDuplicate = true; break;
-          }
+            if ((t.asset || 'XAU/USD') === currentAsset && t.tf === currentTF && Math.abs(t.entry - entry) < pipSize * 10) {
+                isDuplicate = true; break;
+            }
         }
         if (isDuplicate) return;
 
         const risk = Math.abs(entry - sl);
-        const tp1 = dir === 'BUY' ? entry + risk * 1.5 : entry - risk * 1.5;
-        const tp2 = dir === 'BUY' ? entry + risk * 3.5 : entry - risk * 3.5;
+        const tp1 = dir === 'BUY' ? entry + (risk * 1.5) : entry - (risk * 1.5);
+        const tp2 = dir === 'BUY' ? entry + (risk * 3.5) : entry - (risk * 3.5);
 
-        activeTrades[key] = {
-          id: Date.now(),
-          asset: currentAsset,
-          dir, entry, sl, tp1, tp2,
-          tf: currentTF,
-          status: 'PENDING',
-          date: new Date().toLocaleString(),
-          tp1Hit: false
-        };
+        activeTrades[key] = { id: Date.now(), asset: currentAsset, dir, entry, sl, tp1, tp2, tf: currentTF, status: 'PENDING', date: new Date().toLocaleString(), tp1Hit: false };
         addNotification(dir, entry, sl, tp1, tp2, currentTF, currentAsset);
         await saveActiveTradeToCloud(activeTrades[key]);
         localStorage.setItem('activeTrades', JSON.stringify(activeTrades));
-        addAutoLog(`FVG ${dir} @ ${entry.toFixed(5)} on ${currentAsset} ${currentTF.toUpperCase()} (${generalTrend})`);
-
-        if (document.getElementById('page-live').classList.contains('active') &&
-            document.getElementById('assetSelector').value === currentAsset) {
+        
+        addAutoLog(`Found FVG ${dir} at ${entry.toFixed(5)} on ${currentAsset} ${currentTF.toUpperCase()}`);
+        
+        if (document.getElementById('page-live').classList.contains('active') && document.getElementById('assetSelector').value === currentAsset) {
           renderTradeCard(activeTrades[key]);
         }
-      }, 30000);
+
+      }, 30000); 
     }
 
-    // ---------- Logs ----------
     function addAutoLog(text) {
       autoLogs.unshift({ time: new Date().toLocaleTimeString(), text });
       if (autoLogs.length > 20) autoLogs.pop();
@@ -1087,27 +1129,25 @@
       box.innerHTML = html;
     }
 
-    // ---------- Drawing / Card ----------
     function drawTradeLines(trade) {
       priceLines.forEach(l => candleSeries.removePriceLine(l));
       priceLines = [];
       priceLines.push(candleSeries.createPriceLine({ price: trade.entry, color: '#ffd700', lineWidth: 2, lineStyle: 2, title: 'ENTRY' }));
-      priceLines.push(candleSeries.createPriceLine({ price: trade.sl,   color: '#ef5350', lineWidth: 1, lineStyle: 2, title: 'SL' }));
-      priceLines.push(candleSeries.createPriceLine({ price: trade.tp1,  color: '#26a69a', lineWidth: 1, lineStyle: 2, title: 'TP1' }));
-      priceLines.push(candleSeries.createPriceLine({ price: trade.tp2,  color: '#26a69a', lineWidth: 1, lineStyle: 2, title: 'TP2' }));
+      priceLines.push(candleSeries.createPriceLine({ price: trade.sl, color: '#ef5350', lineWidth: 1, lineStyle: 2, title: 'SL' }));
+      priceLines.push(candleSeries.createPriceLine({ price: trade.tp1, color: '#26a69a', lineWidth: 1, lineStyle: 2, title: 'TP1' }));
+      priceLines.push(candleSeries.createPriceLine({ price: trade.tp2, color: '#26a69a', lineWidth: 1, lineStyle: 2, title: 'TP2' }));
     }
 
     function renderTradeCard(trade) {
       const isBuy = trade.dir === 'BUY';
       const asset = trade.asset || currentAsset;
       const pipSize = getPipSize(asset);
+      const pipVal = getPipValue(asset);
       const dp = asset === 'EUR/USD' ? 5 : 2;
-
+      
       let statusClass = "status-pending";
-      let statusText = trade.dir === 'BUY'
-        ? `${dict[currentLang].waitBuy} ${trade.entry.toFixed(dp)}`
-        : `${dict[currentLang].waitSell} ${trade.entry.toFixed(dp)}`;
-
+      let statusText = trade.dir === 'BUY' ? `${dict[currentLang].waitBuy} ${trade.entry.toFixed(dp)}` : `${dict[currentLang].waitSell} ${trade.entry.toFixed(dp)}`;
+      
       if (trade.tp1Hit) {
         statusClass = "status-tp1";
         statusText = dict[currentLang].tp1hit;
@@ -1115,10 +1155,15 @@
         statusClass = isBuy ? "status-active-buy" : "status-active-sell";
         statusText = isBuy ? dict[currentLang].activeBuy : dict[currentLang].activeSell;
       }
-
+      
       const pipsRisk = Math.round(Math.abs(trade.entry - trade.sl) / pipSize);
       const pipsTP1  = Math.round(Math.abs(trade.tp1 - trade.entry) / pipSize);
       const pipsTP2  = Math.round(Math.abs(trade.tp2 - trade.entry) / pipSize);
+
+      // حساب الخسارة والربح بالدولار لحجم 0.02 لوت
+      const dollarLoss = (pipsRisk * pipVal).toFixed(2);
+      const dollarTP1 = (pipsTP1 * pipVal).toFixed(2);
+      const dollarTP2 = (pipsTP2 * pipVal).toFixed(2);
 
       document.getElementById('signalBox').innerHTML = `
         <div class="signal-card ${isBuy ? '' : 'sell'}">
@@ -1129,38 +1174,70 @@
             </div>
             <div style="font-size: 12px; color: #888; font-weight: 600; text-align: ${currentLang === 'ar' ? 'left' : 'right'};">${trade.tf.toUpperCase()} <br> CHART</div>
           </div>
+          
           <div class="price-grid">
             <div class="price-box"><div class="price-label">${dict[currentLang].entry}</div><div class="price-val text-yellow">${trade.entry.toFixed(dp)}</div></div>
             <div class="price-box"><div class="price-label">${dict[currentLang].sl}</div><div class="price-val text-red">${trade.sl.toFixed(dp)}</div><div class="pips-sub text-red">-${pipsRisk} pips</div></div>
             <div class="price-box tp1"><div class="price-label">${dict[currentLang].tp1}</div><div class="price-val text-green">${trade.tp1.toFixed(dp)}</div><div class="pips-sub text-green">+${pipsTP1} pips</div></div>
             <div class="price-box tp2"><div class="price-label">${dict[currentLang].tp2}</div><div class="price-val text-green">${trade.tp2.toFixed(dp)}</div><div class="pips-sub text-green">+${pipsTP2} pips</div></div>
           </div>
-          <button class="btn-copy-signal" onclick="copySignal(${trade.entry}, ${trade.sl}, ${trade.tp1}, ${trade.tp2}, '${trade.dir}', '${asset}')">📋 Copy Trade Plan</button>
+
+          <!-- حاسبة الأرباح والخسائر بالدولار (لـ 0.02 لوت) -->
+          <div class="calc-box">
+            <div class="calc-title">Profit / Loss ($) @ 0.02 Lots</div>
+            <div class="calc-row"><span>Stop Loss:</span> <span class="calc-val-red">-$${dollarLoss}</span></div>
+            <div class="calc-row"><span>Take Profit 1:</span> <span class="calc-val-green">+$${dollarTP1}</span></div>
+            <div class="calc-row"><span>Take Profit 2:</span> <span class="calc-val-green">+$${dollarTP2}</span></div>
+          </div>
+
+          <button class="btn-copy-signal" onclick="copySignal(${trade.entry}, ${trade.sl}, ${trade.tp1}, ${trade.tp2}, '${trade.dir}', '${asset}')">📋 Copy Signal</button>
         </div>
       `;
       drawTradeLines(trade);
     }
 
     function copySignal(entry, sl, tp1, tp2, dir, asset) {
-      const dp = asset === 'EUR/USD' ? 5 : 2;
-      const text = `${asset} ${dir} LIMIT\nEntry: ${entry.toFixed(dp)}\nSL: ${sl.toFixed(dp)}\nTP1: ${tp1.toFixed(dp)}\nTP2: ${tp2.toFixed(dp)}`;
-      navigator.clipboard.writeText(text)
-        .then(() => alert("Trade Plan Copied!"))
-        .catch(() => alert("Failed to copy."));
+        const dp = asset === 'EUR/USD' ? 5 : 2;
+        const text = `🚨 SIGNAL: ${asset} ${dir} LIMIT\n\nEntry: ${entry.toFixed(dp)}\nSL: ${sl.toFixed(dp)}\nTP1: ${tp1.toFixed(dp)}\nTP2: ${tp2.toFixed(dp)}`;
+        navigator.clipboard.writeText(text).then(() => {
+            alert("Signal Copied!");
+        }).catch(err => alert("Failed to copy."));
     }
 
-    // ---------- Notifications ----------
+    function playAlert() {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(880, ctx.currentTime);
+            gain.gain.setValueAtTime(0.1, ctx.currentTime);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.3);
+            // Vibration
+            if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+        } catch (e) {}
+    }
+
     function addNotification(dir, entry, sl, tp1, tp2, tf, asset) {
-      notifications.unshift({ id: Date.now(), dir, entry, sl, tp1, tp2, tf, asset: asset || currentAsset, date: new Date().toLocaleString() });
+      const newNotif = { id: Date.now(), dir, entry, sl, tp1, tp2, tf, asset: asset || currentAsset, date: new Date().toLocaleString() };
+      notifications.unshift(newNotif);
       localStorage.setItem('notifications', JSON.stringify(notifications));
       renderNotifBadge();
       renderNotifList();
+      playAlert(); // إضافة الصوت والرجّة
     }
 
     function renderNotifBadge() {
       const badge = document.getElementById('notifBadge');
-      if (notifications.length > 0) { badge.style.display = 'block'; badge.innerText = notifications.length; }
-      else badge.style.display = 'none';
+      if (notifications.length > 0) {
+        badge.style.display = 'block';
+        badge.innerText = notifications.length;
+      } else {
+        badge.style.display = 'none';
+      }
     }
 
     function renderNotifList() {
@@ -1186,68 +1263,97 @@
       list.innerHTML = html;
     }
 
-    function openNotifications() { document.getElementById('notifModal').style.display = 'flex'; renderNotifList(); }
-    function closeNotifications() { document.getElementById('notifModal').style.display = 'none'; }
+    function openNotifications() {
+      document.getElementById('notifModal').style.display = 'flex';
+      renderNotifList();
+    }
+
+    function closeNotifications() {
+      document.getElementById('notifModal').style.display = 'none';
+    }
+
     function clearAllNotifications() {
       notifications = [];
       localStorage.setItem('notifications', JSON.stringify(notifications));
-      renderNotifBadge(); renderNotifList();
+      renderNotifBadge();
+      renderNotifList();
     }
 
-    // ---------- History ----------
     function setFilter(filter, element) {
       currentFilter = filter;
-      document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.stats-filter .filter-btn').forEach(btn => btn.classList.remove('active'));
+      element.classList.add('active');
+      renderHistoryList();
+    }
+
+    function setAssetFilter(asset, element) {
+      currentAssetFilter = asset;
+      document.querySelectorAll('#page-history > div:nth-child(2) .filter-btn').forEach(btn => btn.classList.remove('active'));
       element.classList.add('active');
       renderHistoryList();
     }
 
     async function clearHistory() {
-      if (!confirm("Are you sure you want to clear all trade history? This cannot be undone.")) return;
-      const { data: { session } } = await supabaseClient.auth.getSession();
-      if (session) {
-        await supabaseClient.from('trade_history').delete().eq('user_id', session.user.id);
+      if (confirm("Are you sure you want to clear all trade history? This cannot be undone.")) {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (session) {
+            await supabaseClient.from('trade_history').delete().eq('user_id', session.user.id);
+        }
+        tradeHistory = [];
+        localStorage.removeItem('tradeHistory');
+        renderHistoryList();
       }
-      tradeHistory = [];
-      localStorage.removeItem('tradeHistory');
-      renderHistoryList();
     }
 
     function renderHistoryList() {
       const list = document.getElementById('historyList');
+      
       let filteredHistory = tradeHistory;
 
+      // فلترة بالتاريخ
       if (currentFilter === 'today') {
         const today = new Date().toLocaleDateString();
-        filteredHistory = tradeHistory.filter(t => (t.date || '').startsWith(today));
+        filteredHistory = filteredHistory.filter(t => (t.date || '').startsWith(today));
       } else if (currentFilter === 'week') {
-        const oneWeekAgo = new Date(); oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-        filteredHistory = tradeHistory.filter(t => new Date(t.date) >= oneWeekAgo);
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+        filteredHistory = filteredHistory.filter(t => new Date(t.date) >= oneWeekAgo);
       }
 
-      let wins = 0, totalPips = 0;
+      // فلترة بالعملة
+      if (currentAssetFilter !== 'all') {
+          filteredHistory = filteredHistory.filter(t => (t.asset || 'XAU/USD') === currentAssetFilter);
+      }
+
+      let wins = 0;
+      let totalPips = 0;
       const totalTrades = filteredHistory.length;
 
       filteredHistory.forEach(t => {
         const pipSize = getPipSize(t.asset || 'XAU/USD');
         const pips = Math.abs(t.exitPrice - t.entry) / pipSize;
-        if (t.result === 'WIN') { wins++; totalPips += pips; }
-        else totalPips -= pips;
+        if (t.result === 'WIN') {
+          wins++;
+          totalPips += pips;
+        } else {
+          totalPips -= pips;
+        }
       });
 
       const winRate = totalTrades > 0 ? ((wins / totalTrades) * 100).toFixed(1) : 0;
+      
       document.getElementById('statWinRate').innerText = winRate + '%';
       document.getElementById('statTotalTrades').innerText = totalTrades;
-
-      const pipsEl = document.getElementById('statTotalPips');
-      pipsEl.innerText = (totalPips > 0 ? '+' : '') + totalPips.toFixed(0);
-      pipsEl.className = totalPips >= 0 ? 'stat-value text-green' : 'stat-value text-red';
+      
+      const pipsElement = document.getElementById('statTotalPips');
+      pipsElement.innerText = (totalPips > 0 ? '+' : '') + totalPips.toFixed(0);
+      pipsElement.className = totalPips >= 0 ? 'stat-value text-green' : 'stat-value text-red';
 
       if (totalTrades === 0) {
         list.innerHTML = `<div class="loading">${dict[currentLang].noHistory}</div>`;
         return;
       }
-
+      
       const sorted = [...filteredHistory].reverse();
       let html = '';
       sorted.forEach(t => {
@@ -1257,7 +1363,7 @@
         const color = isWin ? 'text-green' : 'text-red';
         const sign = isWin ? '+' : '-';
         const pipSize = getPipSize(asset);
-        const pips = Math.round(Math.abs(t.exitPrice - t.entry) / pipSize);
+        const pips = (Math.abs(t.exitPrice - t.entry) / pipSize).toFixed(0);
 
         html += `
           <div class="history-item" onclick="openJournal('${t.id}')">
@@ -1275,14 +1381,13 @@
       list.innerHTML = html;
     }
 
-    // ---------- Journal ----------
     function openJournal(id) {
-      journalEntryId = id;
-      const trade = tradeHistory.find(t => String(t.id) === String(id));
-      if (trade) {
-        document.getElementById('journalInput').value = trade.journal || "";
-        document.getElementById('journalModal').style.display = 'flex';
-      }
+        journalEntryId = id;
+        const trade = tradeHistory.find(t => String(t.id) === String(id));
+        if (trade) {
+            document.getElementById('journalInput').value = trade.journal || "";
+            document.getElementById('journalModal').style.display = 'flex';
+        }
     }
 
     function closeJournal(event) {
@@ -1291,104 +1396,106 @@
     }
 
     async function saveJournal() {
-      const text = document.getElementById('journalInput').value;
-      const idx = tradeHistory.findIndex(t => String(t.id) === String(journalEntryId));
-      if (idx > -1) {
-        tradeHistory[idx].journal = text;
-        localStorage.setItem('tradeHistory', JSON.stringify(tradeHistory));
-
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        if (session) {
-          await supabaseClient.from('trade_history').update({ journal: text }).eq('id', journalEntryId);
+        const text = document.getElementById('journalInput').value;
+        const tradeIndex = tradeHistory.findIndex(t => String(t.id) === String(journalEntryId));
+        if (tradeIndex > -1) {
+            tradeHistory[tradeIndex].journal = text;
+            localStorage.setItem('tradeHistory', JSON.stringify(tradeHistory));
+            
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session) {
+                await supabaseClient.from('trade_history').update({ journal: text }).eq('id', journalEntryId);
+            }
+            alert('Journal saved!');
         }
-        alert('Journal saved!');
-      }
-      document.getElementById('journalModal').style.display = 'none';
+        document.getElementById('journalModal').style.display = 'none';
     }
 
-    // ---------- Live tracking (FIX #1, #3, #4) ----------
     function startLiveTracking() {
       if (liveInterval) clearInterval(liveInterval);
-
+      
       liveInterval = setInterval(async () => {
-        const keys = Object.keys(activeTrades);
-        if (keys.length === 0) return;
+        let activeKeys = Object.keys(activeTrades);
+        if (activeKeys.length === 0) return;
+        
+        // جلب الأسعار لكل عملة
+        const assets = [...new Set(activeKeys.map(k => k.split('__')[0]))];
 
-        // group keys by asset
-        const assets = [...new Set(keys.map(k => k.split('__')[0]))];
+        for (let asset of assets) {
+            try {
+                const res = await fetch(`https://api.twelvedata.com/price?symbol=${asset}&apikey=${TWELVEDATA_API_KEY}`);
+                const data = await res.json();
+                
+                if (data.status === 'error' || !data.price) continue; 
+                
+                const livePrice = parseFloat(data.price);
+                
+                const assetKeys = activeKeys.filter(k => k.startsWith(asset + '__'));
+                for (let key of assetKeys) {
+                    let trade = activeTrades[key];
+                    if (!trade) continue;
 
-        for (const asset of assets) {
-          try {
-            const res = await fetch(`https://api.twelvedata.com/price?symbol=${asset}&apikey=${TWELVEDATA_API_KEY}`);
-            const data = await res.json();
-            if (data.status === 'error' || !data.price) continue;
-            const livePrice = parseFloat(data.price);
-            if (!isFinite(livePrice)) continue;
+                    let changed = false;
+                    let result = null;
+                    let exitPrice = 0;
+                    
+                    if (trade.status === 'PENDING') {
+                        if (trade.dir === 'BUY' && livePrice <= trade.entry) { trade.status = 'ACTIVE'; changed = true; }
+                        if (trade.dir === 'SELL' && livePrice >= trade.entry) { trade.status = 'ACTIVE'; changed = true; }
+                    }
 
-            const assetKeys = keys.filter(k => k.startsWith(asset + '__'));
+                    if (trade.status === 'ACTIVE' && !trade.tp1Hit) {
+                        if (trade.dir === 'BUY' && livePrice >= trade.tp1) { trade.tp1Hit = true; changed = true; }
+                        if (trade.dir === 'SELL' && livePrice <= trade.tp1) { trade.tp1Hit = true; changed = true; }
+                    }
 
-            for (const key of assetKeys) {
-              const trade = activeTrades[key];
-              if (!trade) continue;
+                    if (changed) {
+                        await saveActiveTradeToCloud(trade);
+                        localStorage.setItem('activeTrades', JSON.stringify(activeTrades));
+                    }
 
-              let changed = false;
+                    if (trade.dir === 'BUY') {
+                        if (livePrice <= trade.sl) { result = 'LOSS'; exitPrice = trade.sl; }
+                        if (livePrice >= trade.tp2) { result = 'WIN'; exitPrice = trade.tp2; }
+                    } else {
+                        if (livePrice >= trade.sl) { result = 'LOSS'; exitPrice = trade.sl; }
+                        if (livePrice <= trade.tp2) { result = 'WIN'; exitPrice = trade.tp2; }
+                    }
 
-              if (trade.status === 'PENDING') {
-                if (trade.dir === 'BUY' && livePrice <= trade.entry) { trade.status = 'ACTIVE'; changed = true; }
-                if (trade.dir === 'SELL' && livePrice >= trade.entry) { trade.status = 'ACTIVE'; changed = true; }
-              }
-
-              if (trade.status === 'ACTIVE' && !trade.tp1Hit) {
-                if (trade.dir === 'BUY' && livePrice >= trade.tp1) { trade.tp1Hit = true; changed = true; }
-                if (trade.dir === 'SELL' && livePrice <= trade.tp1) { trade.tp1Hit = true; changed = true; }
-              }
-
-              if (changed) {
-                await saveActiveTradeToCloud(trade);
-                localStorage.setItem('activeTrades', JSON.stringify(activeTrades));
-              }
-
-              let result = null, exitPrice = 0;
-              if (trade.dir === 'BUY') {
-                if (livePrice <= trade.sl) { result = 'LOSS'; exitPrice = trade.sl; }
-                if (livePrice >= trade.tp2) { result = 'WIN'; exitPrice = trade.tp2; }
-              } else {
-                if (livePrice >= trade.sl) { result = 'LOSS'; exitPrice = trade.sl; }
-                if (livePrice <= trade.tp2) { result = 'WIN'; exitPrice = trade.tp2; }
-              }
-
-              if (result) {
-                const finished = { ...trade, result, exitPrice };
-                tradeHistory.push(finished);
-                localStorage.setItem('tradeHistory', JSON.stringify(tradeHistory));
-                await saveHistoryToCloud(finished);
-
-                delete activeTrades[key];
-                await deleteActiveTradeFromCloud(key);
-                localStorage.setItem('activeTrades', JSON.stringify(activeTrades));
-
-                if (result === 'WIN') confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
-
-                if (trade.asset === currentAsset && trade.tf === currentTF) {
-                  alert(`TRADE HIT ${result === 'WIN' ? 'TAKE PROFIT 2' : 'STOP LOSS'} on ${asset}!`);
-                  location.reload();
-                } else {
-                  addAutoLog(`${asset} ${trade.tf.toUpperCase()} closed: ${result}`);
+                    if (result) {
+                        const finishedTrade = { ...trade, result: result, exitPrice: exitPrice };
+                        tradeHistory.push(finishedTrade);
+                        localStorage.setItem('tradeHistory', JSON.stringify(tradeHistory));
+                        await saveHistoryToCloud(finishedTrade);
+                        
+                        delete activeTrades[key];
+                        await deleteActiveTradeFromCloud(key);
+                        localStorage.setItem('activeTrades', JSON.stringify(activeTrades));
+                        
+                        if (result === 'WIN') {
+                            confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+                            playAlert();
+                        }
+                        
+                        if (trade.asset === currentAsset && trade.tf === currentTF) {
+                            alert(`SIGNAL HIT ${result === 'WIN' ? 'TAKE PROFIT 2' : 'STOP LOSS'} on ${asset}!`);
+                            location.reload();
+                        } else {
+                            addAutoLog(`${asset} ${trade.tf.toUpperCase()} closed: ${result}`);
+                        }
+                    }
                 }
-              }
-            }
-
-            // update current card display
-            const curKey = getTradeKey(currentAsset, currentTF);
-            if (activeTrades[curKey] && document.getElementById('page-live').classList.contains('active')) {
-              renderTradeCard(activeTrades[curKey]);
-            }
-          } catch (e) { /* ignore */ }
+                
+                const curKey = getTradeKey(currentAsset, currentTF);
+                if (activeTrades[curKey] && document.getElementById('page-live').classList.contains('active')) {
+                    renderTradeCard(activeTrades[curKey]);
+                }
+                
+            } catch (e) { }
         }
-      }, 15000);
+      }, 15000); 
     }
 
-    // ---------- Misc ----------
     function copyWallet() {
       navigator.clipboard.writeText('TLgREYohGVK6V9zUS6gNowq2WjPavmfEj3')
         .then(() => alert('Wallet address copied!'))
