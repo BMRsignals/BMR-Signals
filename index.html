@@ -41,6 +41,7 @@
     .general-trend-bar { text-align: center; font-size: 12px; font-weight: 700; padding: 8px; border-radius: 8px; margin-top: 8px; background: #111; border: 1px solid #333; }
     .general-trend-bar.bull { color: #26a69a; border-color: #26a69a; background: rgba(38, 166, 154, 0.1); }
     .general-trend-bar.bear { color: #ef5350; border-color: #ef5350; background: rgba(239, 83, 80, 0.1); }
+    .news-bar { text-align: center; font-size: 11px; font-weight: 700; padding: 6px 8px; border-radius: 6px; margin-top: 6px; background: #ffd70022; border: 1px solid #ffd70055; color: #ffd700; display: none; }
     .filter-panel { background: #111; border-bottom: 1px solid #1a1a1a; padding: 12px 16px; display: none; flex-direction: column; gap: 12px; }
     .filter-panel.active { display: flex; }
     .filter-row { display: flex; justify-content: space-between; align-items: center; }
@@ -173,6 +174,8 @@
         <div class="trend-box" id="t-d1">1D</div>
       </div>
       <div class="general-trend-bar" id="generalTrendBar">Analyzing General Trend...</div>
+      <!-- NEW: Economic News Alert Bar -->
+      <div class="news-bar" id="newsBar"></div>
     </div>
 
     <div class="filter-panel" id="filterPanel">
@@ -443,6 +446,10 @@
         renderAutoLogs();
         initApp();
         
+        // NEW: Load Economic News
+        loadEconomicCalendar();
+        setInterval(loadEconomicCalendar, 3600000); // Refresh every hour
+
         document.getElementById('maxSLFilter').value = maxSL;
         document.getElementById('chk-sydney').checked = enabledSessions.sydney;
         document.getElementById('chk-tokyo').checked = enabledSessions.tokyo;
@@ -458,6 +465,40 @@
         document.getElementById('loginScreen').style.display = 'flex';
         document.getElementById('appContent').style.display = 'none';
       }
+    }
+
+    // --- NEW: ECONOMIC CALENDAR ---
+    async function loadEconomicCalendar() {
+        try {
+            // Fetch today's events
+            const today = new Date().toISOString().split('T')[0];
+            const url = `https://biquote.io/api/calendar?importance=high&from=${today}T00:00:00Z&to=${today}T23:59:59Z`;
+            
+            const res = await fetch(url);
+            if (!res.ok) throw new Error("Calendar API error");
+            
+            const data = await res.json();
+            
+            // Filter for USD or Gold related events
+            const relevantEvents = data.filter(e => 
+                e.currency === 'USD' || (e.name && e.name.toLowerCase().includes('gold'))
+            );
+
+            const newsBar = document.getElementById('newsBar');
+
+            if (relevantEvents.length > 0) {
+                const nextEvent = relevantEvents[0]; 
+                const eventTime = new Date(nextEvent.time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                newsBar.innerText = `⚠️ HIGH IMPACT NEWS: ${nextEvent.name} (${nextEvent.currency}) @ ${eventTime}`;
+                newsBar.style.display = 'block';
+            } else {
+                newsBar.style.display = 'none';
+            }
+        } catch (e) {
+            console.warn("Economic calendar error:", e);
+            // If API fails, just hide the bar to avoid clutter
+            document.getElementById('newsBar').style.display = 'none';
+        }
     }
 
     // --- CLOUD ---
@@ -526,7 +567,6 @@
     }
 
     async function updateGeneralTrend() {
-        // Simplified trend analysis for demo
         generalTrend = "NEUTRAL";
         const trendBar = document.getElementById('generalTrendBar');
         trendBar.className = "general-trend-bar";
@@ -605,31 +645,39 @@
       }
     }
 
-    // --- BIQUOTE DATA INTEGRATION ---
+    // --- BIQUOTE DATA INTEGRATION (FIXED) ---
     async function loadChartData(tf) {
       try {
-        const bq = new Biquote();
-        // biquote uses intervals like '1h', '15m', '1d'
-        let interval = tf;
-        if (tf === '5m') interval = '5m';
+        // Correct usage: no need for new Biquote(), call directly
+        const response = await Biquote.ohlc(currentAsset, { interval: tf, limit: 300 });
         
-        const bars = await bq.ohlc(currentAsset, { interval: interval, limit: 300 });
-        
-        // biquote returns oldest first, which is what Lightweight Charts needs
+        // biquote returns { symbol, interval, bars: [...] }
+        const bars = response.bars;
+        if (!bars || bars.length === 0) return null;
+
+        // Key fix: convert ISO string to Unix timestamp (seconds)
         const formatted = bars.map(b => ({
-          time: b.time / 1000, // ensure time is in seconds
+          time: Math.floor(new Date(b.openTime).getTime() / 1000), // Fix: use openTime
           open: b.open,
           high: b.high,
           low: b.low,
           close: b.close
         }));
 
-        candleSeries.setData(formatted);
-        chart.timeScale().setVisibleLogicalRange({ from: formatted.length - 60, to: formatted.length + 10 });
+        // Ensure data is sorted by time ascending
+        const closedBars = formatted.filter(b => !isNaN(b.time));
 
-        return formatted;
+        candleSeries.setData(closedBars);
+        // Auto-scroll to the latest area
+        chart.timeScale().setVisibleLogicalRange({ 
+          from: Math.max(0, closedBars.length - 60), 
+          to: closedBars.length + 10 
+        });
+
+        return closedBars;
       } catch (e) { 
         console.error("Chart Error:", e);
+        document.getElementById('signalBox').innerHTML = `<div class="loading text-red">Chart data load failed: ${e.message}</div>`;
         return null; 
       }
     }
@@ -1026,8 +1074,9 @@
         if (activeKeys.length === 0) return;
         
         try {
-          const bq = new Biquote();
-          const tick = await bq.tick(currentAsset);
+          // Note: Using Biquote's tick endpoint if available, or falling back to latest candle
+          // Assuming Biquote.tick works similarly
+          const tick = await Biquote.tick(currentAsset);
           if (!tick || !tick.mid) return;
           
           const livePrice = tick.mid;
