@@ -817,7 +817,7 @@
       return { sydney: utcHour >= 21 || utcHour < 6, tokyo: utcHour >= 0 && utcHour < 9, london: utcHour >= 7 && utcHour < 16, ny: utcHour >= 12 && utcHour < 21 };
     }
 
-    // ---------- Biquote Chart Fetch (Through Direct Worker URL) ----------
+    // ---------- Biquote Chart Fetch (Direct Worker URL) ----------
     async function fetchChartDataFromSource(tf) {
         const intervalMap = { '5min': '5m', '15min': '15m', '30min': '30m', '1h': '1h', '4h': '4h', '1day': '1d' };
         const biTf = intervalMap[tf] || '5m';
@@ -826,7 +826,6 @@
 
         try {
             const targetApi = `https://biquote.io/api/${symbol}/ohlc?interval=${biTf}&limit=300`;
-            // استخدام رابط الـ Worker المباشر
             const res = await fetch(`https://throbbing-sky-4f73.bacharrachiini97.workers.dev/?url=${encodeURIComponent(targetApi)}`);
             
             if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
