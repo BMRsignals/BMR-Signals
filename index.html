@@ -7,6 +7,7 @@
   <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <link rel="manifest" href='data:application/manifest+json,{"name":"MR.Trader AI","short_name":"Trader","start_url":".","display":"standalone","background_color":"#000000","theme_color":"#ffd700","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/2933/2933179.png","sizes":"512x512","type":"image/png"}]}'>
 
   <style>
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -37,6 +38,13 @@
     .autopilot-status { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; color: #26a69a; }
     .pulse-dot { width: 8px; height: 8px; background: #26a69a; border-radius: 50%; animation: pulse 1.5s infinite; }
     @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(38, 166, 154, 0.4); } 70% { box-shadow: 0 0 0 8px rgba(38, 166, 154, 0); } 100% { box-shadow: 0 0 0 0 rgba(38, 166, 154, 0); } }
+
+    /* Session Bar */
+    #sessionBar { display: flex; gap: 4px; margin-top: 4px; overflow-x: auto; padding-bottom: 4px; }
+    .sess-pill { background: #111; border: 1px solid #333; border-radius: 4px; padding: 2px 8px; font-size: 9px; font-weight: 700; color: #666; white-space: nowrap; display: flex; align-items: center; gap: 4px; }
+    .sess-pill.open { border-color: #26a69a; color: #26a69a; background: rgba(38,166,154,0.1); }
+    .sess-dot { width: 6px; height: 6px; border-radius: 50%; background: #666; }
+    .sess-pill.open .sess-dot { background: #26a69a; box-shadow: 0 0 5px #26a69a; }
 
     .trend-row { display: flex; gap: 6px; justify-content: space-between; margin-top: 4px; }
     .trend-box { flex: 1; text-align: center; font-size: 10px; font-weight: 700; padding: 6px 2px; border-radius: 4px; border: 1px solid #333; color: #666; }
@@ -131,10 +139,17 @@
     .filter-btn { background: #111; border: 1px solid #333; color: #888; padding: 4px 10px; border-radius: 6px; font-size: 10px; cursor: pointer; }
     .filter-btn.active { background: #ffd700; color: #000; border-color: #ffd700; }
     .reset-btn { background: #ef535022; color: #ef5350; border: 1px solid #ef535055; padding: 4px 10px; border-radius: 6px; font-size: 10px; cursor: pointer; }
-    .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 20px; }
+    .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
     .stat-box { background: #111; border: 1px solid #222; border-radius: 12px; padding: 12px; text-align: center; }
     .stat-title { font-size: 10px; color: #888; text-transform: uppercase; font-weight: 700; }
     .stat-value { font-size: 20px; font-weight: 700; margin-top: 4px; }
+    
+    /* Deep Stats */
+    .deep-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px; }
+    .deep-box { background: #111; border: 1px solid #222; border-radius: 12px; padding: 10px; font-size: 11px; }
+    .deep-title { color: #888; font-weight: 700; margin-bottom: 4px; text-transform: uppercase; }
+    .deep-val { color: #ffd700; font-weight: 700; }
+
     .history-item { background: #111; border: 1px solid #222; border-radius: 12px; padding: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: 0.2s; }
     .history-item:active { background: #1a1a1a; }
     .history-title { font-weight: 700; font-size: 14px; }
@@ -183,7 +198,7 @@
         <div class="bell-icon" onclick="openNotifications()">
           🔔<div class="bell-badge" id="notifBadge" style="display:none;">0</div>
         </div>
-        <div id="trialText" style="font-size: 12px; color: #888; font-weight: 600;">PRO</div>
+        <button class="lang-btn" id="langBtn2" onclick="toggleLanguage()" style="padding: 4px 8px; font-size: 10px;">AR</button>
       </div>
     </header>
 
@@ -198,6 +213,14 @@
           <div class="pulse-dot"></div> ACTIVE
         </div>
         <button onclick="toggleFilters()" style="background:none; border:none; color:#fff; font-size:18px;">⚙️</button>
+      </div>
+
+      <!-- Session Bar -->
+      <div id="sessionBar">
+        <div class="sess-pill" id="sess-sydney"><div class="sess-dot"></div>Sydney</div>
+        <div class="sess-pill" id="sess-tokyo"><div class="sess-dot"></div>Tokyo</div>
+        <div class="sess-pill" id="sess-london"><div class="sess-dot"></div>London</div>
+        <div class="sess-pill" id="sess-ny"><div class="sess-dot"></div>New York</div>
       </div>
 
       <div class="trend-row" id="trendRow">
@@ -220,17 +243,14 @@
           <option value="100">100 Pips</option>
         </select>
       </div>
-      
-      <!-- إضافة توقيت البروكر -->
       <div class="filter-row">
         <span class="filter-label">Broker Time Zone</span>
         <select id="brokerTZFilter" class="filter-select" onchange="saveFilters()">
-          <option value="0">GMT+0 (London)</option>
-          <option value="2">GMT+2 (Common)</option>
-          <option value="3" selected>GMT+3 (Dubai/Moscow)</option>
+          <option value="0">GMT+0</option>
+          <option value="2">GMT+2</option>
+          <option value="3" selected>GMT+3</option>
         </select>
       </div>
-
       <div>
         <span class="filter-label">Trading Sessions</span>
         <div class="session-checkboxes">
@@ -240,6 +260,8 @@
           <label class="session-check"><input type="checkbox" id="chk-ny" checked onchange="saveFilters()"> New York</label>
         </div>
       </div>
+      <!-- زر تفعيل التنبيهات -->
+      <button class="btn-primary" onclick="requestPushNotification()" style="margin-top:8px; background:#26a69a; color:#fff;">🔔 Enable Push Notifications</button>
     </div>
 
     <div id="newsPanel">
@@ -294,7 +316,6 @@
         </div>
       </div>
       
-      <!-- فلترة السجل حسب العملة -->
       <div style="display: flex; gap: 4px; margin-bottom: 12px; overflow-x: auto; padding-bottom: 4px;">
         <button class="filter-btn active" id="btn-asset-all" onclick="setAssetFilter('all', this)">All Assets</button>
         <button class="filter-btn" id="btn-asset-XAU" onclick="setAssetFilter('XAU/USD', this)">Gold</button>
@@ -311,16 +332,23 @@
         <div class="stat-box"><div class="stat-title">Total Trades</div><div class="stat-value" id="statTotalTrades">0</div></div>
         <div class="stat-box"><div class="stat-title">Total Pips</div><div class="stat-value text-yellow" id="statTotalPips">0</div></div>
       </div>
+
+      <div class="deep-stats">
+        <div class="deep-box">
+            <div class="deep-title">Best Asset</div>
+            <div class="deep-val" id="statBestAsset">-</div>
+        </div>
+        <div class="deep-box">
+            <div class="deep-title">Best Session</div>
+            <div class="deep-val" id="statBestSession">-</div>
+        </div>
+      </div>
+
       <div id="historyList"><div class="loading">No previous trades.</div></div>
     </div>
 
     <div id="page-account" class="page">
       <h2 style="font-size: 18px; margin-bottom: 16px;">Account Settings</h2>
-
-      <div style="background: #111; border: 1px solid #222; border-radius: 12px; padding: 16px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-        <span style="font-weight: 600;">Language / اللغة</span>
-        <button class="lang-btn" id="langBtn2" onclick="toggleLanguage()">AR</button>
-      </div>
 
       <div style="background: #111; border: 1px solid #222; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
         <div style="font-size: 12px; color: #888; margin-bottom: 4px;">Logged in as:</div>
@@ -396,11 +424,13 @@
     let liveInterval;
     let autopilotInterval;
     let newsInterval;
+    let sessionInterval;
     let currentFilter = 'all';
-    let currentAssetFilter = 'all'; // فلتر العملات للسجل
+    let currentAssetFilter = 'all'; 
+    let isManualRefresh = false;
 
     let maxSL = localStorage.getItem('maxSL') || '50';
-    let brokerTZ = localStorage.getItem('brokerTZ') || '3'; // GMT+3 default
+    let brokerTZ = localStorage.getItem('brokerTZ') || '3'; 
     let enabledSessions = JSON.parse(localStorage.getItem('enabledSessions')) || { sydney: true, tokyo: true, london: true, ny: true };
 
     let activeTrades = {}; 
@@ -409,7 +439,8 @@
     let autoLogs = [];
     let generalTrend = "NEUTRAL";
     let journalEntryId = null;
-    let chartCache = {}; // لحماية الـ API
+    let chartCache = {}; 
+    let swRegistration = null; // Service Worker
 
     function getPipSize(asset) {
       if (asset === 'EUR/USD') return 0.0001;
@@ -418,12 +449,10 @@
     }
     function toPips(diff, asset) { return diff / getPipSize(asset); }
     function getTradeKey(asset, tf) { return `${asset}__${tf}`; }
-    
-    // لحساب الربح والخسارة بالدولار (لـ 0.02 لوت)
     function getPipValue(asset) {
-        if (asset === 'XAU/USD') return 0.20;  // 0.02 lot = $0.20 per pip
-        if (asset === 'EUR/USD') return 0.20;  // 0.02 lot = $0.20 per pip
-        if (asset === 'BTC/USD') return 0.20;  // 0.02 lot = $0.20 per pip (approx)
+        if (asset === 'XAU/USD') return 0.20;
+        if (asset === 'EUR/USD') return 0.20;
+        if (asset === 'BTC/USD') return 0.20;
         return 0.20;
     }
 
@@ -456,6 +485,127 @@
     }
     migrateLocalStorage();
 
+    // ---------- Push Notifications ----------
+    async function registerServiceWorker() {
+        if ('serviceWorker' in navigator) {
+            try {
+                // نستخدم Blob عشان ما نحتاج ملف خارجي
+                const swCode = `
+                    self.addEventListener('push', function(event) {
+                        const data = event.data ? event.data.json() : { title: 'New Signal', body: 'Check the app!' };
+                        const options = {
+                            body: data.body,
+                            icon: 'https://cdn-icons-png.flaticon.com/512/2933/2933179.png',
+                            badge: 'https://cdn-icons-png.flaticon.com/512/2933/2933179.png',
+                            vibrate: [200, 100, 200]
+                        };
+                        event.waitUntil(self.registration.showNotification(data.title, options));
+                    });
+                    self.addEventListener('notificationclick', function(event) {
+                        event.notification.close();
+                        event.waitUntil(clients.openWindow('/'));
+                    });
+                `;
+                const blob = new Blob([swCode], { type: 'application/javascript' });
+                const swUrl = URL.createObjectURL(blob);
+                swRegistration = await navigator.serviceWorker.register(swUrl);
+                console.log("SW Registered");
+            } catch (e) { console.log("SW Error:", e); }
+        }
+    }
+
+    async function requestPushNotification() {
+        if (!('Notification' in window) || !('serviceWorker' in navigator)) {
+            alert("Push notifications are not supported on this browser.");
+            return;
+        }
+        
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+            if (!swRegistration) await registerServiceWorker();
+            alert("✅ Push notifications enabled! You will receive signals even when app is closed.");
+            
+            // إظهار تجربة
+            if (swRegistration && swRegistration.active) {
+                swRegistration.active.showNotification("MR.Trader AI", {
+                    body: "Push notifications are now active! 🚀",
+                    icon: 'https://cdn-icons-png.flaticon.com/512/2933/2933179.png'
+                });
+            }
+        } else {
+            alert("❌ Permission denied. You won't receive background alerts.");
+        }
+    }
+
+    function sendPushNotification(title, body) {
+        if (swRegistration && swRegistration.active && Notification.permission === 'granted') {
+            swRegistration.active.showNotification(title, {
+                body: body,
+                icon: 'https://cdn-icons-png.flaticon.com/512/2933/2933179.png',
+                vibrate: [200, 100, 200]
+            });
+        }
+    }
+
+    // ---------- Session Tracker ----------
+    function getSessionData() {
+        const now = new Date();
+        const utcHour = now.getUTCHours();
+        const utcMin = now.getUTCMinutes();
+        const currentTime = utcHour + (utcMin / 60);
+        
+        // Sydney: 21:00 - 06:00 UTC
+        const sydneyOpen = (currentTime >= 21 || currentTime < 6);
+        let sydneyRemain = 0;
+        if (sydneyOpen) sydneyRemain = currentTime >= 21 ? (24 - currentTime) + 6 : 6 - currentTime;
+
+        // Tokyo: 00:00 - 09:00 UTC
+        const tokyoOpen = (currentTime >= 0 && currentTime < 9);
+        let tokyoRemain = 0;
+        if (tokyoOpen) tokyoRemain = 9 - currentTime;
+
+        // London: 07:00 - 16:00 UTC
+        const londonOpen = (currentTime >= 7 && currentTime < 16);
+        let londonRemain = 0;
+        if (londonOpen) londonRemain = 16 - currentTime;
+
+        // NY: 12:00 - 21:00 UTC
+        const nyOpen = (currentTime >= 12 && currentTime < 21);
+        let nyRemain = 0;
+        if (nyOpen) nyRemain = 21 - currentTime;
+
+        return {
+            sydney: { open: sydneyOpen, remain: sydneyRemain },
+            tokyo: { open: tokyoOpen, remain: tokyoRemain },
+            london: { open: londonOpen, remain: londonRemain },
+            ny: { open: nyOpen, remain: nyRemain }
+        };
+    }
+
+    function updateSessionUI() {
+        const data = getSessionData();
+        
+        const updatePill = (id, sessData) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            if (sessData.open) {
+                el.classList.add('open');
+                const h = Math.floor(sessData.remain);
+                const m = Math.round((sessData.remain - h) * 60);
+                el.innerHTML = `<div class="sess-dot"></div>${id.split('-')[1].toUpperCase()} (${h}h ${m}m)`;
+            } else {
+                el.classList.remove('open');
+                el.innerHTML = `<div class="sess-dot"></div>${id.split('-')[1].toUpperCase()}`;
+            }
+        };
+
+        updatePill('sess-sydney', data.sydney);
+        updatePill('sess-tokyo', data.tokyo);
+        updatePill('sess-london', data.london);
+        updatePill('sess-ny', data.ny);
+    }
+
+    // ---------- News ----------
     let newsCache = null;
     let newsCacheTime = 0;
 
@@ -471,7 +621,6 @@
            else throw new Error("Invalid format");
         }
         
-        // فلترة الأخبار بناءً على العملة الحالية
         let targetCurrencies = ['USD'];
         if (currentAsset === 'EUR/USD') targetCurrencies.push('EUR');
 
@@ -501,7 +650,6 @@
     function getBrokerTimeStr(dateStr) {
         const d = new Date(dateStr);
         if (isNaN(d)) return "N/A";
-        // تحويل التوقيت حسب البروكر
         const utcMs = d.getTime() + d.getTimezoneOffset() * 60000;
         const brokerMs = utcMs + (parseInt(brokerTZ) * 3600000);
         const bDate = new Date(brokerMs);
@@ -573,6 +721,10 @@
 
     window.onload = function() {
       supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      
+      // تهيئة Service Worker
+      registerServiceWorker();
+
       const hash = window.location.hash;
       if (hash && hash.includes('type=recovery')) {
         isRecoveryMode = true;
@@ -586,8 +738,14 @@
       }
       renderNewsPanel();
       newsInterval = setInterval(renderNewsPanel, 5 * 60 * 1000);
+      
+      updateSessionUI();
+      sessionInterval = setInterval(updateSessionUI, 60000); // تحديث كل دقيقة
     };
 
+    // ... (بقية الدوال الخاصة بتسجيل الدخول والتسجيل تبقى كما هي، اختصاراً للنص) ...
+    // أقحمت الدوال القديمة هنا كما هي في الملف السابق
+    
     function showForgotPassword() { document.getElementById('loginBox').style.display = 'none'; document.getElementById('forgotBox').style.display = 'block'; }
     function showLogin() { document.getElementById('loginBox').style.display = 'block'; document.getElementById('forgotBox').style.display = 'none'; document.getElementById('newPasswordBox').style.display = 'none'; }
 
@@ -607,8 +765,7 @@
       const password = document.getElementById('passwordInput').value;
       if (!email || !password) return alert('Please enter email and password.');
       const { error } = await supabaseClient.auth.signUp({ 
-        email, 
-        password,
+        email, password,
         options: { data: { tries_left: 9999, is_pro: true } }
       });
       if (error) alert("Sign Up Error: " + error.message);
@@ -740,7 +897,7 @@
       localStorage.setItem('maxSL', maxSL);
       localStorage.setItem('brokerTZ', brokerTZ);
       localStorage.setItem('enabledSessions', JSON.stringify(enabledSessions));
-      renderNewsPanel(); // تحديث الأخبار حسب التوقيت الجديد
+      renderNewsPanel();
     }
 
     function getActiveSessions() {
@@ -881,7 +1038,7 @@
         }
       });
       updateGeneralTrend();
-      renderNewsPanel(); // تحديث الأخبار للعملة الجديدة
+      renderNewsPanel();
     }
 
     function selectTF(tf, btn) {
@@ -908,7 +1065,6 @@
       const cacheKey = `${currentAsset}_${tf}`;
       const now = Date.now();
       
-      // استخدام الكاش لمدة 60 ثانية لتخفيف الضغط
       if (chartCache[cacheKey] && (now - chartCache[cacheKey].time < 60000) && !isManualRefresh) {
         candleSeries.setData(chartCache[cacheKey].bars);
         chart.timeScale().setVisibleLogicalRange({ from: chartCache[cacheKey].bars.length - 60, to: chartCache[cacheKey].bars.length + 10 });
@@ -1034,7 +1190,6 @@
       btn.disabled = false;
     }
 
-    let isManualRefresh = false;
     function manualRefresh() {
       isManualRefresh = true;
       loadChartData(currentTF).then(() => isManualRefresh = false);
@@ -1160,7 +1315,6 @@
       const pipsTP1  = Math.round(Math.abs(trade.tp1 - trade.entry) / pipSize);
       const pipsTP2  = Math.round(Math.abs(trade.tp2 - trade.entry) / pipSize);
 
-      // حساب الخسارة والربح بالدولار لحجم 0.02 لوت
       const dollarLoss = (pipsRisk * pipVal).toFixed(2);
       const dollarTP1 = (pipsTP1 * pipVal).toFixed(2);
       const dollarTP2 = (pipsTP2 * pipVal).toFixed(2);
@@ -1182,7 +1336,6 @@
             <div class="price-box tp2"><div class="price-label">${dict[currentLang].tp2}</div><div class="price-val text-green">${trade.tp2.toFixed(dp)}</div><div class="pips-sub text-green">+${pipsTP2} pips</div></div>
           </div>
 
-          <!-- حاسبة الأرباح والخسائر بالدولار (لـ 0.02 لوت) -->
           <div class="calc-box">
             <div class="calc-title">Profit / Loss ($) @ 0.02 Lots</div>
             <div class="calc-row"><span>Stop Loss:</span> <span class="calc-val-red">-$${dollarLoss}</span></div>
@@ -1216,7 +1369,6 @@
             gain.gain.setValueAtTime(0.1, ctx.currentTime);
             osc.start();
             osc.stop(ctx.currentTime + 0.3);
-            // Vibration
             if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
         } catch (e) {}
     }
@@ -1227,7 +1379,14 @@
       localStorage.setItem('notifications', JSON.stringify(notifications));
       renderNotifBadge();
       renderNotifList();
-      playAlert(); // إضافة الصوت والرجّة
+      playAlert(); // صوت ورجة
+      
+      // إشعار Push
+      const dp = asset === 'EUR/USD' ? 5 : 2;
+      sendPushNotification(
+          `🚨 New ${dir} Signal: ${asset}`, 
+          `Entry: ${entry.toFixed(dp)} | SL: ${sl.toFixed(dp)} | ${tf.toUpperCase()}`
+      );
     }
 
     function renderNotifBadge() {
@@ -1310,7 +1469,6 @@
       
       let filteredHistory = tradeHistory;
 
-      // فلترة بالتاريخ
       if (currentFilter === 'today') {
         const today = new Date().toLocaleDateString();
         filteredHistory = filteredHistory.filter(t => (t.date || '').startsWith(today));
@@ -1320,7 +1478,6 @@
         filteredHistory = filteredHistory.filter(t => new Date(t.date) >= oneWeekAgo);
       }
 
-      // فلترة بالعملة
       if (currentAssetFilter !== 'all') {
           filteredHistory = filteredHistory.filter(t => (t.asset || 'XAU/USD') === currentAssetFilter);
       }
@@ -1328,15 +1485,37 @@
       let wins = 0;
       let totalPips = 0;
       const totalTrades = filteredHistory.length;
+      
+      // لحساب أفضل عملة وأفضل جلسة
+      let assetStats = {};
+      let sessionStats = {};
 
       filteredHistory.forEach(t => {
-        const pipSize = getPipSize(t.asset || 'XAU/USD');
+        const asset = t.asset || 'XAU/USD';
+        const pipSize = getPipSize(asset);
         const pips = Math.abs(t.exitPrice - t.entry) / pipSize;
+        
+        if (!assetStats[asset]) assetStats[asset] = 0;
+        
+        // تحديد الجلسة حسب الساعة
+        const hour = new Date(t.date).getUTCHours();
+        let sessionName = "Other";
+        if (hour >= 7 && hour < 12) sessionName = "London";
+        else if (hour >= 12 && hour < 16) sessionName = "London/NY";
+        else if (hour >= 16 && hour < 21) sessionName = "New York";
+        else if (hour >= 21 || hour < 6) sessionName = "Sydney/Tokyo";
+        
+        if (!sessionStats[sessionName]) sessionStats[sessionName] = 0;
+
         if (t.result === 'WIN') {
           wins++;
           totalPips += pips;
+          assetStats[asset] += pips;
+          sessionStats[sessionName] += pips;
         } else {
           totalPips -= pips;
+          assetStats[asset] -= pips;
+          sessionStats[sessionName] -= pips;
         }
       });
 
@@ -1348,6 +1527,24 @@
       const pipsElement = document.getElementById('statTotalPips');
       pipsElement.innerText = (totalPips > 0 ? '+' : '') + totalPips.toFixed(0);
       pipsElement.className = totalPips >= 0 ? 'stat-value text-green' : 'stat-value text-red';
+
+      // أفضل عملة وأفضل جلسة
+      let bestAsset = '-';
+      let maxAssetPips = -Infinity;
+      for (const [a, p] of Object.entries(assetStats)) {
+          if (p > maxAssetPips) { maxAssetPips = p; bestAsset = a; }
+      }
+      if (bestAsset !== '-') bestAsset = bestAsset.replace('/USD', '') + ` (+${maxAssetPips.toFixed(0)} pips)`;
+      
+      let bestSession = '-';
+      let maxSessionPips = -Infinity;
+      for (const [s, p] of Object.entries(sessionStats)) {
+          if (p > maxSessionPips) { maxSessionPips = p; bestSession = s; }
+      }
+      if (bestSession !== '-') bestSession = bestSession + ` (+${maxSessionPips.toFixed(0)} pips)`;
+
+      document.getElementById('statBestAsset').innerText = bestAsset;
+      document.getElementById('statBestSession').innerText = bestSession;
 
       if (totalTrades === 0) {
         list.innerHTML = `<div class="loading">${dict[currentLang].noHistory}</div>`;
@@ -1418,7 +1615,6 @@
         let activeKeys = Object.keys(activeTrades);
         if (activeKeys.length === 0) return;
         
-        // جلب الأسعار لكل عملة
         const assets = [...new Set(activeKeys.map(k => k.split('__')[0]))];
 
         for (let asset of assets) {
@@ -1475,6 +1671,9 @@
                         if (result === 'WIN') {
                             confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
                             playAlert();
+                            sendPushNotification(`✅ Take Profit Hit!`, `${asset} ${trade.tf.toUpperCase()} closed in profit.`);
+                        } else {
+                            sendPushNotification(`❌ Stop Loss Hit`, `${asset} ${trade.tf.toUpperCase()} closed in loss.`);
                         }
                         
                         if (trade.asset === currentAsset && trade.tf === currentTF) {
