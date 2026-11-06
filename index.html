@@ -10,7 +10,6 @@
   <link rel="manifest" href='data:application/manifest+json,{"name":"MR.Trader AI","short_name":"Trader","start_url":".","display":"standalone","background_color":"#000000","theme_color":"#ffd700","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/2933/2933179.png","sizes":"512x512","type":"image/png"}]}'>
 
   <style>
-    /* CSS كامل ومعدل */
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body { margin: 0; background: #000; color: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; min-height: 100vh; padding-bottom: 90px; }
     body.rtl { direction: rtl; }
@@ -387,7 +386,6 @@
   <script>
     const SUPABASE_URL = 'https://wdexwfoplycblaxmrfws.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_6U7d-ihEr1ivc362mhkDeQ_2suPM3gy';
-    // لم نعد بحاجة لمفتاح TwelveData لأننا سنستخدم Biquote عبر Cloudflare Worker
 
     let supabaseClient = null;
     let isRecoveryMode = false; 
@@ -425,10 +423,7 @@
     function toPips(diff, asset) { return diff / getPipSize(asset); }
     function getTradeKey(asset, tf) { return `${asset}__${tf}`; }
     function getPipValue(asset) {
-        if (asset === 'XAU/USD') return 0.20;
-        if (asset === 'EUR/USD') return 0.20;
-        if (asset === 'BTC/USD') return 0.20;
-        return 0.20;
+        return 0.20; // 0.02 lot value per pip for all 3 assets is roughly $0.20
     }
 
     function migrateLocalStorage() {
@@ -825,7 +820,40 @@
       return { sydney: utcHour >= 21 || utcHour < 6, tokyo: utcHour >= 0 && utcHour < 9, london: utcHour >= 7 && utcHour < 16, ny: utcHour >= 12 && utcHour < 21 };
     }
 
-    // ---------- تحديث الاتجاه العام (عبر الوسيط) ----------
+    // ---------- Biquote Chart Fetch (Through Proxy) ----------
+    async function fetchChartDataFromSource(tf) {
+        const intervalMap = { '5min': '5m', '15min': '15m', '30min': '30m', '1h': '1h', '4h': '4h', '1day': '1d' };
+        const biTf = intervalMap[tf] || '5m';
+        const symbolMap = { 'XAU/USD': 'XAUUSD', 'EUR/USD': 'EURUSD', 'BTC/USD': 'BTCUSD' };
+        const symbol = symbolMap[currentAsset];
+
+        try {
+            const targetApi = `https://biquote.io/api/${symbol}/ohlc?interval=${biTf}&limit=300`;
+            const res = await fetch(`https://api.mrtraderai.com/?url=${encodeURIComponent(targetApi)}`);
+            
+            if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+            const data = await res.json();
+            
+            if (!data || !data.bars || data.bars.length === 0) {
+                throw new Error("No bars returned");
+            }
+
+            return data.bars.map(item => ({
+                time: new Date(item.openTime).getTime() / 1000, 
+                open: parseFloat(item.open), 
+                high: parseFloat(item.high),
+                low: parseFloat(item.low), 
+                close: parseFloat(item.close)
+            }));
+
+        } catch (e) {
+            console.error("Chart fetch error:", e);
+            const errEl = document.getElementById('chartError');
+            if (errEl) { errEl.innerText = "⚠️ Failed to load data."; errEl.style.display = 'block'; }
+            return null;
+        }
+    }
+
     async function updateGeneralTrend() {
         const tfs = ['15min', '30min', '1h', '4h', '1day'];
         const ids = ['t-m15', 't-m30', 't-h1', 't-h4', 't-d1'];
@@ -922,41 +950,6 @@
       const key = getTradeKey(currentAsset, currentTF);
       if (activeTrades[key]) { renderTradeCard(activeTrades[key]); drawTradeLines(activeTrades[key]); }
       else { document.getElementById('signalBox').innerHTML = `<div class="loading">${dict[currentLang].loading}</div>`; priceLines.forEach(l => candleSeries.removePriceLine(l)); priceLines = []; }
-    }
-
-    // ---------- دالة جلب الشارت من خلال الـ Cloudflare Worker (الوسيط) ----------
-    async function fetchChartDataFromSource(tf) {
-        const intervalMap = { '5min': '5m', '15min': '15m', '30min': '30m', '1h': '1h', '4h': '4h', '1day': '1d' };
-        const biTf = intervalMap[tf] || '5m';
-        const symbolMap = { 'XAU/USD': 'XAUUSD', 'EUR/USD': 'EURUSD', 'BTC/USD': 'BTCUSD' };
-        const symbol = symbolMap[currentAsset];
-
-        try {
-            const targetApi = `https://biquote.io/api/${symbol}/ohlc?interval=${biTf}&limit=300`;
-            // استخدام الوسيط api.mrtraderai.com
-            const res = await fetch(`https://api.mrtraderai.com/?url=${encodeURIComponent(targetApi)}`);
-            
-            if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-            const data = await res.json();
-            
-            if (!data || !data.bars || data.bars.length === 0) {
-                throw new Error("No bars returned");
-            }
-
-            return data.bars.map(item => ({
-                time: new Date(item.time).getTime() / 1000, 
-                open: parseFloat(item.open), 
-                high: parseFloat(item.high),
-                low: parseFloat(item.low), 
-                close: parseFloat(item.close)
-            }));
-
-        } catch (e) {
-            console.error("Chart fetch error:", e);
-            const errEl = document.getElementById('chartError');
-            if (errEl) { errEl.innerText = "⚠️ Failed to load data."; errEl.style.display = 'block'; }
-            return null;
-        }
     }
 
     async function loadChartData(tf) {
@@ -1231,7 +1224,6 @@
         document.getElementById('journalModal').style.display = 'none';
     }
 
-    // ---------- تتبع السعر اللحظي عبر الوسيط ----------
     function startLiveTracking() {
       if (liveInterval) clearInterval(liveInterval);
       liveInterval = setInterval(async () => {
@@ -1244,7 +1236,6 @@
                 const sym = symbolMap[asset];
                 
                 const targetApi = `https://biquote.io/api/${sym}`;
-                // استخدام الوسيط هنا أيضاً
                 const res = await fetch(`https://api.mrtraderai.com/?url=${encodeURIComponent(targetApi)}`);
                 const data = await res.json();
                 livePrice = data.mid; 
