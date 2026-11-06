@@ -8,37 +8,75 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <link rel="manifest" href='data:application/manifest+json,{"name":"MR.Trader AI","short_name":"Trader","start_url":".","display":"standalone","background_color":"#000000","theme_color":"#ffd700","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/2933/2933179.png","sizes":"512x512","type":"image/png"}]}'>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
   <style>
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    body { margin: 0; background: #000; color: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; min-height: 100vh; padding-bottom: 90px; }
+    body { margin: 0; background: #000; color: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; min-height: 100vh; padding-bottom: 90px; overflow-x: hidden; }
     body.rtl { direction: rtl; }
     .text-green { color: #26a69a; } .text-red { color: #ef5350; } .text-yellow { color: #ffd700; }
-    #loginScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: #000; z-index: 1000; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
-    .login-box { width: 100%; max-width: 400px; background: #111; border: 1px solid #222; border-radius: 16px; padding: 24px; text-align: center; }
-    .login-input { width: 100%; padding: 14px; margin-bottom: 12px; background: #000; border: 1px solid #333; color: #fff; border-radius: 8px; font-size: 14px; }
-    .btn-primary { width: 100%; padding: 14px; border-radius: 8px; border: none; font-size: 16px; font-weight: 700; cursor: pointer; background: #ffd700; color: #000; margin-bottom: 10px; }
-    .btn-secondary { width: 100%; padding: 14px; border-radius: 8px; border: 1px solid #ffd700; font-size: 16px; font-weight: 700; cursor: pointer; background: transparent; color: #ffd700; }
-    .forgot-link { color: #888; font-size: 12px; text-decoration: underline; cursor: pointer; margin-top: 10px; display: block; }
+
+    /* ================= Splash Screen (Welcome) ================= */
+    #splashScreen {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
+      background: linear-gradient(145deg, #000 0%, #1a1505 100%);
+      z-index: 3000; display: flex; flex-direction: column; justify-content: center; align-items: center;
+      transition: opacity 0.5s ease-out;
+    }
+    .splash-logo { font-size: 32px; font-weight: 800; color: #fff; margin-bottom: 10px; letter-spacing: 2px; }
+    .splash-logo span { color: #ffd700; }
+    .splash-tag { font-size: 14px; color: #888; margin-bottom: 40px; letter-spacing: 1px; }
+    .spinner { width: 50px; height: 50px; border: 4px solid rgba(255, 215, 0, 0.2); border-top: 4px solid #ffd700; border-radius: 50%; animation: spin 1s linear infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    /* ================= Login Screen ================= */
+    #loginScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: #000; z-index: 2000; display: none; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
+    .login-box { width: 100%; max-width: 400px; background: #111; border: 1px solid #222; border-radius: 16px; padding: 30px 24px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    .login-logo { font-size: 24px; font-weight: 800; color: #fff; margin-bottom: 30px; }
+    .login-logo span { color: #ffd700; }
+    .login-input { width: 100%; padding: 14px; margin-bottom: 16px; background: #000; border: 1px solid #333; color: #fff; border-radius: 8px; font-size: 14px; outline: none; }
+    .login-input:focus { border-color: #ffd700; }
+    .btn-primary { width: 100%; padding: 14px; border-radius: 8px; border: none; font-size: 16px; font-weight: 700; cursor: pointer; background: #ffd700; color: #000; margin-bottom: 12px; transition: 0.2s; }
+    .btn-primary:hover { background: #e6c200; }
+    .btn-secondary { width: 100%; padding: 14px; border-radius: 8px; border: 1px solid #ffd700; font-size: 16px; font-weight: 700; cursor: pointer; background: transparent; color: #ffd700; transition: 0.2s; }
+    .btn-secondary:hover { background: rgba(255, 215, 0, 0.1); }
+    .forgot-link { color: #888; font-size: 12px; text-decoration: underline; cursor: pointer; margin-top: 15px; display: block; }
+
+    /* ================= App Layout ================= */
     .page { display: none; padding: 16px; animation: fadeIn 0.3s; }
     .page.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    header { padding: 16px; border-bottom: 1px solid #1a1a1a; display: flex; justify-content: space-between; align-items: center; }
+    
+    header { padding: 16px; border-bottom: 1px solid #1a1a1a; display: flex; justify-content: space-between; align-items: center; background: #000; position: sticky; top: 0; z-index: 50; }
     header h1 { margin: 0; font-size: 18px; font-weight: 700; }
     .header-icons { display: flex; align-items: center; gap: 12px; }
-    .bell-icon { font-size: 20px; cursor: pointer; position: relative; }
+    .bell-icon { font-size: 20px; cursor: pointer; position: relative; color: #fff; }
     .bell-badge { position: absolute; top: -4px; right: -4px; background: #ef5350; color: #fff; font-size: 10px; font-weight: 700; padding: 2px 5px; border-radius: 10px; }
+
+    /* Dashboard (Home) */
+    .welcome-card { background: linear-gradient(135deg, #1a1505 0%, #000 100%); border: 1px solid #ffd70055; border-radius: 16px; padding: 20px; margin-bottom: 20px; text-align: center; }
+    .welcome-card img { width: 100%; border-radius: 12px; margin-bottom: 15px; opacity: 0.9; }
+    .welcome-card h2 { margin: 0 0 8px 0; color: #ffd700; font-size: 20px; }
+    .welcome-card p { margin: 0; color: #ccc; font-size: 13px; line-height: 1.5; }
+    .quick-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+    .qs-box { background: #111; border: 1px solid #222; border-radius: 12px; padding: 16px; text-align: center; }
+    .qs-title { font-size: 11px; color: #888; text-transform: uppercase; font-weight: 700; margin-bottom: 5px; }
+    .qs-val { font-size: 22px; font-weight: 700; }
+
+    /* Top Bar (Chart Page) */
     .top-bar { display: flex; flex-direction: column; gap: 8px; padding: 10px 16px; border-bottom: 1px solid #1a1a1a; }
     .top-row { display: flex; justify-content: space-between; align-items: center; }
     .asset-select { background: #111; color: #fff; border: 1px solid #333; padding: 8px; border-radius: 8px; font-size: 14px; font-weight: 700; }
     .autopilot-status { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; color: #26a69a; }
     .pulse-dot { width: 8px; height: 8px; background: #26a69a; border-radius: 50%; animation: pulse 1.5s infinite; }
     @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(38, 166, 154, 0.4); } 70% { box-shadow: 0 0 0 8px rgba(38, 166, 154, 0); } 100% { box-shadow: 0 0 0 0 rgba(38, 166, 154, 0); } }
+    
     #sessionBar { display: flex; gap: 4px; margin-top: 4px; overflow-x: auto; padding-bottom: 4px; }
     .sess-pill { background: #111; border: 1px solid #333; border-radius: 4px; padding: 2px 8px; font-size: 9px; font-weight: 700; color: #666; white-space: nowrap; display: flex; align-items: center; gap: 4px; }
     .sess-pill.open { border-color: #26a69a; color: #26a69a; background: rgba(38,166,154,0.1); }
     .sess-dot { width: 6px; height: 6px; border-radius: 50%; background: #666; }
     .sess-pill.open .sess-dot { background: #26a69a; box-shadow: 0 0 5px #26a69a; }
+
     .trend-row { display: flex; gap: 6px; justify-content: space-between; margin-top: 4px; }
     .trend-box { flex: 1; text-align: center; font-size: 10px; font-weight: 700; padding: 6px 2px; border-radius: 4px; border: 1px solid #333; color: #666; }
     .trend-box.bull { background: rgba(38, 166, 154, 0.15); border-color: #26a69a; color: #26a69a; }
@@ -46,6 +84,7 @@
     .general-trend-bar { text-align: center; font-size: 12px; font-weight: 700; padding: 8px; border-radius: 8px; margin-top: 8px; background: #111; border: 1px solid #333; }
     .general-trend-bar.bull { color: #26a69a; border-color: #26a69a; background: rgba(38, 166, 154, 0.1); }
     .general-trend-bar.bear { color: #ef5350; border-color: #ef5350; background: rgba(239, 83, 80, 0.1); }
+
     .filter-panel { background: #111; border-bottom: 1px solid #1a1a1a; padding: 12px 16px; display: none; flex-direction: column; gap: 12px; }
     .filter-panel.active { display: flex; }
     .filter-row { display: flex; justify-content: space-between; align-items: center; }
@@ -54,6 +93,7 @@
     .session-checkboxes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
     .session-check { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #ccc; }
     .session-check input { accent-color: #ffd700; }
+
     #newsPanel { padding: 12px 16px; background: #0a0a0a; border-bottom: 1px solid #1a1a1a; }
     .news-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
     .news-title { font-size: 12px; font-weight: 700; color: #ffd700; text-transform: uppercase; }
@@ -65,7 +105,8 @@
     .news-impact-badge { padding: 1px 6px; border-radius: 4px; font-size: 9px; font-weight: 700; }
     .news-impact-badge.high { background: #ef5350; color: #fff; }
     .news-impact-badge.medium { background: #ffa726; color: #000; }
-    #notifModal { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: rgba(0,0,0,0.9); z-index: 2000; display: none; flex-direction: column; padding: 20px; }
+
+    #notifModal { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: rgba(0,0,0,0.9); z-index: 2000; display: none; flex-direction: column; padding: 20px; backdrop-filter: blur(5px); }
     .notif-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
     .notif-close { font-size: 24px; color: #888; cursor: pointer; background: none; border: none; }
     .notif-actions { display: flex; gap: 10px; margin-bottom: 16px; }
@@ -74,6 +115,7 @@
     .notif-item { background: #111; border: 1px solid #222; padding: 12px; border-radius: 8px; margin-bottom: 10px; }
     .notif-item.buy { border-left: 4px solid #26a69a; }
     .notif-item.sell { border-left: 4px solid #ef5350; }
+
     .tf-selector { display: flex; overflow-x: auto; padding: 10px 16px; gap: 8px; border-bottom: 1px solid #1a1a1a; scrollbar-width: none; }
     .tf-selector::-webkit-scrollbar { display: none; }
     .tf-btn { background: #111; border: 1px solid #333; color: #888; padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
@@ -81,6 +123,7 @@
     .btn-analyze { width: 100%; padding: 16px; background: #222; color: #fff; border: none; border-top: 1px solid #333; font-size: 16px; font-weight: 700; cursor: pointer; transition: 0.3s; }
     .btn-analyze:active { background: #ffd700; color: #000; }
     #chart-container { width: 100%; height: 35vh; border-bottom: 1px solid #1a1a1a; position: relative; }
+
     .signal-card { background: rgba(17, 26, 20, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(38, 166, 154, 0.3); border-radius: 16px; padding: 16px; margin-top: 16px; box-shadow: 0 8px 32px 0 rgba(0,0,0,0.37); }
     .signal-card.sell { background: rgba(26, 17, 17, 0.7); border-color: rgba(239, 83, 80, 0.3); }
     .price-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
@@ -90,23 +133,29 @@
     .price-label { font-size: 11px; color: #888; font-weight: 600; text-transform: uppercase; }
     .price-val { font-size: 18px; font-weight: 700; margin-top: 4px; }
     .pips-sub { font-size: 11px; font-weight: 600; margin-top: 4px; }
+    
     .calc-box { background: #1a1a1a; border: 1px solid #ffd70044; border-radius: 12px; padding: 12px; margin-top: 12px; }
     .calc-title { font-size: 11px; color: #ffd700; font-weight: 700; text-transform: uppercase; margin-bottom: 8px; text-align: center; border-bottom: 1px solid #333; padding-bottom: 4px; }
     .calc-row { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; }
     .calc-val-red { color: #ef5350; font-weight: 700; }
     .calc-val-green { color: #26a69a; font-weight: 700; }
+
     .status-badge { padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 700; text-transform: uppercase; display: inline-block; margin-top: 8px; }
     .status-pending { background: #ffd70022; color: #ffd700; border: 1px solid #ffd70055; }
     .status-active-buy { background: #26a69a22; color: #26a69a; border: 1px solid #26a69a55; animation: pulse 2s infinite; }
     .status-active-sell { background: #ef535022; color: #ef5350; border: 1px solid #ef535055; animation: pulse 2s infinite; }
     .status-tp1 { background: #ffd70033; color: #ffd700; border: 1px solid #ffd70077; }
+
     .risk-note-live { font-size: 12px; color: #888; background: #111; padding: 12px; border-radius: 8px; border: 1px solid #222; margin-top: 16px; line-height: 1.5; }
     .btn-copy-signal { display: block; width: 100%; margin-top: 12px; padding: 10px; background: #333; color: #fff; text-align: center; border-radius: 8px; font-weight: 700; cursor: pointer; border: 1px solid #555; }
+
     .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; height: 65px; background: #0a0a0a; border-top: 1px solid #222; display: flex; justify-content: space-around; align-items: center; z-index: 100; }
-    .nav-item { color: #666; text-align: center; font-size: 11px; font-weight: 700; text-transform: uppercase; cursor: pointer; }
+    .nav-item { color: #666; text-align: center; font-size: 11px; font-weight: 700; text-transform: uppercase; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; width: 25%; }
     .nav-item.active { color: #ffd700; }
-    .nav-icon { font-size: 20px; margin-bottom: 4px; display: block; }
+    .nav-icon { font-size: 20px; margin-bottom: 4px; }
+
     .lang-btn { background: #222; border: 1px solid #444; color: #ffd700; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; }
+    
     .sub-banner { background: linear-gradient(145deg, #1a1505 0%, #000 100%); border: 1px solid #ffd70055; border-radius: 16px; padding: 20px; text-align: center; margin-top: 16px; }
     .sub-banner h3 { color: #ffd700; margin: 0 0 8px 0; letter-spacing: 1px; }
     .sub-banner p { color: #ccc; font-size: 14px; margin-bottom: 16px; }
@@ -115,39 +164,54 @@
     .wallet-address { background: #111; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 12px; color: #ffd700; word-break: break-all; margin: 12px 0; border: 1px solid #333; text-align: center; }
     .btn-copy { width: 100%; padding: 10px; background: #ffd700; color: #000; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; margin-bottom: 8px; }
     .btn-verify { display: block; text-align: center; text-decoration: none; width: 100%; padding: 12px; background: #229ED9; color: #fff; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 14px; }
+
     .stats-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
     .stats-filter { display: flex; gap: 4px; flex-wrap: wrap; }
     .filter-btn { background: #111; border: 1px solid #333; color: #888; padding: 4px 10px; border-radius: 6px; font-size: 10px; cursor: pointer; }
     .filter-btn.active { background: #ffd700; color: #000; border-color: #ffd700; }
     .reset-btn { background: #ef535022; color: #ef5350; border: 1px solid #ef535055; padding: 4px 10px; border-radius: 6px; font-size: 10px; cursor: pointer; }
+    
     .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
     .stat-box { background: #111; border: 1px solid #222; border-radius: 12px; padding: 12px; text-align: center; }
     .stat-title { font-size: 10px; color: #888; text-transform: uppercase; font-weight: 700; }
     .stat-value { font-size: 20px; font-weight: 700; margin-top: 4px; }
+    
     .deep-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px; }
     .deep-box { background: #111; border: 1px solid #222; border-radius: 12px; padding: 10px; font-size: 11px; }
     .deep-title { color: #888; font-weight: 700; margin-bottom: 4px; text-transform: uppercase; }
     .deep-val { color: #ffd700; font-weight: 700; }
+
     .history-item { background: #111; border: 1px solid #222; border-radius: 12px; padding: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: 0.2s; }
     .history-item:active { background: #1a1a1a; }
     .history-title { font-weight: 700; font-size: 14px; }
     .history-date { font-size: 11px; color: #888; }
     .history-result { font-weight: 700; font-size: 14px; text-align: right;}
+    
     #journalModal { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: rgba(0,0,0,0.9); z-index: 3000; display: none; justify-content: center; align-items: center; padding: 20px; }
     .journal-box { background: #111; border: 1px solid #333; border-radius: 16px; width: 100%; max-width: 400px; padding: 24px; }
     .journal-input { width: 100%; height: 100px; background: #000; border: 1px solid #333; color: #fff; border-radius: 8px; padding: 12px; margin-bottom: 16px; font-family: inherit; resize: none; }
+
     .auto-log { background: #111; border: 1px solid #222; border-radius: 12px; padding: 16px; margin-bottom: 12px; font-family: monospace; font-size: 12px; }
     .log-item { margin-bottom: 8px; border-bottom: 1px solid #222; padding-bottom: 8px; }
     .log-time { color: #888; font-size: 10px; }
     .btn-refresh { width: 100%; padding: 10px; background: #333; color: #fff; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; margin-top: 12px; }
+    
     .chart-error { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #ef5350; font-size: 12px; text-align: center; background: rgba(0,0,0,0.8); padding: 10px; border-radius: 8px; z-index: 10; display: none; }
   </style>
 </head>
 <body id="mainBody">
 
+  <!-- Splash Screen -->
+  <div id="splashScreen">
+    <div class="splash-logo">MR.Trader <span>AI</span></div>
+    <div class="splash-tag">SMC MASTER</div>
+    <div class="spinner"></div>
+  </div>
+
+  <!-- Login Screen -->
   <div id="loginScreen">
     <div class="login-box" id="loginBox">
-      <h2 style="color: #ffd700; margin-bottom: 20px;">MR.Trader AI</h2>
+      <div class="login-logo">MR.Trader <span>AI</span></div>
       <input type="email" id="emailInput" class="login-input" placeholder="Enter your email">
       <input type="password" id="passwordInput" class="login-input" placeholder="Enter password">
       <button class="btn-primary" onclick="loginUser()">Login</button>
@@ -155,18 +219,19 @@
       <a class="forgot-link" onclick="showForgotPassword()">Forgot Password?</a>
     </div>
     <div class="login-box" id="forgotBox" style="display: none;">
-      <h2 style="color: #ffd700; margin-bottom: 20px;">Reset Password</h2>
+      <div class="login-logo">Reset Password</div>
       <input type="email" id="resetEmailInput" class="login-input" placeholder="Enter your email">
       <button class="btn-primary" onclick="sendResetEmail()">Send Reset Link</button>
       <a class="forgot-link" onclick="showLogin()">Back to Login</a>
     </div>
     <div class="login-box" id="newPasswordBox" style="display: none;">
-      <h2 style="color: #ffd700; margin-bottom: 20px;">Set New Password</h2>
+      <div class="login-logo">Set New Password</div>
       <input type="password" id="newPasswordInput" class="login-input" placeholder="Enter new password">
       <button class="btn-primary" onclick="updatePassword()">Update Password</button>
     </div>
   </div>
 
+  <!-- App Content -->
   <div id="appContent" style="display: none;">
     <header>
       <h1>MR.Trader <span class="text-yellow">AI</span></h1>
@@ -178,75 +243,101 @@
       </div>
     </header>
 
-    <div class="top-bar">
-      <div class="top-row">
-        <select id="assetSelector" class="asset-select" onchange="changeAsset()">
-          <option value="XAU/USD">XAUUSD (Gold)</option>
-          <option value="EUR/USD">EURUSD</option>
-          <option value="BTC/USD">BTCUSD</option>
-        </select>
-        <div class="autopilot-status">
-          <div class="pulse-dot"></div> ACTIVE
+    <!-- Home / Dashboard Page -->
+    <div id="page-home" class="page active">
+      <div class="welcome-card">
+        <!-- صورة ترحيبية تعبر عن التداول -->
+        <img src="https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=600&q=80" alt="Trading Welcome">
+        <h2>Welcome to MR.Trader AI</h2>
+        <p>Your journey to profitable trading starts here. Use our advanced AI to scan the markets, find high-probability SMC setups, and manage your risk with confidence.</p>
+      </div>
+      
+      <div class="quick-stats">
+        <div class="qs-box">
+          <div class="qs-title">Total Trades</div>
+          <div class="qs-val text-yellow" id="homeTotalTrades">0</div>
         </div>
-        <button onclick="toggleFilters()" style="background:none; border:none; color:#fff; font-size:18px;">⚙️</button>
-      </div>
-
-      <div id="sessionBar">
-        <div class="sess-pill" id="sess-sydney"><div class="sess-dot"></div>Sydney</div>
-        <div class="sess-pill" id="sess-tokyo"><div class="sess-dot"></div>Tokyo</div>
-        <div class="sess-pill" id="sess-london"><div class="sess-dot"></div>London</div>
-        <div class="sess-pill" id="sess-ny"><div class="sess-dot"></div>New York</div>
-      </div>
-
-      <div class="trend-row" id="trendRow">
-        <div class="trend-box" id="t-m15">M15</div>
-        <div class="trend-box" id="t-m30">M30</div>
-        <div class="trend-box" id="t-h1">1H</div>
-        <div class="trend-box" id="t-h4">4H</div>
-        <div class="trend-box" id="t-d1">1D</div>
-      </div>
-      <div class="general-trend-bar" id="generalTrendBar">Analyzing General Trend...</div>
-    </div>
-
-    <div class="filter-panel" id="filterPanel">
-      <div class="filter-row">
-        <span class="filter-label">Max Stop Loss (Pips)</span>
-        <select id="maxSLFilter" class="filter-select" onchange="saveFilters()">
-          <option value="30">30 Pips</option>
-          <option value="50" selected>50 Pips</option>
-          <option value="70">70 Pips</option>
-          <option value="100">100 Pips</option>
-        </select>
-      </div>
-      <div class="filter-row">
-        <span class="filter-label">Broker Time Zone</span>
-        <select id="brokerTZFilter" class="filter-select" onchange="saveFilters()">
-          <option value="0">GMT+0</option>
-          <option value="2">GMT+2</option>
-          <option value="3" selected>GMT+3</option>
-        </select>
-      </div>
-      <div>
-        <span class="filter-label">Trading Sessions</span>
-        <div class="session-checkboxes">
-          <label class="session-check"><input type="checkbox" id="chk-sydney" checked onchange="saveFilters()"> Sydney</label>
-          <label class="session-check"><input type="checkbox" id="chk-tokyo" checked onchange="saveFilters()"> Tokyo</label>
-          <label class="session-check"><input type="checkbox" id="chk-london" checked onchange="saveFilters()"> London</label>
-          <label class="session-check"><input type="checkbox" id="chk-ny" checked onchange="saveFilters()"> New York</label>
+        <div class="qs-box">
+          <div class="qs-title">Win Rate</div>
+          <div class="qs-val text-green" id="homeWinRate">0%</div>
         </div>
       </div>
-      <button class="btn-primary" onclick="requestPushNotification()" style="margin-top:8px; background:#26a69a; color:#fff;">🔔 Enable Push Notifications</button>
+
+      <button class="btn-primary" onclick="switchTab('live', document.querySelectorAll('.nav-item')[0])" style="padding: 16px; font-size: 18px;">
+        <i class="fa-solid fa-bolt"></i> Go to Live Analysis
+      </button>
     </div>
 
-    <div id="newsPanel">
-      <div class="news-header">
-        <span class="news-title">📰 News Alerts</span>
-        <span style="font-size:10px; color:#888;" id="newsStatus">Loading...</span>
+    <!-- Live Page -->
+    <div id="page-live" class="page" style="padding: 0;">
+      <div class="top-bar">
+        <div class="top-row">
+          <select id="assetSelector" class="asset-select" onchange="changeAsset()">
+            <option value="XAU/USD">XAUUSD (Gold)</option>
+            <option value="EUR/USD">EURUSD</option>
+            <option value="BTC/USD">BTCUSD</option>
+          </select>
+          <div class="autopilot-status">
+            <div class="pulse-dot"></div> ACTIVE
+          </div>
+          <button onclick="toggleFilters()" style="background:none; border:none; color:#fff; font-size:18px;"><i class="fa-solid fa-gear"></i></button>
+        </div>
+
+        <div id="sessionBar">
+          <div class="sess-pill" id="sess-sydney"><div class="sess-dot"></div>Sydney</div>
+          <div class="sess-pill" id="sess-tokyo"><div class="sess-dot"></div>Tokyo</div>
+          <div class="sess-pill" id="sess-london"><div class="sess-dot"></div>London</div>
+          <div class="sess-pill" id="sess-ny"><div class="sess-dot"></div>New York</div>
+        </div>
+
+        <div class="trend-row" id="trendRow">
+          <div class="trend-box" id="t-m15">M15</div>
+          <div class="trend-box" id="t-m30">M30</div>
+          <div class="trend-box" id="t-h1">1H</div>
+          <div class="trend-box" id="t-h4">4H</div>
+          <div class="trend-box" id="t-d1">1D</div>
+        </div>
+        <div class="general-trend-bar" id="generalTrendBar">Analyzing General Trend...</div>
       </div>
-      <div id="newsList"><div style="font-size:11px;color:#666;">Fetching economic calendar...</div></div>
-    </div>
 
-    <div id="page-live" class="page active" style="padding: 0;">
+      <div class="filter-panel" id="filterPanel">
+        <div class="filter-row">
+          <span class="filter-label">Max Stop Loss (Pips)</span>
+          <select id="maxSLFilter" class="filter-select" onchange="saveFilters()">
+            <option value="30">30 Pips</option>
+            <option value="50" selected>50 Pips</option>
+            <option value="70">70 Pips</option>
+            <option value="100">100 Pips</option>
+          </select>
+        </div>
+        <div class="filter-row">
+          <span class="filter-label">Broker Time Zone</span>
+          <select id="brokerTZFilter" class="filter-select" onchange="saveFilters()">
+            <option value="0">GMT+0</option>
+            <option value="2">GMT+2</option>
+            <option value="3" selected>GMT+3</option>
+          </select>
+        </div>
+        <div>
+          <span class="filter-label">Trading Sessions</span>
+          <div class="session-checkboxes">
+            <label class="session-check"><input type="checkbox" id="chk-sydney" checked onchange="saveFilters()"> Sydney</label>
+            <label class="session-check"><input type="checkbox" id="chk-tokyo" checked onchange="saveFilters()"> Tokyo</label>
+            <label class="session-check"><input type="checkbox" id="chk-london" checked onchange="saveFilters()"> London</label>
+            <label class="session-check"><input type="checkbox" id="chk-ny" checked onchange="saveFilters()"> New York</label>
+          </div>
+        </div>
+        <button class="btn-primary" onclick="requestPushNotification()" style="margin-top:8px; background:#26a69a; color:#fff;">🔔 Enable Push Notifications</button>
+      </div>
+
+      <div id="newsPanel">
+        <div class="news-header">
+          <span class="news-title">📰 News Alerts</span>
+          <span style="font-size:10px; color:#888;" id="newsStatus">Loading...</span>
+        </div>
+        <div id="newsList"><div style="font-size:11px;color:#666;">Fetching economic calendar...</div></div>
+      </div>
+
       <div class="tf-selector" id="tfSelector">
         <button class="tf-btn active" onclick="selectTF('5min', this)">M5</button>
         <button class="tf-btn" onclick="selectTF('15min', this)">M15</button>
@@ -269,6 +360,7 @@
       </div>
     </div>
 
+    <!-- Auto Page -->
     <div id="page-auto" class="page">
       <h2 style="font-size: 18px; margin-bottom: 16px;">Autopilot Logs</h2>
       <div class="auto-log" id="autoLogBox">
@@ -277,9 +369,10 @@
           <div>Autopilot initialized. Waiting for session...</div>
         </div>
       </div>
-      <button class="btn-refresh" onclick="manualRefresh()">🔄 Manual Refresh Signals</button>
+      <button class="btn-refresh" onclick="manualRefresh()"><i class="fa-solid fa-rotate"></i> Manual Refresh Signals</button>
     </div>
 
+    <!-- History Page -->
     <div id="page-history" class="page">
       <div class="stats-header">
         <h2 style="font-size: 18px; margin: 0;">Performance</h2>
@@ -321,15 +414,18 @@
       <div id="historyList"><div class="loading">No previous trades.</div></div>
     </div>
 
+    <!-- Account Page -->
     <div id="page-account" class="page">
       <h2 style="font-size: 18px; margin-bottom: 16px;">Account Settings</h2>
 
       <div style="background: #111; border: 1px solid #222; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
         <div style="font-size: 12px; color: #888; margin-bottom: 4px;">Logged in as:</div>
         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
-          <div id="userEmail" style="font-weight: 600; font-size: 14px;">...</div>
+          <div id="userEmail" style="font-weight: 600; font-size: 14px; word-break: break-all;">...</div>
         </div>
-        <button onclick="logout()" style="width: 100%; padding: 12px; background: #ef535022; color: #ef5350; border: 1px solid #ef535055; border-radius: 8px; font-weight: 700; cursor: pointer;">Log Out</button>
+        <button onclick="logout()" style="width: 100%; padding: 12px; background: #ef535022; color: #ef5350; border: 1px solid #ef535055; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-right-from-bracket"></i> Log Out
+        </button>
       </div>
 
       <div class="sub-banner">
@@ -353,18 +449,31 @@
       </div>
     </div>
 
+    <!-- Bottom Nav -->
     <div class="bottom-nav">
-      <div class="nav-item active" onclick="switchTab('live', this)"><span class="nav-icon">⚡</span> <span class="nav-text">Live</span></div>
-      <div class="nav-item" onclick="switchTab('auto', this)"><span class="nav-icon">🤖</span> <span class="nav-text">Auto</span></div>
-      <div class="nav-item" onclick="switchTab('history', this)"><span class="nav-icon">🕒</span> <span class="nav-text">History</span></div>
-      <div class="nav-item" onclick="switchTab('account', this)"><span class="nav-icon">👤</span> <span class="nav-text">Account</span></div>
+      <div class="nav-item active" onclick="switchTab('home', this)">
+        <span class="nav-icon"><i class="fa-solid fa-house"></i></span> 
+        <span class="nav-text">Home</span>
+      </div>
+      <div class="nav-item" onclick="switchTab('live', this)">
+        <span class="nav-icon"><i class="fa-solid fa-bolt"></i></span> 
+        <span class="nav-text">Live</span>
+      </div>
+      <div class="nav-item" onclick="switchTab('history', this)">
+        <span class="nav-icon"><i class="fa-solid fa-clock-rotate-left"></i></span> 
+        <span class="nav-text">History</span>
+      </div>
+      <div class="nav-item" onclick="switchTab('account', this)">
+        <span class="nav-icon"><i class="fa-solid fa-user"></i></span> 
+        <span class="nav-text">Account</span>
+      </div>
     </div>
   </div>
 
   <div id="notifModal">
     <div class="notif-header">
       <h3 style="margin:0;">Notifications</h3>
-      <button class="notif-close" onclick="closeNotifications()">✕</button>
+      <button class="notif-close" onclick="closeNotifications()"><i class="fa-solid fa-xmark"></i></button>
     </div>
     <div class="notif-actions">
       <button class="btn-clear" onclick="clearAllNotifications()">Clear All</button>
@@ -386,7 +495,6 @@
   <script>
     const SUPABASE_URL = 'https://wdexwfoplycblaxmrfws.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_6U7d-ihEr1ivc362mhkDeQ_2suPM3gy';
-    // TwelveData API Key
     const TWELVEDATA_API_KEY = '24b3b0279ca544ab9f2bf3caf86c5fdc';
 
     let supabaseClient = null;
@@ -652,7 +760,17 @@
       }
     }
 
+    // بداية التطبيق
     window.onload = function() {
+      // إخفاء شاشة الترحيب بعد 3 ثواني
+      setTimeout(() => {
+        const splash = document.getElementById('splashScreen');
+        if (splash) {
+          splash.style.opacity = '0';
+          setTimeout(() => splash.style.display = 'none', 500);
+        }
+      }, 3000);
+
       supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
       registerServiceWorker();
       const hash = window.location.hash;
@@ -887,11 +1005,13 @@
       document.getElementById('langBtn2').innerText = currentLang === 'en' ? 'AR' : 'EN';
       if (currentLang === 'ar') document.getElementById('mainBody').classList.add('rtl'); else document.getElementById('mainBody').classList.remove('rtl');
       const el = document.getElementById('loadingText'); if (el) el.innerText = dict[currentLang].loading;
+      
       const navs = document.querySelectorAll('.nav-text');
-      if (navs[0]) navs[0].innerText = dict[currentLang].live;
-      if (navs[1]) navs[1].innerText = dict[currentLang].auto;
+      if (navs[0]) navs[0].innerText = dict[currentLang].home;
+      if (navs[1]) navs[1].innerText = dict[currentLang].live;
       if (navs[2]) navs[2].innerText = dict[currentLang].history;
       if (navs[3]) navs[3].innerText = dict[currentLang].account;
+      
       const key = getTradeKey(currentAsset, currentTF);
       if (activeTrades[key]) renderTradeCard(activeTrades[key]); 
       renderHistoryList();
@@ -977,20 +1097,14 @@
       }
     }
 
-    // دالة البحث عن الفجوات السعرية (FVG) مع توسيع نطاق البحث
     function findSMCSetup(bars) {
         let setup = null;
         const currentPrice = bars[bars.length - 1].close; 
-        
-        // البحث في آخر 60 شمعة
         for (let i = bars.length - 3; i >= Math.max(0, bars.length - 60); i--) {
             const c1 = bars[i]; const c3 = bars[i + 2];
             if (!c1 || !c3) continue;
-
-            // فجوة شراء (Bullish FVG)
             if (c1.high < c3.low) {
                 const fvgMid = (c1.high + c3.low) / 2;
-                // التأكد أن السعر الحالي قريب من الفجوة (أقل من 50 pip)
                 if (Math.abs(currentPrice - fvgMid) < (getPipSize(currentAsset) * 50)) {
                     if (generalTrend === "BULLISH" || generalTrend === "NEUTRAL") { 
                         setup = { dir: "BUY", entry: c1.high, sl: c1.low - getPipSize(currentAsset) * 5 }; 
@@ -998,7 +1112,6 @@
                     }
                 }
             }
-            // فجوة بيع (Bearish FVG)
             if (c1.low > c3.high) {
                 const fvgMid = (c1.low + c3.high) / 2;
                 if (Math.abs(currentPrice - fvgMid) < (getPipSize(currentAsset) * 50)) {
@@ -1213,6 +1326,10 @@
       const winRate = totalTrades > 0 ? ((wins / totalTrades) * 100).toFixed(1) : 0;
       document.getElementById('statWinRate').innerText = winRate + '%';
       document.getElementById('statTotalTrades').innerText = totalTrades;
+      
+      document.getElementById('homeWinRate').innerText = winRate + '%';
+      document.getElementById('homeTotalTrades').innerText = totalTrades;
+      
       const pipsElement = document.getElementById('statTotalPips');
       pipsElement.innerText = (totalPips > 0 ? '+' : '') + totalPips.toFixed(0);
       pipsElement.className = totalPips >= 0 ? 'stat-value text-green' : 'stat-value text-red';
